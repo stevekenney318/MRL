@@ -1,0 +1,147 @@
+/**
+Stylesheet File Uploading and Attachment
+**/
+#btn_shortcode label{cursor:default !important}
+
+/*******
+Css For Tab Content
+*************************************/
+
+a:active {outline: none;}
+a:focus {-moz-outline-style: none;}
+#tabs_container {width: auto;font-family: Arial, Helvetica, sans-serif;font-size: 12px;}
+#tabs_container ul.tabs {list-style: none;border-bottom: 1px solid #ccc;height: 23px;margin: 0;}
+#tabs_container ul.tabs li {float: left;}
+#tabs_container ul.tabs li a {padding: 3px 10px;display: block;border-left: 1px solid #ccc;border-top: 1px solid #ccc;border-right: 1px solid #ccc;margin-right: 2px;
+	text-decoration: none;background-color: #efefef;border-top-left-radius: 5px;border-top-right-radius: 5px}
+#tabs_container ul.tabs li.active a {background-color: #fff;padding-top: 4px;}
+div.tab_contents_container {border: 1px solid #ccc;border-top: none;padding: 10px;}
+div.tab_contents {display: none;}
+div.tab_contents_active {	display: block;}
+div.clear {clear: both;}
+.tab_left{float:left;width:400px;}
+.tab_right{float:right;width:150px;height:150px;}
+.button-media-background{color:white !important;text-decoration:none;background-color: #21759B;border-radius: 5px;padding:5px 10px 8px 9px;border-style:solid;border-width: 1px;height:24px;line-height: 23px;}
+#shortcode_tab_container{width:400px;}
+.outer_tab_container{height:190px;border-bottom:1px solid #ccc;}
+.add_tab{float:left;}
+.cancel_tab{float:right;}
+.insert_button{float: left;margin-left: 105px;padding-top: 10px}
+.insert_button_map{float: left;margin-left: 175px;padding-top: 10px}
+.tab_right li a{padding:5px;}
+#TB_ajaxContent{width:620px;height:620px !important;}
+.shortcode_tab_content,.shortcode_accordion_content{float: left;display: block;width: 100px;vertical-align: top}.
+.tabwrapper .cancel_button{float: right !important;}
+.tabwrapper,.accordionwrapper{ border-bottom: 1px solid #CCCCCC;width:100%;height: 225px;float: left;padding-top: 30px}
+.cancel_button{ background-color:#DA4F49 !important;background-image: linear-gradient(to bottom, #EE5F5B, #BD362F) !important; }
+#inserttab,#insertaccordion{margin-left: 10px;margin-right: 10px}
+.custom_btn{color: #fff;font-family: 'Times New Roman';margin: 15px}
+#TB_ajaxContent > h2{
+display:none;
+}
+
+/*#adminmenu #menu-posts-file>a.menu-top:focus,#menu-posts-file > a,#adminmenu #menu-posts-file.opensub > a:hover, #menu-posts-file > a:hover, #menu-posts-file>a:focus,#adminmenu li#menu-posts-file.wp-has-current-submenu a.wp-has-current-submenu{
+  background-color:blue;
+  color:#fff
+}*/
+.uploadFileWrapper{
+  /*float:left;*/
+  width: 100%;
+  position: relative;
+}
+
+.fileUpload {
+    position: relative;
+    overflow: hidden;
+    /*margin: 0 10px;*/
+    width: 120px;
+    /*padding-left: 200px;*/
+    height: 34px;
+    /*float: left;*/
+
+}
+.fileUpload input.upload {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0;
+    filter: alpha(opacity=0);
+}
+
+#uploadFile{
+  width: 200px;
+  left: 0;
+  top: 0;
+  padding-top: 0;
+  margin-top: 0;
+  height: 34px;
+  border: 0;
+  position: absolute;
+}
+
+input.readonly, input[readonly], textarea.readonly, textarea[readonly]{
+opacity:0.5;
+  }
+
+
+
+.mce-object-iframe{ 
+    width: 100%;
+    height: 100%;
+    position:relative;
+    top: 0;
+    }
+
+
+
+
+  .messageBox .message{
+    border: 1px dashed transparent;
+    background: transparent;
+    padding: 10px;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+  .messageError .message{
+    /*border-color: #a10000;*/
+    background: #fff5f1;
+    color: #a10000;
+  }
+    .messageSuccess .message{
+    /*border-color: #00a100;*/
+    background: #f1fff1;
+    color: #00a100;
+  }
+  .fileName{
+    /*float:right;*/
+    position: absolute;
+    left: 150px;
+    top: 5px;
+    color: #000;
+    font-size: 18px;
+}
+
+.js .postbox .handlediv {
+    display: none;
+}
+
+.poweredby-logo.not-active {
+   pointer-events: none!important;
+   cursor: default!important;
+}
+
+#button1, .js-textareacopybtn {
+  background-color: #0D85B6;
+  border: none;
+  color: white;
+  padding: 10px 18px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  border-radius: 4px;
+  cursor: pointer;
+}

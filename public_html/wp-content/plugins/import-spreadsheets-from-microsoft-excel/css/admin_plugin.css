@@ -1,0 +1,152 @@
+body.wp-autoresize.mceContentBody{
+    padding-bottom: 20px !important;
+}
+.mce-object-iframe{ 
+    width: 100%;
+    height: 100%;
+    position:relative;
+    top: 0;
+}
+#hasIframe{
+  position: relative;
+  
+}
+.mce-content-body .mce-clonedresizable{
+  position: absolute !important;
+  
+}
+
+#hasIframe .mce-object-iframe{ 
+    position:absolute;
+    top:0;
+    left:0;
+  
+}
+
+    .mce-object-iframe iframe{
+      position: relative;
+      
+    }
+
+ /*.mce-btn .mce-txt{
+ 	color: red!important;
+   }*/
+   .mce-btn .mce-txt:hover{
+       border-color: #999
+   }
+   [aria-label="DeleteCalculator"].mce-btn .mce-txt{
+
+   	float: left;
+    background:url('../icon/delete_shortcode.png') no-repeat 6px 6px;
+    display:inline-block;
+    height: 16px;
+    margin: 0 2px 0 0;
+    vertical-align: text-top;
+    width: auto;
+
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 26px;
+    height: 28px;
+    margin: 0;
+    padding: 4px 10px;
+    cursor: pointer;
+    border-width: 1px;
+    border-style: solid;
+    -webkit-appearance: none;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    white-space: nowrap;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    color: #555;
+    border-color: #ccc;
+    background-color: #f7f7f7;
+    -webkit-box-shadow: 0 1px 0 #ccc;
+    box-shadow: 0 1px 0 #ccc;
+    vertical-align: top;
+    margin-right: 5px;
+    margin-bottom: 0;
+    padding-left: 25px;
+    padding-right: 7px;
+}
+.wp-core-ui a.files_media_link{
+    padding-left: 0.4em;
+}
+
+[aria-label="DeleteCalculator"], [aria-label="DeleteCalculator"]:hover{
+   border:0 !important;
+   margin: 0 !important;
+   float: left !important
+}
+
+.mce-content-body button {
+    align-self: center;
+    margin-left: 310px;
+
+
+}
+.mce-content-body button {
+
+  background-image:url('../icon/delete_shortcode.png');
+  background-repeat: no-repeat;
+  background-position: 6px 6px;
+  background-color: #f7f7f7;
+
+  vertical-align: text-top;
+  width: auto;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 20px;
+  height: 28px;
+  margin: 0;
+  padding: 4px 10px;
+  cursor: pointer;
+  border-width: 1px;
+  border-style: solid;
+  -webkit-appearance: none;
+  -webkit-border-radius: 3px;
+  border-radius: 3px;
+  white-space: nowrap;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  color: #cd0000;
+  border-color: #cd0000;
+  -webkit-box-shadow: 0 1px 0 #ccc;
+  box-shadow: 0 1px 0 #ccc;
+  vertical-align: top;
+  margin-right: 5px;
+  margin-bottom: 0;
+  padding-left: 25px;
+  padding-right: 7px;
+  display: inline-block;
+  position: absolute;
+
+    /*background: #d01c1c;
+    color: #FFF;
+    text-decoration: none;
+    padding: 10px;*/
+}
+.mce-content-body button:hover{
+    background-color: #ef0000;
+    color: #FFF;
+    cursor: pointer;
+}
+.mce-content-body button:after {
+    content: '';
+    display: block;  
+    position: absolute;
+    left: 20px;
+    bottom: 100%;
+    width: 0;
+    height: 0;
+    border-bottom: 10px solid #cd0000;
+    border-top: 10px solid transparent;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+}
+.mce-content-body button:hover:after {
+    border-bottom-color: #ef0000;
+}

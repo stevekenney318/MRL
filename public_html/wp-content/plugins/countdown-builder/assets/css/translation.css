@@ -1,0 +1,36 @@
+.ycd-container-wrapper .ycd-translation-wrapper {
+	margin-bottom: 20px;
+}
+#template-wrapper {
+	width: 1px;
+	height: 1px;
+	position: absolute;
+	left: -90000px;
+}
+.ycd-translation-header {
+	background: #fff;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	color: #888;
+	padding: 15px 20px;
+	position: relative
+}
+
+.delete-item {
+	position: absolute;
+	right: 20px;
+	cursor: pointer;
+}
+
+.ycd-translation-body {
+	background: #fff;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	color: #888;
+	padding: 15px 20px;
+	position: relative;
+}
+
+.ycd-hide {
+	display: none;
+}
