@@ -210,7 +210,8 @@ $isAdmin = isAdmin($_SESSION['userSession']);
     $sql = "SELECT * FROM `years` WHERE `year` < '$raceYear' AND `year` > '0' ORDER BY `years`.`year` DESC";
     foreach ($dbo->query($sql) as $row) {
         $prevRaceYear = $row['year'];
-        include 'prior_year_user_team_chart_history.php';
+        // include 'prior_year_user_team_chart_history.php';
+        include 'prior_year_user_team_chart.php';
     }
     ?>
 

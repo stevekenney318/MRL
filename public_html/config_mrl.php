@@ -9,12 +9,12 @@
 
 $formLocked = "no";    // this is a manual lock used to show form or not. Must be "no" to show form
 
-$raceYear = "2025"; // Current Year
+$raceYear = "2026"; // Current Year
 $previousRaceYear = $raceYear - 1; // Subtract 1 to get the previous year
 
 // Segment 4
-$segment = "S4"; // Current Submission Segment S1 , S2 , S3 , S4
-$formLockDate = '8/31/2025 6:00 pm'; // date/time to lock form for segment
+// $segment = "S4"; // Current Submission Segment S1 , S2 , S3 , S4
+// $formLockDate = '8/31/2025 6:00 pm'; // date/time to lock form for segment
 
 // Segment 3
 // $segment = "S3"; // Current Submission Segment S1 , S2 , S3 , S4
@@ -25,8 +25,8 @@ $formLockDate = '8/31/2025 6:00 pm'; // date/time to lock form for segment
 // $formLockDate = '4/13/2025 3:00 pm'; // date/time to lock form for segment
 
 // Segment 1
-// $segment = "S1"; // Current Submission Segment S1 , S2 , S3 , S4
-// $formLockDate = '2/16/2026 1:30 pm'; // date/time to lock form for segment (updated time)
+$segment = "S1"; // Current Submission Segment S1 , S2 , S3 , S4
+$formLockDate = '2/15/2026 2:30 pm'; // date/time to lock form for segment (updated time)
 
 
 // set segmentName based on segment

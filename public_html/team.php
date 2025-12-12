@@ -120,11 +120,15 @@ $isAdmin = isAdmin($_SESSION['userSession']);
                 echo "<br>";
                 echo "*******************************************************************";
                 echo "<br>";
-                echo "<a href='https://auth-db1928.hstgr.io/index.php?db=u809830586_MRL_DB' target='_blank'>- MRL database - (MySql) phpMyAdmin on Hostinger</a>";
+                echo "<a href='https://chatgpt.com/g/g-p-67946df1de588191ab3a786578a24816-mrl/project' target='_blank'>- ChatGPT MRL Project</a>";
                 echo "<br>";
-                echo "<a href='https://manliusracingleague.com/wp-admin/' target='_blank'>- WordPress Admin</a>";
+                echo "<a href='https://auth-db1928.hstgr.io/index.php?db=u809830586_MRL_DB' target='_blank'>- phpMyAdmin (Hostinger)</a>";
                 echo "<br>";
-                echo "<a href='https://hpanel.hostinger.com/websites/manliusracingleague.com' target='_blank'>- hPanel Hostinger</a>";
+                echo "<a href='https://manliusracingleague.com/wp-admin/?platform=hpanel&client_id=1017612160' target='_blank'>- WP Admin (Hostinger)</a>";
+                echo "<br>";
+                echo "<a href='https://hpanel.hostinger.com/websites/manliusracingleague.com/files/backups' target='_blank'>- Backups (Hostinger)</a>";
+                echo "<br>";
+                echo "<a href='https://hpanel.hostinger.com/websites/manliusracingleague.com' target='_blank'>- hPanel (Hostinger)</a>";
                 echo "<br>";
                 echo "*******************************************************************";
                 echo "<br>";
@@ -135,16 +139,18 @@ $isAdmin = isAdmin($_SESSION['userSession']);
             <br>
             Welcome to your team page.<br>
             <br>
-            <a style="color:red;">See note below regarding previous years picks</a><br>
+            <a style="color:red;">Update 2025-12-11 23:18:31 - See note below regarding previous years picks</a><br>
             <br>
             Below, you will find links for this year's season, payment status, your current team chart, the latest submission form, or the current segment team chart, and then any previous years played.
             <br>
             <br>
-            2025 Fees & Payment info is <a href="2025_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
-            2025 Rules are <a href="2025_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
-            <!-- 2025 Race Schedule (on MRL) is <a href="2025_Schedule.php" target="_blank" rel="noopener noreferrer">here </a><br> -->
-            2025 Race Schedule (on MRL) is <a style="color:red;">N/A at this time</a><br>
-            2025 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2025/schedule/" target="_blank" rel="noopener noreferrer">here </a><br>
+            <br>
+            <a style="color:red;">2026 setup in progress</a><br>
+            <br>
+            2026 Fees & Payment info is <a href="2026_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Rules are <a href="2026_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Race Schedule (on MRL) is <a style="color:red;">N/A at this time</a><br>
+            2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here </a><br>
             <br>
             ************************ Team Menu ******************************
             *******************************************************************
@@ -190,13 +196,17 @@ $isAdmin = isAdmin($_SESSION['userSession']);
             ?>
 <br>
 <br>
-<p style='font-size:16.0pt;line-height:120%;font-family:"Century Gothic",sans-serif;color:#dfcca8'>
+<!-- <p style='font-size:16.0pt;line-height:120%;font-family:"Century Gothic",sans-serif;color:#dfcca8'>
     <span style="font-size:20.0pt; text-decoration:underline; display:inline;">Previous Years Picks</span>
     <br><br>
     <a style="color:red;">FYI: As of 2025-01-26 16:57:01 - The repair process of the previous years report is still a work in progress. <br></a>
     Some background info - with every submission made, a duplicate entry is recorded into a separate data table. Therefore every submission made, including additional picks or late picks, are stored in this backup table. So until I resolve the issue, I have modified the reports to use this table. The one drawback to this method, due to its purpose, is all of your picks will show. Including the multiple picks made prior to a segment starting and/or any late picks, changed drivers, etc. But for now, more is better than less or none! You should see your picks below for the years of 2017 - 2024.<br>
+</p> -->
+<p style='font-size:18.0pt;line-height:120%;font-family:"Century Gothic",sans-serif;color:#dfcca8'>
+    <span style="font-size:20.0pt; text-decoration:underline; display:inline;">Previous Years Picks</span>
+    <br><br>
+    <a style="color:red;"></a>FYI: Great news — With the help of my friend Chad from ChatGPT, the user picks data has now been fully restored. As of 2025-12-11 23:18:31, all data is now being pulled from the final team picks table instead of the historical backup table. You should not see any gaps in your previous years picks. Please let us know if you see anything that doesn't look right to you. Thanks for your patience through all of this.<br>
 </p>
-
 </div>
 </div>
 <br>
@@ -206,8 +216,8 @@ $isAdmin = isAdmin($_SESSION['userSession']);
     $sql = "SELECT * FROM `years` WHERE `year` < '$raceYear' AND `year` > '0' ORDER BY `years`.`year` DESC";
     foreach ($dbo->query($sql) as $row) {
         $prevRaceYear = $row[year];
-        // include 'prior_year_user_team_chart.php'; // this is the original line
-        include 'prior_year_user_team_chart_history.php';  // this is the temporary fix to show the history picks
+        include 'prior_year_user_team_chart.php'; // this is the original line
+        // include 'prior_year_user_team_chart_history.php';  // this is the temporary fix to show the history picks
     }
     ?>
 
