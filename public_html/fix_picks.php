@@ -19,7 +19,7 @@ if (!$user_home->is_logged_in()) {
 }
 
 // Include header for MRL styling, etc.
-include 'header.php';
+// include 'header.php';
 
 
 // ***** Admin ************************************************

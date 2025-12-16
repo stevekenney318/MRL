@@ -1,5 +1,5 @@
 <?php
-include 'header.php';
+// include 'header.php';
 // Start the session to access session variables
 session_start();
 

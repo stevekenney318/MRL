@@ -1,4 +1,5 @@
 <?Php
+session_start();
 date_default_timezone_set("	America/New_York");
 include "config.php"; // setup variables for database connection 
 include "config_mrl.php"; // setup variables for current MRL season & segment

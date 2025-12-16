@@ -15,7 +15,7 @@ if (!$user_home->is_logged_in()) {
 }
 
 // Import the header.php file
-include 'header.php';
+// include 'header.php';
 
 // Import the config.php and config_mrl.php files
 require "config.php";

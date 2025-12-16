@@ -1,5 +1,5 @@
 <?php
-include 'header.php';
+// include 'header.php';
 session_start(); // ready to go!
 
 require_once 'class.user.php';

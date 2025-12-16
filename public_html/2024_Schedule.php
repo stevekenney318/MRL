@@ -22,7 +22,7 @@ $user_home = new USER();
 // }
 
 // Include header for MRL styling, etc.
-include 'header.php';
+// include 'header.php';
 
 // Set the time zone and get the current time
 date_default_timezone_set("America/New_York");

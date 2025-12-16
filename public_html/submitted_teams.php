@@ -1,4 +1,5 @@
 <?php
+session_start();
 include "config.php"; // Database connection info
 include "config_mrl.php"; // setup variables for current MRL season & segment
 $currentTimeIs = date("n/j/Y g:i a"); //get date in format '8/25/2020 12:20 am';

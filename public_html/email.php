@@ -15,7 +15,7 @@ if (!$user_home->is_logged_in()) {
 require_once 'Admin.php';
 
 date_default_timezone_set('America/New_York');
-include 'header.php';
+// include 'header.php';
 include "config.php"; // Database connection using PDO
 include "config_mrl.php"; // setup variables for current MRL season & segment
 $currentTimeIs = date("n/j/Y g:i a");

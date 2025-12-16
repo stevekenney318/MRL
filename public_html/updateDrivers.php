@@ -7,7 +7,7 @@ if (!$user_home->is_logged_in()) {
     $user_home->redirect('login.php');
 }
 
-include 'header.php';
+// include 'header.php';
 require "config.php";
 require "config_mrl.php";
 

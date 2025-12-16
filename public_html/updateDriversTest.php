@@ -10,7 +10,7 @@ if (!$user_home->is_logged_in()) {
 }
 
 // Include header and configuration files
-include 'header.php';
+// include 'header.php';
 require "config.php";
 require "config_mrl.php";
 

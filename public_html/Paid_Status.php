@@ -6,9 +6,9 @@ session_start();
 // Store the current page URL in the session
 $_SESSION['return_to'] = $_SERVER['REQUEST_URI'];
 // Include necessary files after session start
-require_once 'class.user.php';
-require 'config.php';
-require 'config_mrl.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config_mrl.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/class.user.php';
 
 // Create a new USER object
 $user_home = new USER();
@@ -19,7 +19,7 @@ if (!$user_home->is_logged_in()) {
 }
 
 // Include header for MRL styling, etc.
-include 'header.php';
+// include 'header.php';
 
 // Check if the user is an admin
 $isAdmin = isAdmin($_SESSION['userSession']);
@@ -79,7 +79,7 @@ if (mysqli_query($dbconnect, $sql)) {
 <head>
     <title>MRL Paid Status</title>
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="mrl-styles.css">
+    <link rel="stylesheet" href="/mrl-styles.css">
     <style>
         body {
             padding-top: 0px;
