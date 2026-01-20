@@ -1,10 +1,14 @@
 <?php
 // Paid_Status_Year.php
 
-// Start the session and include necessary files
+// ------------------------------------------------------------
+// Session + admin enforcement (standard, consistent)
+// ------------------------------------------------------------
 session_start();
+
 // Store the current page URL in the session
 $_SESSION['return_to'] = $_SERVER['REQUEST_URI'];
+
 // Include necessary files after session start
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config_mrl.php';
@@ -16,23 +20,21 @@ $user_home = new USER();
 // Redirect to login if not logged in
 if (!$user_home->is_logged_in()) {
     $user_home->redirect('login.php');
+    exit;
 }
-
-// Include header for MRL styling, etc.
-// include 'header.php';
 
 // Check if the user is an admin
-$isAdmin = isAdmin($_SESSION['userSession']);
+$isAdmin = isAdmin($_SESSION['userSession'] ?? null);
 
-// Display admin status
-if ($isAdmin) {
-    echo '<div style="color: green;">You are authorized to view/use this page</div>';
-    echo "<script>console.log('Validated admin');</script>";
-} else {
-    echo '<div style="color: red;">You are NOT authorized to view/use this page</div>';
-    echo "<script>console.log('Validated non-admin');</script>";
-    die();
-}
+// Admin status line (uses global CSS in /mrl-styles.css)
+$adminStatusLine = $isAdmin
+    ? '<div class="admin-status admin-yes">You are authorized to view/use this page</div>'
+    : '<div class="admin-status admin-no">You are NOT authorized to view/use this page</div>';
+
+// Preserve prior console logging behavior (optional)
+$adminConsoleLog = $isAdmin
+    ? "<script>console.log('Validated admin');</script>"
+    : "<script>console.log('Validated non-admin');</script>";
 
 // Set the time zone and get the current time
 date_default_timezone_set("America/New_York");
@@ -62,6 +64,18 @@ foreach ($dbo->query($sql) as $row) {
 </head>
 <body>
 
+<?php
+// ------------------------------------------------------------
+// Admin status (first visible output)
+// ------------------------------------------------------------
+echo $adminStatusLine;
+echo $adminConsoleLog;
+
+if (!$isAdmin) {
+    exit;
+}
+?>
+
 <!-- Year Selection Dropdown -->
 <form method="GET" action="">
     <label for="year">Select Year:</label>
@@ -76,7 +90,7 @@ foreach ($dbo->query($sql) as $row) {
 $selectedYear = isset($_GET['year']) ? $_GET['year'] : $raceYear;
 
 // Paid Status
-// $sql = "SELECT * FROM `Financial` WHERE `raceYear` = '$selectedYear' AND `userActive` = 'Y' AND `userID`!= 0 ORDER BY `raceYear` DESC";
+// $sql = "SELECT * FROM `Financial` WHERE `raceYear` = '$select...D `userActive` = 'Y' AND `userID`!= 0 ORDER BY `raceYear` DESC";
 $sql = "SELECT * FROM `Financial` WHERE `raceYear` = '$selectedYear' AND `userID`!= 0 ORDER BY `raceYear` DESC";
 
 echo "<style type='text/css'>table, th, td {border: 1px solid black;border-collapse: collapse;padding: 3px;}</style>";
@@ -84,33 +98,52 @@ echo "<style type='text/css'>table, th, td {border: 1px solid black;border-colla
 echo "<table align=center>";
 echo "<tr style='background-color:#fabf8f; color:#222222;'>";
 echo "<th colspan=6>$selectedYear Paid Status</th>";
+echo "</tr>";
 
 echo "<tr style='background-color:#fabf8f; color:#222222;'>";
-echo "<th>Team</th><th>Owner</th><th>Status</th><th>Amount</th><th>How</th><th>Comments</th></tr>";
+echo "<th>Team</th><th>Owner</th><th>Status</th><th>Amount</th><th>How</th><th>Comments</th>";
+echo "</tr>";
 
-foreach ($dbo->query($sql) as $row) {
+foreach($dbo->query($sql) as $row){
+
     echo "<tr>";
-    echo "<td style='background-color:#b7dee8; color:#222222; font-size: 13pt; line-height: 140%; font-family: Helvetica Neue,Helvetica,Arial,sans-serif;'>" . $row['teamName'] . "</td>";
-    echo "<td style='background-color:#b7dee8; color:#222222; font-size: 13pt; line-height: 140%; font-family: Helvetica Neue,Helvetica,Arial,sans-serif;'>" . $row['userName'] . "</td>";
-    echo "<td style='background-color:#b7dee8; color:#222222; font-size: 13pt; line-height: 140%; font-family: Helvetica Neue,Helvetica,Arial,sans-serif;'>" . $row['paidStatus'] . "</td>";
-    echo "<td style='background-color:#b7dee8; color:#222222; font-size: 13pt; line-height: 140%; font-family: Helvetica Neue,Helvetica,Arial,sans-serif;'>" . "$" . $row['paidAmount'] . "</td>";
-    echo "<td style='background-color:#b7dee8; color:#222222; font-size: 13pt; line-height: 140%; font-family: Helvetica Neue,Helvetica,Arial,sans-serif;'>" . $row['paidHow'] . "</td>";
-    echo "<td style='background-color:#b7dee8; color:#222222; font-size: 13pt; line-height: 140%; font-family: Helvetica Neue,Helvetica,Arial,sans-serif;'>" . $row['paidComment'] . "</td>";
+
+    echo "<td style='background-color:#b7dee8; color:#222222; font-size:13pt; line-height:140%; font-family:Helvetica Neue,Helvetica,Arial,sans-serif;'>{$row['teamName']}</td>";
+
+    echo "<td style='background-color:#b7dee8; color:#222222; font-size:13pt; line-height:140%; font-family:Helvetica Neue,Helvetica,Arial,sans-serif;'>{$row['userName']}</td>";
+
+    echo "<td style='background-color:#b7dee8; color:#222222; font-size:13pt; line-height:140%; font-family:Helvetica Neue,Helvetica,Arial,sans-serif;'>{$row['paidStatus']}</td>";
+
+    echo "<td style='background-color:#b7dee8; color:#222222; font-size:13pt; line-height:140%; font-family:Helvetica Neue,Helvetica,Arial,sans-serif;'>\${$row['paidAmount']}</td>";
+
+    echo "<td style='background-color:#b7dee8; color:#222222; font-size:13pt; line-height:140%; font-family:Helvetica Neue,Helvetica,Arial,sans-serif;'>{$row['paidHow']}</td>";
+
+    echo "<td style='background-color:#b7dee8; color:#222222; font-size:13pt; line-height:140%; font-family:Helvetica Neue,Helvetica,Arial,sans-serif;'>{$row['paidComment']}</td>";
+
     echo "</tr>";
 }
+
 echo "</table>";
 
-// SQL to get total amount for the year
-$sql = "SELECT SUM(paidAmount) AS Total FROM Financial WHERE `raceYear` = $selectedYear";
+$sql = "SELECT SUM(paidAmount) AS Total FROM Financial WHERE raceYear = $selectedYear";
 
 echo "<table align=center>";
-echo "<tr style='background-color:#fabf8f; color:#222222; font-size: 13pt; line-height: 140%; font-family: Helvetica Neue,Helvetica,Arial,sans-serif;'>";
-echo "<th colspan=1>$selectedYear Total</th>";
+echo "<tr style='background-color:#fabf8f; color:#222222; font-size:13pt; line-height:140%; font-family:Helvetica Neue,Helvetica,Arial,sans-serif;'>";
+echo "<th>$selectedYear Total</th>";
+echo "</tr>";
 
-foreach ($dbo->query($sql) as $row) {
-    echo "<tr><td style='background-color:#d8e4bc; color:#222222; font-size: 13pt; line-height: 140%; font-family: Helvetica Neue,Helvetica,Arial,sans-serif;'>" . "$" . $row['Total'] . "</td></tr>";
+foreach($dbo->query($sql) as $row){
+
+    echo "<tr>";
+
+    echo "<td style='background-color:#d8e4bc; color:#222222; font-size:13pt; line-height:140%; font-family:Helvetica Neue,Helvetica,Arial,sans-serif;'>\${$row['Total']}</td>";
+
+    echo "</tr>";
 }
+
 echo "</table>";
+
 ?>
+
 </body>
 </html>

@@ -26,6 +26,24 @@ $first_name = $name_parts[0];
 // Check if the user is an admin - used when offline
 $isAdmin = isAdmin($_SESSION['userSession']);
 
+$uid = (int)$_SESSION['userSession'];
+
+// ---------------------------------------------------------
+// TEAM NAME MODULE (standalone include)
+// ---------------------------------------------------------
+require_once 'teamname.php';
+
+// Handle AJAX availability check (exits immediately when called)
+if (isset($dbconnect)) {
+    mrl_teamname_handle_ajax($dbconnect);
+}
+
+// Handle save (POST -> redirect -> GET) and get message if any
+$teamNameMessage = '';
+if (isset($dbconnect)) {
+    $teamNameMessage = mrl_teamname_handle_save($dbconnect, (string)$raceYear, $uid);
+}
+
 // used for team page maintenance mode
 // Display admin status
 
@@ -112,8 +130,6 @@ $isAdmin = isAdmin($_SESSION['userSession']);
                 echo "<br>";
                 echo "<a href='https://manliusracingleague.com/admin_setup.php' target='_blank'>- Update Year/Segment & Submission Date</a>";
                 echo "<br>";
-                echo "<a href='https://manliusracingleague.com/report_all_users_auth.php' target='_blank'>- View user auth status to make late picks or change driver</a>";
-                echo "<br>";
                 echo "<a href='https://manliusracingleague.com/change_user_auth.php' target='_blank'>- Toggle user status to make late picks or change driver</a>";
                 echo "<br>";
                 echo "<a href='https://manliusracingleague.com/addDrivers.php' target='_blank'>- Add drivers for a new year.</a>";
@@ -167,6 +183,7 @@ $isAdmin = isAdmin($_SESSION['userSession']);
     </div>
 
     <a name="current_user_team_chart"></a>
+    <!-- <?php include 'showCurrentDrivers.php'; ?> -->
     <?php include 'current_user_team_chart.php'; ?>
 
     <?php
@@ -177,17 +194,48 @@ $isAdmin = isAdmin($_SESSION['userSession']);
         include 'team-late-pick.php';
     }
     ?>
-
     <div style="width:80%; margin:0 auto; text-align: left;">
         <div style="color: #dfcca8; font-size:16.0pt; line-height:120%; font-family:'Century Gothic',sans-serif;">
             <br>
             <?php
             $end_ts = strtotime($formLockDate);
             $user_ts = strtotime($currentTimeIs);
+
             if ($formLocked == 'no') {
                 if ($end_ts > $user_ts) {
-                    include $currentForm;
-                    include 'submitted_teams_count.php';
+
+                    // NEW: check for team name for current season
+                    $teamName = '';
+
+                    if (isset($dbconnect)) {
+                        $teamCheck = mysqli_query(
+                            $dbconnect,
+                            "SELECT teamName
+                             FROM user_teams
+                             WHERE userID = $uid
+                               AND raceYear = $raceYear
+                             LIMIT 1"
+                        );
+                        if ($teamCheck) {
+                            $teamRow = mysqli_fetch_assoc($teamCheck);
+                            $teamName = trim($teamRow['teamName'] ?? '');
+                        }
+                    }
+
+                    if ($teamName === '') {
+
+                        // Render the team name form (from teamname.php)
+                        if (!isset($dbconnect)) {
+                            echo "<div style='color:red; font-weight:bold; font-size:14pt; text-align:center;'>Database connection not available.</div>";
+                        } else {
+                            mrl_teamname_render_form($dbconnect, (string)$raceYear, $uid, (string)$teamNameMessage);
+                        }
+
+                    } else {
+                        include $currentForm;
+                        include 'submitted_teams_count.php';
+                    }
+
                 } else {
                     echo "$formLockedMessage - past Lock date of $formLockDate for $raceYear $segmentName -";
                     include 'current_segment_chart.php';
@@ -196,23 +244,17 @@ $isAdmin = isAdmin($_SESSION['userSession']);
                 echo "$formLockedMessage";
             }
             ?>
-<br>
-<br>
-<!-- <p style='font-size:16.0pt;line-height:120%;font-family:"Century Gothic",sans-serif;color:#dfcca8'>
-    <span style="font-size:20.0pt; text-decoration:underline; display:inline;">Previous Years Picks</span>
-    <br><br>
-    <a style="color:red;">FYI: As of 2025-01-26 16:57:01 - The repair process of the previous years report is still a work in progress. <br></a>
-    Some background info - with every submission made, a duplicate entry is recorded into a separate data table. Therefore every submission made, including additional picks or late picks, are stored in this backup table. So until I resolve the issue, I have modified the reports to use this table. The one drawback to this method, due to its purpose, is all of your picks will show. Including the multiple picks made prior to a segment starting and/or any late picks, changed drivers, etc. But for now, more is better than less or none! You should see your picks below for the years of 2017 - 2024.<br>
-</p> -->
-<p style='font-size:18.0pt;line-height:120%;font-family:"Century Gothic",sans-serif;color:#dfcca8'>
-    <span style="font-size:20.0pt; text-decoration:underline; display:inline;">Previous Years Picks</span>
-    <br><br>
-    <a style="color:red;"></a>FYI: Great news — With the help of my friend Chad from ChatGPT, the user picks data has now been fully restored. As of 2025-12-11 23:18:31, all data is now being pulled from the final team picks table instead of the historical backup table. You should not see any gaps in your previous years picks. Please let us know if you see anything that doesn't look right to you. Thanks for your patience through all of this.<br>
-</p>
-</div>
-</div>
-<br>
+            <br>
+            <br>
 
+            <p style='font-size:18.0pt;line-height:120%;font-family:"Century Gothic",sans-serif;color:#dfcca8'>
+                <span style="font-size:20.0pt; text-decoration:underline; display:inline;">Previous Years Picks</span>
+                <br><br>
+                <a style="color:red;"></a>FYI: Great news — With the help of my friend Chad from ChatGPT, the user picks data has now been fully restored. As of 2025-12-11 23:18:31, all data is now being pulled from the final team picks table instead of the historical backup table. You should not see any gaps in your previous years picks. Please let us know if you see anything that doesn't look right to you. Thanks for your patience through all of this.<br>
+            </p>
+        </div>
+    </div>
+    <br>
 
     <?php
     $sql = "SELECT * FROM `years` WHERE `year` < '$raceYear' AND `year` > '0' ORDER BY `years`.`year` DESC";

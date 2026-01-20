@@ -1,16 +1,20 @@
 <?php
-// include 'header.php';
-session_start(); // ready to go!
+session_start();
 
-require_once 'class.user.php';
+$_SESSION['return_to'] = $_SERVER['REQUEST_URI'];
+
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config_mrl.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/class.user.php';
+
 $user_home = new USER();
-if(!$user_home->is_logged_in())
-{
-	$user_home->redirect('login.php');
+
+if (!$user_home->is_logged_in()) {
+    $user_home->redirect('login.php');
+    exit;
 }
 
-require "config.php"; // setup variables for database connection 
-require "config_mrl.php"; // setup variables for current MRL season & segment
+$isAdmin = isAdmin($_SESSION['userSession'] ?? null);
 date_default_timezone_set("America/New_York");
 $currentTimeIs = date("n/j/Y g:i a"); //get date in format '8/25/2020 12:20 am'
 
@@ -21,10 +25,6 @@ if (!$mysqli) {
   die("Connection failed: " . mysqli_connect_error());
 }
 
-////////////IMPORTANT//////////////////
-// determine if logged in user is Admin
-require_once 'Admin.php';
-///////////////////////////////////////
 
 // fetch user names from database
 $result = mysqli_query($mysqli,"SELECT userName, changeAuth FROM users WHERE userActive='Y'");
@@ -54,9 +54,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <html>
 <head>
-<title>MRL Admin</title>
+<title>MRL Admin - Change User Auth</title>
+<link rel="stylesheet" href="/mrl-styles.css">
 </head>
 <body>
+
+<?php
+echo $isAdmin
+    ? '<div class="admin-status admin-yes">You are authorized to view/use this page</div>'
+    : '<div class="admin-status admin-no">You are NOT authorized to view/use this page</div>';
+
+if (!$isAdmin) {
+    exit;
+}
+?>
 
 <p>This is the page to use to change a users access to be able to make late picks or change a driver.</b>
 

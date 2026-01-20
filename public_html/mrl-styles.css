@@ -1,192 +1,287 @@
 body {
-    font-size: 14pt;
-    line-height: 140%;
-    font-family: 'Century Gothic', sans-serif;
-    color: #dfcca8;
-    background-color: #222222;
-    padding-bottom: 20px;
-    padding-left: 20px;
+	font-size: 14pt;
+	line-height: 140%;
+	font-family: 'Century Gothic', sans-serif;
+	color: #dfcca8;
+	background-color: #222222;
+	padding-bottom: 20px;
+	padding-left: 20px;
 }
 
 @media only screen and (max-width: 600px) {
-  body {
-    background-color: #222222;
-  }
+	body {
+		background-color: #222222;
+	}
 }
 
 a:any-link {
-  color: #08c;
-  text-decoration: none;
+	color: #08c;
+	text-decoration: none;
 }
 
 a:hover {
-  color: #164e69;
-  text-decoration: underline;
+	text-decoration: underline;
+	color: #08c;
 }
 
-#white-btn {
-    background-color: #592525;
-    border: none;
-    border-radius: 50%;
-    color: #2e8b52;
+/* =========================================
+   Admin status (top line)
+   ========================================= */
+.admin-status {
+	margin: 0;
+	padding: 0;
+	font: inherit;
+	line-height: 1.2;
+}
+
+.admin-yes {
+	color: green !important;
+}
+
+.admin-no {
+	color: red !important;
+}
+
+/* =========================================
+   Basic tables
+   ========================================= */
+table {
+	border-collapse: collapse;
+}
+
+th, td {
+	padding: 6px;
+}
+
+/* =========================================
+   MRL table look
+   ========================================= */
+.mrl-table {
+	border: 1px solid #666;
+	background-color: transparent;
+}
+
+.mrl-table th {
+	color: #bbbbbb;
+	border-bottom: 1px solid #666;
+}
+
+.mrl-table td {
+	color: #dfcca8;
+}
+
+/* =========================================
+   Utility
+   ========================================= */
+.center {
+	text-align: center;
+}
+
+.left {
+	text-align: left;
+}
+
+.right {
+	text-align: right;
+}
+
+.bold {
+	font-weight: bold;
+}
+
+.red {
+	color: #ff4c4c;
+}
+
+.green {
+	color: #3ee06f;
+}
+
+.small-note {
+	font-size: 12px;
+	color: #bbbbbb;
+}
+
+/* =========================================
+   Layout helpers
+   ========================================= */
+.container {
+	width: 80%;
+	margin: 0 auto;
+}
+/* =========================================
+   Headings
+   ========================================= */
+h1, h2, h3 {
+	color: #dfcca8;
+	margin: 0 0 10px 0;
+}
+
+hr {
+	border: 0;
+	border-top: 1px solid #444;
+	margin: 18px 0;
+}
+
+/* =========================================
+   Inputs / selects (legacy pages rely on browser defaults)
+   ========================================= */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select {
+	/* intentionally light-touch */
+}
+
+/* =========================================
+   Buttons (legacy pages rely on browser defaults)
+   ========================================= */
+input[type="submit"],
+button {
+	/* intentionally light-touch */
+}
+
+/* =========================================
+   Paid status tables (legacy styling)
+   ========================================= */
+.paid-status-title {
+	font-weight: bold;
+	font-size: 18pt;
+	color: #000;
+	background: #fabf8f;
+	text-align: center;
+}
+
+.paid-status-header {
+	font-weight: bold;
+	font-size: 14pt;
+	color: #000;
+	background: #fabf8f;
+	text-align: center;
+}
+
+.paid-status-cell {
+	font-size: 13pt;
+	color: #000;
+	background: #b8cce4;
+	border: 1px solid #000;
+	padding: 3px;
+}
+
+.paid-status-total-label {
+	font-weight: bold;
+	font-size: 14pt;
+	color: #000;
+	background: #fabf8f;
+	border: 1px solid #000;
+	text-align: center;
+}
+
+.paid-status-total-value {
+	font-size: 14pt;
+	color: #000;
+	background: #d8e4bc;
+	border: 1px solid #000;
+	text-align: left;
+	padding: 6px;
+}
+
+/* =========================================
+   Driver group tables (legacy styling)
+   ========================================= */
+.group-title {
+	font-weight: bold;
+	font-size: 18pt;
+	color: #000;
+	background: #fabf8f;
+	text-align: center;
+}
+
+.group-header {
+	font-weight: bold;
+	font-size: 14pt;
+	color: #000;
+	background: #fabf8f;
+	text-align: center;
+}
+
+.group-a { background: #d9d9d9; }
+.group-b { background: #c4bd97; }
+.group-c { background: #b8cce4; }
+.group-d { background: #d8e4bc; }
+
+.group-cell {
+	font-size: 13pt;
+	color: #000;
+	border: 1px solid #000;
+	padding: 3px;
+	text-align: left;
+}
+
+/* =========================================
+   Misc
+   ========================================= */
+.notice-success {
+	color: #3ee06f;
+	font-size: 22px;
+	font-weight: 800;
+	margin-bottom: 14px;
+}
+
+.notice-error {
+	color: #ff4c4c;
+	font-size: 18px;
+	font-weight: 700;
+	margin-bottom: 14px;
+}
+/* =========================================
+   Spacing helpers
+   ========================================= */
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-20 { margin-bottom: 20px; }
+
+/* =========================================
+   Simple panels
+   ========================================= */
+.panel {
+	border: 1px solid #444;
+	padding: 12px;
+	background: rgba(255,255,255,0.02);
+}
+
+/* =========================================
+   End of existing file
+   ========================================= */
+
+
+/* =========================================================
+   Form controls (reuse addDrivers-style defaults)
+   - These classes DO NOTHING until you add the class names
+     to elements in a page (next step).
+   ========================================================= */
+
+.mrl-control {
+    font-family: Tahoma, Verdana, Segoe, sans-serif;
+    font-size: 13pt;
+    line-height: normal;
+    padding: 2px 6px;
+}
+
+.mrl-button {
+    font-family: Tahoma, Verdana, Segoe, sans-serif;
+    font-size: 13pt;
+    line-height: normal;
+    padding: 2px 10px;
     cursor: pointer;
-    font-size: 16px;
-    height: 40px;
-    width: 40px;
-  }
-  
-  #white-btn:hover {
-    background-color: #cccccc;
-  }
-
-
-
-/* -------  Start --------- */
-/* This is a slider button initially used to toggle background color */
-/* ---- */
-  .switch input[type=checkbox] {
-    visibility: hidden;
-  }
-  
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 40px;
-    height: 20px;
-  }
-  
-  .switch .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    border-radius: 20px;
-    -webkit-transition: .4s;
-    transition: .4s;
-  }
-  
-  .switch .slider:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 2px;
-    bottom: 2px;
-    background-color: white;
-    -webkit-transition: .4s;
-    transition: .4s;
-    border-radius: 50%;
-  }
-  
-  .switch input[type=checkbox]:checked + .slider {
-    background-color: #222222;
-  }
-  
-  .switch input[type=checkbox]:focus + .slider {
-    box-shadow: 0 0 1px #222222;
-  }
-  
-  .switch input[type=checkbox]:checked + .slider:before {
-    -webkit-transform: translateX(20px);
-    -ms-transform: translateX(20px);
-    transform: translateX(20px);
-  }
-
-/* ---- */
-/* This is a slider button initially used to toggle background color */
-/* -------  End --------- */
-
-
-
-/* -------  Start --------- */
-/* This is the NAV bar */
-/* ---- */
-
-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #333;
-  color:#dfcca8;
-  padding: 10px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1;
 }
 
-.dropdown {
-  position: relative;
+/* Optional: tight, centered row (matches how addDrivers lays out forms) */
+.mrl-form-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
 }
-
-.dropbtn {
-  background-color: #333;
-  color:#dfcca8;
-  border: none;
-  cursor: pointer;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  z-index: 1;
-  background-color: #f9f9f9;
-  min-width: 160px; 
-  border-radius: 10px;
-}
-
-.dropdown-content a {
-  color: black;
-  padding: 4px 1px;
-  text-decoration: none;
-  display: block;
-}
-
-.dropdown:hover .dropdown-content {
-  display: block;
-}
-
-@media screen and (max-width: 480px) {
-  /* This will apply the following styles for screens with a maximum width of 480px */
-  .dropdown-content {
-  display: block;
-  position: static;
-  background-color: #f1f1f1;
-  width: 100%;
-  max-width: 200px;
-  padding: 0;
-  }
-  .dropdown-content a {
-  display: block;
-  text-align: left;
-  }
-  .dropdown {
-  position: relative;
-  display: inline-block;
-  margin-right: 10px;
-  }
-  .dropbtn {
-  font-size: 16px;
-  }
-  }
-
-.title {
-  font-size: 20px;
-  font-weight: normal;
-  color:#dfcca8;
-}
-
-.clock {
-  font-size: 20px;
-  font-weight: normal;
-  color:#dfcca8;
-}
-
-
-/* ---- */
-/* This is the NAV bar */
-/* -------  End --------- */  

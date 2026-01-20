@@ -83,7 +83,13 @@ if ($segment == 'S3') {
     $segmentName = 'Segment #3';
 }
 if ($segment == 'S4') {
-    $segmentName = 'Playoffs';
+    // 2014–2025: "Playoffs"
+    // 2026+: "The Chase"
+    if ((int)$raceYear >= 2026) {
+        $segmentName = 'The Chase';
+    } else {
+        $segmentName = 'Playoffs';
+    }
 }
 
 // ---------------------------------------------------------------------

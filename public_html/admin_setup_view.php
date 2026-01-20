@@ -1,29 +1,29 @@
+
 <?php
 // ------------------------------------------------------------
-// Admin Setup - View Only (Phase 1)
+// Admin Setup - View Only
 // Displays current MRL configuration from admin_setup
 // ------------------------------------------------------------
 
 session_start();
 
-require_once 'class.user.php';
-require 'config.php';
-require 'config_mrl.php';
+$_SESSION['return_to'] = $_SERVER['REQUEST_URI'];
+
+require_once $_SERVER['DOCUMENT_ROOT'] . '/class.user.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config_mrl.php';
 
 // Create USER object
 $user_home = new USER();
 
 // Redirect if not logged in
 if (!$user_home->is_logged_in()) {
-    $_SESSION['return_to'] = $_SERVER['REQUEST_URI'];
     $user_home->redirect('login.php');
+    exit;
 }
 
 // Admin check
-if (!function_exists('isAdmin') || !isAdmin($_SESSION['userSession'])) {
-    echo "<h2 style='color:red;'>You are NOT authorized to view this page.</h2>";
-    exit;
-}
+$isAdmin = isAdmin($_SESSION['userSession'] ?? null);
 
 // ------------------------------------------------------------
 // Fetch current admin_setup row
@@ -50,8 +50,7 @@ $sql = "
 $result = mysqli_query($dbconnect, $sql);
 
 if (!$result || mysqli_num_rows($result) !== 1) {
-    echo "<h2 style='color:red;'>Error: Unable to read admin_setup configuration.</h2>";
-    exit;
+    die('Error: Unable to read admin_setup configuration.');
 }
 
 $row = mysqli_fetch_assoc($result);
@@ -90,14 +89,9 @@ if (!empty($row['updatedAt'])) {
     <title>MRL Admin Setup (View)</title>
     <meta charset="UTF-8">
 
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #222;
-            color: #eee;
-            padding: 20px;
-        }
+    <link rel="stylesheet" href="/mrl-styles.css">
 
+    <style>
         table {
             border-collapse: collapse;
             margin-top: 20px;
@@ -132,6 +126,16 @@ if (!empty($row['updatedAt'])) {
 </head>
 
 <body>
+
+<?php
+echo $isAdmin
+    ? '<div class="admin-status admin-yes">You are authorized to view/use this page</div>'
+    : '<div class="admin-status admin-no">You are NOT authorized to view/use this page</div>';
+
+if (!$isAdmin) {
+    exit;
+}
+?>
 
 <h1>MRL Admin Setup (Read-Only)</h1>
 
@@ -172,18 +176,17 @@ if (!empty($row['updatedAt'])) {
     </tr>
 
     <tr>
-    <td>Updated By</td>
-    <td>
-        <?php
-        echo htmlspecialchars(
-            $row['updatedByName']
-            ? $row['updatedByName']
-            : 'User ID ' . $row['updatedBy']
-        );
-        ?>
-    </td>
-</tr>
-
+        <td>Updated By</td>
+        <td>
+            <?php
+            echo htmlspecialchars(
+                $row['updatedByName']
+                ? $row['updatedByName']
+                : 'User ID ' . $row['updatedBy']
+            );
+            ?>
+        </td>
+    </tr>
 </table>
 
 <div class="note">

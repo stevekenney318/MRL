@@ -71,7 +71,7 @@ if (isset($_POST['year'])) {
     $selectedYear = $_POST['year'];
 
     // Fetch the modification status for the selected year
-    $stmt = mysqli_prepare($dbconnect, "SELECT modify_drivers FROM years WHERE year = ?");
+    $stmt = mysqli_prepare($dbconnect, "SELECT lockDrivers	 FROM years WHERE year = ?");
     mysqli_stmt_bind_param($stmt, "s", $selectedYear);
     mysqli_stmt_execute($stmt);
     mysqli_stmt_bind_result($stmt, $modifyDrivers);
