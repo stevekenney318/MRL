@@ -285,3 +285,169 @@ button {
     align-items: center;
     gap: 10px;
 }
+
+/* =========================================================
+   Team Chart page (scoped styles — legacy grid, NO WRAP)
+   Tightened columns + centered table + reduced top gap
+   ========================================================= */
+
+.teamchart-container {
+  width: 98% !important;
+  margin: 0 auto !important;
+}
+
+/* reduce gap under dropdowns */
+.teamchart-form {
+  margin: 4px 0 4px 0 !important;
+}
+
+.teamchart-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important;
+}
+
+.teamchart-label {
+  font-size: 16px !important;
+}
+
+.teamchart-select {
+  width: 120px !important;
+  height: 30px !important;
+  border: 1px solid #999 !important;
+  font-size: 18px !important;
+  color: #000 !important;
+  background-color: #eee !important;
+  border-radius: 4px !important;
+  box-shadow: 4px 4px #ccc !important;
+  padding: 2px 6px !important;
+}
+
+.teamchart-button {
+  height: 32px !important;
+  padding: 0 12px !important;
+  border: 1px solid #999 !important;
+  background: #eee !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+}
+
+/* scroll horizontally instead of wrapping */
+.teamchart-scroll {
+  overflow-x: auto !important;
+  text-align: center !important; /* centers the inline-table below */
+}
+
+/* IMPORTANT CHANGE:
+   - Auto layout so columns tighten to content (like your original)
+   - No fixed 1600px width
+*/
+.teamchart-table {
+  border-collapse: collapse !important;
+  border: 1px solid #000 !important;
+  color: #000 !important;
+  table-layout: auto !important;
+  width: auto !important;
+  margin: 0 auto !important;
+  display: inline-table !important; /* allows centering via parent text-align */
+}
+
+/* Keep the table centered, but keep cell text left-aligned */
+.teamchart-table th,
+.teamchart-table td {
+  text-align: left !important;
+}
+
+/* (Optional) keep header labels centered like the original */
+.teamchart-header-row th,
+.teamchart-title-row th {
+  text-align: center !important;
+}
+
+.teamchart-table th,
+.teamchart-table td {
+  border: 1px solid #000 !important;
+  padding: 2px 6px !important;     /* tighter than before */
+  white-space: nowrap !important;  /* your “no wrap anywhere” requirement */
+  vertical-align: middle !important;
+}
+
+/* Header rows */
+.teamchart-title-row th {
+  background-color: #fabf8f !important;
+  text-align: center !important;
+  font-weight: bold !important;
+  padding: 4px 6px !important;
+}
+
+.teamchart-header-row th {
+  background-color: #fabf8f !important;
+  color: #222 !important;
+  text-align: center !important;
+  font-weight: bold !important;
+}
+
+/* Column fills */
+.teamchart-cell-team,
+.teamchart-cell-owner,
+.teamchart-cell-time {
+  background-color: #b7dee8 !important;
+}
+
+.teamchart-cell-a { background-color: #d9d9d9 !important; }
+.teamchart-cell-b { background-color: #c4bd97 !important; }
+.teamchart-cell-c { background-color: #b8cce4 !important; }
+.teamchart-cell-d { background-color: #d8e4bc !important; }
+
+.teamchart-empty {
+  text-align: center !important;
+  padding: 10px !important;
+  background-color: #b7dee8 !important;
+  font-weight: bold !important;
+}
+
+/* =========================================================
+   Team Chart - Print support
+   - Prints only the chart area
+   - White background
+   - Landscape
+   - Preserve colors
+   ========================================================= */
+
+@media print {
+
+    @page {
+        size: landscape;
+        margin: 0.5in;
+    }
+
+    /* Force white print page + preserve colors */
+    html, body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Hide anything you don't want printed */
+    .teamchart-no-print,
+    .admin-status {
+        display: none !important;
+    }
+
+    /* Remove outer margins/padding that waste space */
+    body {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Ensure chart is visible and centered nicely */
+    .teamchart-scroll {
+        overflow: visible !important;
+    }
+
+    .teamchart-table {
+        margin: 0 auto !important;
+    }
+}

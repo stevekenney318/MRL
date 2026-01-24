@@ -31,7 +31,7 @@ $uid = (int)$_SESSION['userSession'];
 // ---------------------------------------------------------
 // TEAM NAME MODULE (standalone include)
 // ---------------------------------------------------------
-require_once 'teamname.php';
+require_once 'team_name.php';
 
 // Handle AJAX availability check (exits immediately when called)
 if (isset($dbconnect)) {
@@ -165,17 +165,25 @@ if (isset($dbconnect)) {
             <br>
             <a style="color:red;">2026 setup in progress</a><br>
             <br>
-            2026 Fees & Payment info is <a href="2026_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
+            <!-- 2026 Fees & Payment info is <a href="2026_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
             2026 Rules are <a href="2026_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
             2026 Race Schedule (on MRL) is <a style="color:red;">N/A at this time</a><br>
             2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here </a><br>
+            <br> -->
+
+            2026 Fees & Payment info is <a style="color:red;">N/A at this time</a><br>
+            2026 Rules are <a style="color:red;">N/A at this time</a><br>
+            2026 Race Schedule (on MRL) is <a style="color:red;">N/A at this time</a><br>
+            2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here </a><br>
             <br>
+
             ************************ Team Menu ******************************
             *******************************************************************
             <br>
             <a href="https://manliusracingleague.com/showDrivers.php" target="_blank" rel="noopener noreferrer">- Show driver selection chart for a given year </a><br>
+            <a href="https://manliusracingleague.com/team_chart.php" target="_blank" rel="noopener noreferrer">- Show Team Chart for a given year & segment </a><br>
             <a href="https://manliusracingleague.com/submitted_teams.php" target="_blank" rel="noopener noreferrer">- Submitted Teams for Current Segment </a><br>
-            - Your Profile page (change your email addresses) -> Use dropdown menu - upper left at your name.<br>
+            <a href="https://manliusracingleague.com/profile.php" target="_blank" rel="noopener noreferrer">- Your Profile page (change your email addresses, etc) </a> - Or use dropdown menu - upper left at your name.<br>
             <br>
             *******************************************************************
             <br>
@@ -224,7 +232,7 @@ if (isset($dbconnect)) {
 
                     if ($teamName === '') {
 
-                        // Render the team name form (from teamname.php)
+                        // Render the team name form (from team_name.php)
                         if (!isset($dbconnect)) {
                             echo "<div style='color:red; font-weight:bold; font-size:14pt; text-align:center;'>Database connection not available.</div>";
                         } else {
