@@ -235,6 +235,14 @@ button {
 	font-weight: 700;
 	margin-bottom: 14px;
 }
+
+.notice-gate {
+    color: red !important;
+    font-size: 16pt;
+    font-weight: bold;
+}
+
+
 /* =========================================
    Spacing helpers
    ========================================= */

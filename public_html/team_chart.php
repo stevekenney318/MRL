@@ -250,7 +250,6 @@ $action  = $hasPost ? ($_POST['action'] ?? 'show') : 'show';
 
 $postYear    = $hasPost ? ($_POST['year'] ?? '') : '';
 $postSegment = $hasPost ? ($_POST['segment'] ?? '') : '';
-
 // ---------- load years + segments from DB ----------
 $years    = [];
 $segments = [];
@@ -356,18 +355,27 @@ if (
 }
 
 // ---------- lock display pieces ----------
+// FIX: Always format from $lockTs when available. This covers BOTH cases:
+// 1) date-only + separate time, and
+// 2) a full datetime stored in $formLockDate (with $formLockTime empty).
 $lockTimeDisplay = '';
 $lockDateDisplay = '';
 
-if ($formLockTimeRaw !== '') {
-    $lockTimeDisplay = $formLockTimeRaw;
-    $t = strtotime($formLockTimeRaw);
-    if ($t !== false) $lockTimeDisplay = date('g:i A', $t);
-}
-if ($formLockDateRaw !== '') {
-    $lockDateDisplay = $formLockDateRaw;
-    $d = strtotime($formLockDateRaw);
-    if ($d !== false) $lockDateDisplay = date('n/j/Y', $d);
+if ($lockTs > 0) {
+    $lockTimeDisplay = date('g:i A', $lockTs);
+    $lockDateDisplay = date('n/j/Y', $lockTs);
+} else {
+    // Fallback (should be rare)
+    if ($formLockTimeRaw !== '') {
+        $lockTimeDisplay = $formLockTimeRaw;
+        $t = strtotime($formLockTimeRaw);
+        if ($t !== false) $lockTimeDisplay = date('g:i A', $t);
+    }
+    if ($formLockDateRaw !== '') {
+        $lockDateDisplay = $formLockDateRaw;
+        $d = strtotime($formLockDateRaw);
+        if ($d !== false) $lockDateDisplay = date('n/j/Y', $d);
+    }
 }
 
 // ---------- load picks (only if we're showing chart OR exporting) ----------
@@ -435,7 +443,7 @@ if ($isExcel) {
     // If gated, do NOT export chart
     if ($showSubmittedInsteadOfChart) {
         header('Content-Type: text/plain; charset=UTF-8');
-        echo "Team Chart for {$selectedYear} / {$selectedSegment} will be available after {$lockTimeDisplay} on {$lockDateDisplay}";
+        echo "Team Chart for {$selectedYear} / {$selectedSegment} will be available at {$lockTimeDisplay} on {$lockDateDisplay}";
         exit;
     }
 
@@ -540,7 +548,7 @@ if (isset($adminStatusLine)) {
 
         <div style="color:red; font-size:16pt; margin:10px 0;">
             Team Chart for <?=h($selectedYear)?> / <?=h($selectedSegment)?>
-            will be available after <?=h($lockTimeDisplay)?> on <?=h($lockDateDisplay)?>
+            will be available at <?=h($lockTimeDisplay)?> on <?=h($lockDateDisplay)?>
         </div>
 
         <?php include 'submitted_teams.php'; ?>

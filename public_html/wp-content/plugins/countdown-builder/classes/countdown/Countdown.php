@@ -469,7 +469,22 @@ abstract class Countdown {
 	public static function find($id) {
 		$options = CountdownModel::getDataById($id);
 
+		if (is_string($options)) {
+			$maybe = maybe_unserialize($options);
+			if (is_array($maybe)) {
+				$options = $maybe;
+			} else {
+				$json = json_decode($options, true);
+				if (is_array($json)) {
+					$options = $json;
+				}
+			}
+		}
+
 		if(empty($options)) {
+			return false;
+		}
+		if (empty($options['ycd-type'])) {
 			return false;
 		}
 		$type = $options['ycd-type'];
@@ -633,6 +648,9 @@ abstract class Countdown {
 
 	public function getAllSavedOptions() {
 		$savedData = $this->getSavedData();
+		if (!$savedData) {
+			$savedData = [];
+		}
 		$savedData['id'] = $this->getId();
 		$savedData['ycd-timer-seconds'] = $this->getCountdownTimerAttrSeconds();
 

@@ -34,7 +34,7 @@ echo "As of $currentTimeIs, $resultcount teams have submitted their picks for $r
     Click <a href="submitted_teams.php" target="_blank" rel="noopener noreferrer">here</a> to see the submission status of all teams. <a href="submitted_teams.php" target="_blank" rel="noopener noreferrer"></a><br><br>***** The <?php echo "$raceYear $segmentName" ?> team chart (with drivers) will appear here at <?php echo "$formLockDate" ?> (refresh browser if necessary) *****
 -->
 
-Click <a href="submitted_teams.php">here</a> to see the submission status of all teams. <br><br>***** The <?php echo "$raceYear $segmentName" ?> team chart (with drivers) will appear here at <?php echo "$formLockDate" ?> (refresh browser if necessary) *****
+Click <a href="team_chart.php">here</a> to see the submission status of all teams. <br><br>***** The <?php echo "$raceYear $segmentName" ?> team chart (with drivers) will appear here at <?php echo "$formLockDate" ?> (refresh browser if necessary) *****
 
 
 <?Php

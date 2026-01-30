@@ -262,29 +262,47 @@ class SimpleCountdown extends Countdown
 
     public function getViewContent()
     {
-
         $id = $this->getId();
+    
+        // options may be false/null
         $options = $this->getAllOptions();
-	    $options = $this->filterTranslations($options);
-	    $this->options = $options;
-        $options = json_encode($options);
+        if (!is_array($options)) {
+            $options = [];
+        }
+    
+        $options = $this->filterTranslations($options);
+        if (!is_array($options)) {
+            $options = [];
+        }
+    
+        $this->options = $options;
+    
+        $optionsJson = json_encode($options, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '{}';
+    
         $allowed_html = AdminHelper::getAllowedTags();
-
+    
+        // IMPORTANT: wp_kses() must receive STRING, not null
+        $before = (string) ($this->getOptionValue('ycd-simple-countdown-before-countdown') ?? '');
+        $after  = (string) ($this->getOptionValue('ycd-simple-countdown-after-countdown') ?? '');
+        $render = (string) ($this->render() ?? '');
+    
         ob_start();
         ?>
         <div class="ycd-countdown-wrapper ycd-simple-content-wrapper ycd-simple-content-wrapper-<?php echo esc_attr($id); ?>">
-            <div class="ycd-simple-time ycd-simple-container ycd-countdown-content-wrapper ycd-simple-wrapper-<?php echo esc_attr($id); ?>" data-options='<?php echo esc_attr($options); ?>' data-id="<?php echo esc_attr($id); ?>">
-                <div class="ycd-simple-before-countdown"><?php echo wp_kses($this->getOptionValue('ycd-simple-countdown-before-countdown'), $allowed_html); ?></div>
-                <?php echo wp_kses($this->render(), $allowed_html); ?>
-                <div class="ycd-simple-after-countdown"><?php echo wp_kses($this->getOptionValue('ycd-simple-countdown-after-countdown'), $allowed_html); ?></div>
+            <div class="ycd-simple-time ycd-simple-container ycd-countdown-content-wrapper ycd-simple-wrapper-<?php echo esc_attr($id); ?>"
+                 data-options='<?php echo esc_attr($optionsJson); ?>'
+                 data-id="<?php echo esc_attr($id); ?>">
+                <div class="ycd-simple-before-countdown"><?php echo wp_kses($before, $allowed_html); ?></div>
+                <?php echo wp_kses($render, $allowed_html); ?>
+                <div class="ycd-simple-after-countdown"><?php echo wp_kses($after, $allowed_html); ?></div>
             </div>
         </div>
         <?php
-        $content = ob_get_contents();
-        ob_end_clean();
-	    $content .= $this->additionalFunctionality();
-        $content .= $this->getStyles();
-
+        $content = ob_get_clean();
+    
+        $content .= (string) ($this->additionalFunctionality() ?? '');
+        $content .= (string) ($this->getStyles() ?? '');
+    
         return $content;
-    }
+    }    
 }

@@ -69,6 +69,12 @@ Yes you can, we have Circle and Flipclock countdown popups.
 You need to select the .zip file, there is no need to extract the zip file, just upload it.
 
 == Changelog ==
+= 3.0.7 =
+* Admin side improrvements
+
+= 3.0.6 =
+* Fixed deprecated functionality to ensure full compatibility with PHP 8.4 version
+
 = 3.0.5 =
 * Admin side improvements
 

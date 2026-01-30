@@ -1,18 +1,18 @@
-# BEGIN MRL MAINTENANCE REDIRECT with IP bypass for Steve
-<IfModule mod_rewrite.c>
-  RewriteEngine On
+# # BEGIN MRL MAINTENANCE REDIRECT with IP bypass for Steve
+# <IfModule mod_rewrite.c>
+#   RewriteEngine On
 
-  # Allow Steve's IP to bypass maintenance mode
-  RewriteCond %{REMOTE_ADDR} !=96.249.37.154
+#   # Allow Steve's IP to bypass maintenance mode
+#   RewriteCond %{REMOTE_ADDR} !=96.249.37.154
 
-  # Allow direct access to maintenance assets
-  RewriteCond %{REQUEST_URI} !^/maintenance\.html$
-  RewriteCond %{REQUEST_URI} !^/bg\.jpg$
+#   # Allow direct access to maintenance assets
+#   RewriteCond %{REQUEST_URI} !^/maintenance\.html$
+#   RewriteCond %{REQUEST_URI} !^/bg\.jpg$
 
-  # Everyone else gets the maintenance page
-  RewriteRule ^.*$ /maintenance.html [L]
-</IfModule>
-# END MRL MAINTENANCE REDIRECT
+#   # Everyone else gets the maintenance page
+#   RewriteRule ^.*$ /maintenance.html [L]
+# </IfModule>
+# # END MRL MAINTENANCE REDIRECT
 
 
 # BEGIN WordPress

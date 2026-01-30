@@ -64,6 +64,10 @@ class CircleCountdown extends Countdown {
 
 	public function getDataAllOptions() {
         $savedData = $this->getSavedData();
+
+		if (!is_array($savedData)) {
+			$savedData = [];
+		}
         $savedData['id'] = $this->getId();
 
 		return $savedData;
@@ -228,38 +232,86 @@ class CircleCountdown extends Countdown {
     
 	public function getViewContent() {
 		$this->includeStyles();
-        $id = $this->getId();
-
-		$allowed_html = AdminHelper::getAllowedTags();
-        $seconds = $this->getCountdownTimerAttrSeconds();
-		$bgImageStyleStr = $this->getBgImageStyleStr();
+		$id = $this->getId();
+	
+		$seconds = (int) ($this->getCountdownTimerAttrSeconds() ?? 0);
+		$bgImageStyleStr = (string) ($this->getBgImageStyleStr() ?? '');
+	
+		// ---- SAFE data options ----
 		$allDataOptions = $this->getDataAllOptions();
-		$allDataOptions = json_encode($allDataOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
+		if (!is_array($allDataOptions)) {
+			$allDataOptions = [];
+		}
+		$allDataOptions = json_encode(
+			$allDataOptions,
+			JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT
+		) ?: '{}';
+	
+		// ---- SAFE circle options ----
 		$prepareOptions = $this->getCircleOptionsData();
+		if (!is_array($prepareOptions)) {
+			$prepareOptions = [];
+		}
 		$prepareOptions = $this->filterTranslations($prepareOptions);
-
-		$prepareOptions = json_encode($prepareOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
-		$width = (int)$this->getOptionValue('ycd-countdown-width');
-		$widthMeasure = $this->getOptionValue('ycd-dimension-measure');
-		$width .= $widthMeasure;
-		$content = '<div class="ycd-countdown-wrapper">';
+		if (!is_array($prepareOptions)) {
+			$prepareOptions = [];
+		}
+		$prepareOptions = json_encode(
+			$prepareOptions,
+			JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT
+		) ?: '{}';
+	
+		// ---- SAFE width ----
+		$width = (int) ($this->getOptionValue('ycd-countdown-width') ?? 0);
+		$widthMeasure = (string) ($this->getOptionValue('ycd-dimension-measure') ?? 'px');
+		$width = $width . $widthMeasure;
+	
+		// ---- SAFE shortcode contents (NO null allowed) ----
+		$beforeExpire = (string) ($this->getOptionValue('ycd-circle-countdown-expiration-before-countdown') ?? '');
+		$before       = (string) ($this->getOptionValue('ycd-circle-countdown-before-countdown') ?? '');
+		$afterExpire  = (string) ($this->getOptionValue('ycd-circle-countdown-expiration-after-countdown') ?? '');
+		$after        = (string) ($this->getOptionValue('ycd-circle-countdown-after-countdown') ?? '');
+	
+		$content  = '<div class="ycd-countdown-wrapper">';
 		$content .= apply_filters('ycdCircleCountdownPrepend', '', $this);
-        $content .= '<div class="ycd-circle-expiration-before-countdown" style="display: none">'.do_shortcode($this->getOptionValue('ycd-circle-countdown-expiration-before-countdown')).'</div>';
-        $content .= '<div class="ycd-circle-before-countdown">'.do_shortcode($this->getOptionValue('ycd-circle-countdown-before-countdown')).'</div>';
+	
+		$content .= '<div class="ycd-circle-expiration-before-countdown" style="display:none">'
+				 . do_shortcode($beforeExpire)
+				 . '</div>';
+	
+		$content .= '<div class="ycd-circle-before-countdown">'
+				 . do_shortcode($before)
+				 . '</div>';
+	
 		ob_start();
 		?>
-        <div class="ycd-circle-<?php echo esc_attr($id); ?>-wrapper ycd-circle-wrapper ycd-countdown-content-wrapper">
-            <div id="ycd-circle-<?php echo esc_attr($id); ?>" data-id="<?php echo esc_attr($id); ?>" class="ycd-time-circle" data-options='<?php echo esc_attr($prepareOptions); ?>' data-all-options='<?php echo esc_attr($allDataOptions); ?>' data-timer="<?php echo esc_attr($seconds) ?>" style="<?php echo esc_attr($bgImageStyleStr); ?>; width: <?php echo esc_attr($width); ?>; height: 100%; padding: 0; box-sizing: border-box; background-color: inherit"></div>
-        </div>
+		<div class="ycd-circle-<?php echo esc_attr($id); ?>-wrapper ycd-circle-wrapper ycd-countdown-content-wrapper">
+			<div
+				id="ycd-circle-<?php echo esc_attr($id); ?>"
+				data-id="<?php echo esc_attr($id); ?>"
+				class="ycd-time-circle"
+				data-options='<?php echo esc_attr($prepareOptions); ?>'
+				data-all-options='<?php echo esc_attr($allDataOptions); ?>'
+				data-timer="<?php echo esc_attr($seconds); ?>"
+				style="<?php echo esc_attr($bgImageStyleStr); ?>; width: <?php echo esc_attr($width); ?>; height: 100%; padding: 0; box-sizing: border-box; background-color: inherit">
+			</div>
+		</div>
 		<?php
-		$content .= ob_get_contents();
-		ob_get_clean();
+		$content .= ob_get_clean();
+	
 		$content .= $this->additionalFunctionality();
-        $content .= '<div class="ycd-circle-expiration-after-countdown" data-key="" style="display: none">'.do_shortcode($this->getOptionValue('ycd-circle-countdown-expiration-after-countdown')).'</div>';
-        $content .= '<div class="ycd-circle-after-countdown" data-key="">'.do_shortcode($this->getOptionValue('ycd-circle-countdown-after-countdown')).'</div>';
+	
+		$content .= '<div class="ycd-circle-expiration-after-countdown" style="display:none">'
+				 . do_shortcode($afterExpire)
+				 . '</div>';
+	
+		$content .= '<div class="ycd-circle-after-countdown">'
+				 . do_shortcode($after)
+				 . '</div>';
+	
 		$content .= '</div>';
 		$content .= $this->renderStyles();
-		
-        return $content;
-	}
+	
+		return $content;
+	}	
 }

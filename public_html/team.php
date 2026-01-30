@@ -158,30 +158,25 @@ if (isset($dbconnect)) {
             Welcome to your team page.<br>
             <br>
             <a style="color:red;">Update 2025-12-11 23:18:31 - See note below regarding previous years picks</a><br>
-            <br>
+            <!-- <br>
             Below, you will find links for this year's season, payment status, your current team chart, the latest submission form, or the current segment team chart, and then any previous years played.
-            <br>
-            <br>
-            <br>
-            <a style="color:red;">2026 setup in progress</a><br>
-            <br>
-            <!-- 2026 Fees & Payment info is <a href="2026_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
-            2026 Rules are <a href="2026_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
-            2026 Race Schedule (on MRL) is <a style="color:red;">N/A at this time</a><br>
-            2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here </a><br>
             <br> -->
-
-            2026 Fees & Payment info is <a style="color:red;">N/A at this time</a><br>
-            2026 Rules are <a style="color:red;">N/A at this time</a><br>
-            2026 Race Schedule (on MRL) is <a style="color:red;">N/A at this time</a><br>
+            <br>
+            <br>
+            <u style="color:red;">League Info as of 2026-01-28 21:50:08</u><br><br>
+            2026 Fees & Payment info is <a href="https://manliusracingleague.com/2026_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Rules are <a href="https://manliusracingleague.com/2026_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Race Schedule - PDF (on MRL) is <a href="https://manliusracingleague.com/wp-content/uploads/2026/01/2026_Schedule_MRL.pdf" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Race Schedule - Spreadsheet (on MRL) is <a href="https://manliusracingleague.com/wp-content/uploads/2026/01/2026_Schedule_MRL.xlsx" target="_blank" rel="noopener noreferrer">here </a><br>
             2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here </a><br>
             <br>
+            
 
             ************************ Team Menu ******************************
             *******************************************************************
             <br>
-            <a href="https://manliusracingleague.com/showDrivers.php" target="_blank" rel="noopener noreferrer">- Show driver selection chart for a given year </a><br>
-            <a href="https://manliusracingleague.com/team_chart.php" target="_blank" rel="noopener noreferrer">- Show Team Chart for a given year & segment </a><br>
+            <a href="https://manliusracingleague.com/showDrivers.php" target="_blank" rel="noopener noreferrer">- Driver Chart(s) - view, print for any year. </a><br>
+            <a href="https://manliusracingleague.com/team_chart.php" target="_blank" rel="noopener noreferrer">- Team Chart(s) - view, pdf , spreadsheet for any year/segment. </a><br>
             <a href="https://manliusracingleague.com/submitted_teams.php" target="_blank" rel="noopener noreferrer">- Submitted Teams for Current Segment </a><br>
             <a href="https://manliusracingleague.com/profile.php" target="_blank" rel="noopener noreferrer">- Your Profile page (change your email addresses, etc) </a> - Or use dropdown menu - upper left at your name.<br>
             <br>
@@ -245,7 +240,8 @@ if (isset($dbconnect)) {
                     }
 
                 } else {
-                    echo "$formLockedMessage - past Lock date of $formLockDate for $raceYear $segmentName -";
+                    // echo "$formLockedMessage - past Lock date of $formLockDate for $raceYear $segmentName -";
+                    echo "$formLockedMessage - past Lock date of $formLockDate";
                     include 'current_segment_chart.php';
                 }
             } else {
