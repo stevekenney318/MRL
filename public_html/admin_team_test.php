@@ -32,8 +32,27 @@ $first_name = $name_parts[0];
 // Check if the user is an admin - used when offline
 $isAdmin = isAdmin($_SESSION['userSession']);
 
+$uid = (int)$_SESSION['userSession'];
+
+// ---------------------------------------------------------
+// TEAM NAME MODULE (standalone include)
+// ---------------------------------------------------------
+require_once 'team_name.php';
+
+// Handle AJAX availability check (exits immediately when called)
+if (isset($dbconnect)) {
+    mrl_teamname_handle_ajax($dbconnect);
+}
+
+// Handle save (POST -> redirect -> GET) and get message if any
+$teamNameMessage = '';
+if (isset($dbconnect)) {
+    $teamNameMessage = mrl_teamname_handle_save($dbconnect, (string)$raceYear, $uid);
+}
+
 // used for team page maintenance mode
 // Display admin status
+
 // if ($isAdmin) {
 //     echo '<div style="color: red; text-align: center; font-size:18.0pt;">Team page is currently in maintenance mode</div>'; // current status note
 //     echo "<br>"; // line break
@@ -111,11 +130,11 @@ $isAdmin = isAdmin($_SESSION['userSession']);
                 echo "<br>";
                 echo "*******************************************************************";
                 echo "<br>";
-                echo "<a href='https://manliusracingleague.com/Paid_Status.php' target='_blank'>- See Paid Status for current year</a>";
+                echo "<a href='https://manliusracingleague.com/Paid_Status_Year.php' target='_blank'>- See Paid Status for selectable year</a>";
                 echo "<br>";
                 echo "<a href='https://manliusracingleague.com/email.php' target='_blank'>- List all active players email addresses</a>";
                 echo "<br>";
-                echo "<a href='https://manliusracingleague.com/report_all_users_auth.php' target='_blank'>- View user auth status to make late picks or change driver</a>";
+                echo "<a href='https://manliusracingleague.com/admin_setup.php' target='_blank'>- Update Year/Segment & Submission Date</a>";
                 echo "<br>";
                 echo "<a href='https://manliusracingleague.com/change_user_auth.php' target='_blank'>- Toggle user status to make late picks or change driver</a>";
                 echo "<br>";
@@ -125,11 +144,15 @@ $isAdmin = isAdmin($_SESSION['userSession']);
                 echo "<br>";
                 echo "*******************************************************************";
                 echo "<br>";
-                echo "<a href='https://clients.hostwinds.com/clientarea.php' target='_blank'>- Web Hosting Website (Hostwinds.com)</a>";
+                echo "<a href='https://chatgpt.com/g/g-p-67946df1de588191ab3a786578a24816-mrl/project' target='_blank'>- ChatGPT MRL Project</a>";
                 echo "<br>";
-                echo "<a href='https://clients.hostwinds.com/clientarea.php?action=productdetails&id=656552&dosinglesignon=1' target='_blank'>- Web Hosting control panel - cPanel </a>";
+                echo "<a href='https://auth-db1928.hstgr.io/index.php?db=u809830586_MRL_DB' target='_blank'>- phpMyAdmin (Hostinger)</a>";
                 echo "<br>";
-                echo "<a href='https://dal-shared-53.hostwindsdns.com:2083/cpsess2043700985/frontend/jupiter/sql/PhpMyAdmin.html' target='_blank'>- Website database - (MySql) phpMyAdmin </a>";
+                echo "<a href='https://manliusracingleague.com/wp-admin/?platform=hpanel&client_id=1017612160' target='_blank'>- WP Admin (Hostinger)</a>";
+                echo "<br>";
+                echo "<a href='https://hpanel.hostinger.com/websites/manliusracingleague.com/files/backups' target='_blank'>- Backups (Hostinger)</a>";
+                echo "<br>";
+                echo "<a href='https://hpanel.hostinger.com/websites/manliusracingleague.com' target='_blank'>- hPanel (Hostinger)</a>";
                 echo "<br>";
                 echo "*******************************************************************";
                 echo "<br>";
@@ -140,23 +163,28 @@ $isAdmin = isAdmin($_SESSION['userSession']);
             <br>
             Welcome to your team page.<br>
             <br>
-            <a style="color:red;">See note below regarding previous years picks</a><br>
-            <br>
+            <a style="color:red;">Update 2025-12-11 23:18:31 - See note below regarding previous years picks</a><br>
+            <!-- <br>
             Below, you will find links for this year's season, payment status, your current team chart, the latest submission form, or the current segment team chart, and then any previous years played.
+            <br> -->
             <br>
             <br>
-            2025 Fees & Payment info is <a href="2025_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
-            2025 Rules are <a href="2025_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
-            <!-- 2025 Race Schedule (on MRL) is <a href="2025_Schedule.php" target="_blank" rel="noopener noreferrer">here </a><br> -->
-            2025 Race Schedule (on MRL) is <a style="color:red;">N/A at this time</a><br>
-            2025 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2025/schedule/" target="_blank" rel="noopener noreferrer">here </a><br>
+            <u style="color:red;">League Info as of 2026-01-28 21:50:08</u><br><br>
+            2026 Fees & Payment info is <a href="https://manliusracingleague.com/2026_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Rules are <a href="https://manliusracingleague.com/2026_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Race Schedule - PDF (on MRL) is <a href="https://manliusracingleague.com/wp-content/uploads/2026/01/2026_Schedule_MRL.pdf" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Race Schedule - Spreadsheet (on MRL) is <a href="https://manliusracingleague.com/wp-content/uploads/2026/01/2026_Schedule_MRL.xlsx" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here </a><br>
             <br>
+            
+
             ************************ Team Menu ******************************
             *******************************************************************
             <br>
-            <a href="https://manliusracingleague.com/showDrivers.php" target="_blank" rel="noopener noreferrer">- Show driver selection chart for a given year </a><br>
+            <a href="https://manliusracingleague.com/showDrivers.php" target="_blank" rel="noopener noreferrer">- Driver Chart(s) - view, print for any year. </a><br>
+            <a href="https://manliusracingleague.com/team_chart.php" target="_blank" rel="noopener noreferrer">- Team Chart(s) - view, pdf , spreadsheet for any year/segment. </a><br>
             <a href="https://manliusracingleague.com/submitted_teams.php" target="_blank" rel="noopener noreferrer">- Submitted Teams for Current Segment </a><br>
-            - Your Profile page (change your email addresses) -> Use dropdown menu - upper left at your name.<br>
+            <a href="https://manliusracingleague.com/profile.php" target="_blank" rel="noopener noreferrer">- Your Profile page (change your email addresses, etc) </a> - Or use dropdown menu - upper left at your name.<br>
             <br>
             *******************************************************************
             <br>
@@ -164,6 +192,7 @@ $isAdmin = isAdmin($_SESSION['userSession']);
     </div>
 
     <a name="current_user_team_chart"></a>
+    <!-- <?php include 'showCurrentDrivers.php'; ?> -->
     <?php include 'current_user_team_chart.php'; ?>
 
     <?php
@@ -174,44 +203,75 @@ $isAdmin = isAdmin($_SESSION['userSession']);
         include 'team-late-pick.php';
     }
     ?>
-
     <div style="width:80%; margin:0 auto; text-align: left;">
         <div style="color: #dfcca8; font-size:16.0pt; line-height:120%; font-family:'Century Gothic',sans-serif;">
             <br>
             <?php
             $end_ts = strtotime($formLockDate);
             $user_ts = strtotime($currentTimeIs);
+
             if ($formLocked == 'no') {
                 if ($end_ts > $user_ts) {
-                    include $currentForm;
-                    include 'submitted_teams_count.php';
+
+                    // NEW: check for team name for current season
+                    $teamName = '';
+
+                    if (isset($dbconnect)) {
+                        $teamCheck = mysqli_query(
+                            $dbconnect,
+                            "SELECT teamName
+                             FROM user_teams
+                             WHERE userID = $uid
+                               AND raceYear = $raceYear
+                             LIMIT 1"
+                        );
+                        if ($teamCheck) {
+                            $teamRow = mysqli_fetch_assoc($teamCheck);
+                            $teamName = trim($teamRow['teamName'] ?? '');
+                        }
+                    }
+
+                    if ($teamName === '') {
+
+                        // Render the team name form (from team_name.php)
+                        if (!isset($dbconnect)) {
+                            echo "<div style='color:red; font-weight:bold; font-size:14pt; text-align:center;'>Database connection not available.</div>";
+                        } else {
+                            mrl_teamname_render_form($dbconnect, (string)$raceYear, $uid, (string)$teamNameMessage);
+                        }
+
+                    } else {
+                        include $currentForm;
+                        include 'submitted_teams_count.php';
+                    }
+
                 } else {
-                    echo "$formLockedMessage - past Lock date of $formLockDate for $raceYear $segmentName -";
+                    // echo "$formLockedMessage - past Lock date of $formLockDate for $raceYear $segmentName -";
+                    echo "$formLockedMessage - past Lock date of $formLockDate";
                     include 'current_segment_chart.php';
                 }
             } else {
                 echo "$formLockedMessage";
             }
             ?>
-<br>
-<br>
-<p style='font-size:16.0pt;line-height:120%;font-family:"Century Gothic",sans-serif;color:#dfcca8'>
-    <span style="font-size:20.0pt; text-decoration:underline; display:inline;">Previous Years Picks</span>
-    <br><br>
-    <a style="color:red;">FYI: As of 2025-01-26 16:57:01 - The repair process of the previous years report is still a work in progress. <br></a>
-    Some background info - with every submission made, a duplicate entry is recorded into a separate data table. Therefore every submission made, including additional picks or late picks, are stored in this backup table. So until I resolve the issue, I have modified the reports to use this table. The one drawback to this method, due to its purpose, is all of your picks will show. Including the multiple picks made prior to a segment starting and/or any late picks, changed drivers, etc. But for now, more is better than less or none! You should see your picks below for the years of 2017 - 2024.<br>
-</p>
+            <br>
+            <br>
 
-</div>
-</div>
-<br>
+            <p style='font-size:18.0pt;line-height:120%;font-family:"Century Gothic",sans-serif;color:#dfcca8'>
+                <span style="font-size:20.0pt; text-decoration:underline; display:inline;">Previous Years Picks</span>
+                <br><br>
+                <a style="color:red;"></a>FYI: Great news — With the help of my friend Chad from ChatGPT, the user picks data has now been fully restored. As of 2025-12-11 23:18:31, all data is now being pulled from the final team picks table instead of the historical backup table. You should not see any gaps in your previous years picks. Please let us know if you see anything that doesn't look right to you. Thanks for your patience through all of this.<br>
+            </p>
+        </div>
+    </div>
+    <br>
 
     <?php
     $sql = "SELECT * FROM `years` WHERE `year` < '$raceYear' AND `year` > '0' ORDER BY `years`.`year` DESC";
     foreach ($dbo->query($sql) as $row) {
-        $prevRaceYear = $row['year'];
-        // include 'prior_year_user_team_chart_history.php';
-        include 'prior_year_user_team_chart.php';
+        $prevRaceYear = $row[year];
+        include 'prior_year_user_team_chart.php'; // this is the original line
+        // include 'prior_year_user_team_chart_history.php';  // this is the temporary fix to show the history picks
     }
     ?>
 
@@ -228,12 +288,6 @@ $isAdmin = isAdmin($_SESSION['userSession']);
     <script src="bootstrap/js/jquery-1.9.1.min.js"></script>
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <script src="assets/scripts.js"></script>
-
-<?php 
-// Restore original session user ID after including files
-$_SESSION['userSession'] = $originalUserID;
-?>
-
 </body>
 
 </html>
