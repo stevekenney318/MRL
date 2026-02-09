@@ -124,11 +124,13 @@ if (isset($dbconnect)) {
                 echo "<br>";
                 echo "*******************************************************************";
                 echo "<br>";
+                echo "<a href='https://manliusracingleague.com/admin_setup.php' target='_blank'>- Setup Year/Segment & Submission Date</a>";
+                echo "<br>";
                 echo "<a href='https://manliusracingleague.com/Paid_Status_Year.php' target='_blank'>- See Paid Status for selectable year</a>";
                 echo "<br>";
-                echo "<a href='https://manliusracingleague.com/email.php' target='_blank'>- List all active players email addresses</a>";
+                echo "<a href='https://manliusracingleague.com/team_view_as.php' target='_blank'>- View Team page as alternate user</a>";
                 echo "<br>";
-                echo "<a href='https://manliusracingleague.com/admin_setup.php' target='_blank'>- Update Year/Segment & Submission Date</a>";
+                echo "<a href='https://manliusracingleague.com/email.php' target='_blank'>- List all  email addresses - active & inactive</a>";
                 echo "<br>";
                 echo "<a href='https://manliusracingleague.com/change_user_auth.php' target='_blank'>- Toggle user status to make late picks or change driver</a>";
                 echo "<br>";
@@ -137,8 +139,6 @@ if (isset($dbconnect)) {
                 echo "<a href='https://manliusracingleague.com/current_segment_chart_by_entry_time.php' target='_blank'>- Show current segment team chart sorted by Entry Time.</a>";
                 echo "<br>";
                 echo "*******************************************************************";
-                echo "<br>";
-                echo "<a href='https://chatgpt.com/g/g-p-67946df1de588191ab3a786578a24816-mrl/project' target='_blank'>- ChatGPT MRL Project</a>";
                 echo "<br>";
                 echo "<a href='https://auth-db1928.hstgr.io/index.php?db=u809830586_MRL_DB' target='_blank'>- phpMyAdmin (Hostinger)</a>";
                 echo "<br>";
@@ -163,7 +163,7 @@ if (isset($dbconnect)) {
             <br> -->
             <br>
             <br>
-            <u style="color:red;">League Info as of 2026-01-28 21:50:08</u><br><br>
+            <u style="color:red;">League Info as of 2026-02-03 11:09:24</u><br><br>
             2026 Fees & Payment info is <a href="https://manliusracingleague.com/2026_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
             2026 Rules are <a href="https://manliusracingleague.com/2026_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
             2026 Race Schedule - PDF (on MRL) is <a href="https://manliusracingleague.com/wp-content/uploads/2026/01/2026_Schedule_MRL.pdf" target="_blank" rel="noopener noreferrer">here </a><br>

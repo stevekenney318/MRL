@@ -136,8 +136,57 @@ class SimpleCountdown extends Countdown
         $style .= ob_get_contents();
         ob_end_clean();
 
+        if (ycd_is_free()) {
+            $style = $this->simpleCountdownStyles($style, $this);
+        }
+
         return apply_filters('YcdSimpleCountdownStyles', $style, $this);
     }
+
+    public function simpleCountdownStyles($styles, $obj)
+	{
+		$id = $obj->getId();
+
+		$numbersColor = $obj->getOptionValue('ycd-simple-numbers-color', true);
+		$numbersFontFamily = $obj->getFontFamilyByName('ycd-simple-numbers-font-family', true);
+		$labelsColor = $obj->getOptionValue('ycd-simple-text-color', true);
+		$labelsFontFamily = $obj->getFontFamilyByName('ycd-simple-text-font-family', true);
+
+		$uniteMarginTop = $obj->getOptionValue('ycd-simple-unite-margin-top', true);
+        $uniteMarginRight = $obj->getOptionValue('ycd-simple-unite-margin-right', true);
+        $uniteMarginBottom = $obj->getOptionValue('ycd-simple-unite-margin-bottom', true);
+        $uniteMarginLeft = $obj->getOptionValue('ycd-simple-unite-margin-left', true);
+
+        $unitePaddingTop = $obj->getOptionValue('ycd-simple-unite-padding-top', true);
+        $uniteMPaddingRight = $obj->getOptionValue('ycd-simple-unite-padding-right', true);
+        $unitePaddingBottom = $obj->getOptionValue('ycd-simple-unite-padding-bottom', true);
+        $unitePaddingLeft = $obj->getOptionValue('ycd-simple-unite-padding-left', true);
+
+		ob_start();
+		?>
+		<style>
+			.ycd-simple-content-wrapper-<?php echo $id; ?> .ycd-simple-countdown-number,
+			.ycd-simple-content-wrapper-<?php echo $id; ?> .ycd-simple-timer-dots{
+				color: <?php echo $numbersColor; ?>;
+				font-family: <?php echo $numbersFontFamily; ?>;
+			}
+			.ycd-simple-content-wrapper-<?php echo $id; ?> .ycd-simple-countdown-label {
+				color: <?php echo $labelsColor; ?>;
+				font-family: <?php echo $labelsFontFamily; ?>;
+			}
+			.ycd-simple-content-wrapper-<?php echo (int)$id; ?> .ycd-simple-current-unite-wrapper {
+                margin: <?php echo esc_attr($uniteMarginTop).' '.esc_attr($uniteMarginRight).' '.esc_attr($uniteMarginBottom).' '.esc_attr($uniteMarginLeft);?>
+            }
+            .ycd-simple-content-wrapper-<?php echo (int)$id; ?> .ycd-simple-current-unite-wrapper {
+                padding: <?php echo esc_attr($unitePaddingTop).' '.esc_attr($uniteMPaddingRight).' '.esc_attr($unitePaddingBottom).' '.esc_attr($unitePaddingLeft);?>
+            }
+		</style>
+		<?php
+		$styles .= ob_get_contents();
+		ob_end_clean();
+
+		return $styles;
+	}
 
     private function render()
     {

@@ -20,7 +20,7 @@ $currentTimeIs = date("n/j/Y g:i a");
 $originalUserID = $_SESSION['userSession'];
 
 // Temporarily set the user ID 
-$_SESSION['userSession'] = 25;
+$_SESSION['userSession'] = 0;
 
 $stmt = $user_home->runQuery("SELECT * FROM users WHERE userID=:uid");
 $stmt->execute(array(":uid" => $_SESSION['userSession']));

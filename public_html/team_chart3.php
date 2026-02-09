@@ -1,10 +1,10 @@
 <?php
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
-// echo "<div style='font:11px/1.2 monospace; color:#999; text-align:center; margin:0; padding:0;'>"
-//    . "FILE: " . basename(__FILE__) . " | " . date('Y-m-d H:i:s')
-//    . "</div>";
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+echo "<div style='font:11px/1.2 monospace; color:#999; text-align:center; margin:0; padding:0;'>"
+   . "FILE: " . basename(__FILE__) . " | " . date('Y-m-d H:i:s')
+   . "</div>";
 
 ob_start();
 if (session_status() === PHP_SESSION_NONE) {

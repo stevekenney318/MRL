@@ -358,6 +358,9 @@ abstract class Countdown {
 	public function getOptionValueFromSavedData($optionName, $forceDefaultValue = false) {
 		
 		$defaultData = $this->getDefaultDataByName($optionName);
+		if ($forceDefaultValue) {
+			return $defaultData['defaultValue'];
+		}
 		$savedData = $this->getSavedData();
 
 		$optionValue = null;

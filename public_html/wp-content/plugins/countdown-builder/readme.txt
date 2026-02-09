@@ -69,6 +69,10 @@ Yes you can, we have Circle and Flipclock countdown popups.
 You need to select the .zip file, there is no need to extract the zip file, just upload it.
 
 == Changelog ==
+= 3.0.8 =
+* Simple Countdown default styles fixed
+* Countdown functionlity improvement
+
 = 3.0.7 =
 * Admin side improrvements
 
