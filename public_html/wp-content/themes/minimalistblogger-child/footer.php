@@ -2,33 +2,24 @@
 /**
  * The template for displaying the footer
  *
- * Contains the closing of the #content div and all content after.
- *
- * @link https://developer.wordpress.org/themes/basics/template-files/#template-partials
- *
- * @package minimalistblogger
+ * @package minimalistblogger-child
  */
-
 ?>
 
-<div class="site-info">
-	<?php echo esc_html('&copy;', 'minimalistblogger') ?> <?php echo "2017-"; ?> <?php echo esc_html(date('Y')); ?> <?php bloginfo( 'name' ); ?>
-	<!-- Delete below lines to remove copyright from footer -->
-	
-	<!-- Delete above lines to remove copyright from footer -->
+<footer id="colophon" class="site-footer">
+    <div style="width: 100%; margin: 0 auto; text-align: center; padding: 18px 12px; box-sizing: border-box;">
+        <div style="font-size: 16pt; line-height: 1.2; font-family: 'Century Gothic', sans-serif; color: #dfcca8;">
+            <div style="margin-bottom: 10px;">
+                Some older pages may contain links or images that no longer work.
+            </div>
 
-</div><!-- .site-info -->
-</div>
-
-
-
-</footer>
-</div>
-<!-- Off canvas menu overlay, delete to remove dark shadow -->
-<div id="smobile-menu" class="mobile-only"></div>
-<div id="mobile-menu-overlay"></div>
+            <div>
+                Copyright &copy; 2017-<?php echo esc_html(date('Y')); ?> Manlius Racing League
+            </div>
+        </div>
+    </div>
+</footer><!-- #colophon -->
 
 <?php wp_footer(); ?>
-<?php echo esc_html('&copy;', 'minimalistblogger') ?> <?php echo "2017-"; ?> <?php echo esc_html(date('Y')); ?> <?php bloginfo( 'name' ); ?>
 </body>
 </html>

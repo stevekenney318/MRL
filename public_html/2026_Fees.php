@@ -74,12 +74,12 @@ $currentTimeIs = date("n/j/Y g:i a");
     <h1>2026 Fees & Payment</h1>
     <p><span class="section-text">Fees:</span></p>
     <ul>
-        <li style="list-style-type: none;">For 2026, the Fee is <span style="color: Red;">$49</span> per Race Team (16 teams):</li>
+        <li style="list-style-type: none;">For 2026, the Fee is <span style="color: Red;">$43.88</span> per Race Team (18 teams):</li>
         <br>
 
-        <a href="https://manliusracingleague.com/wp-content/uploads/2026/02/2026-Fees-dark-16-teams-20260202.200957052.jpg" target="_blank" rel="noopener noreferrer">
+        <a href="https://manliusracingleague.com/wp-content/uploads/2026/02/2026-Fees-dark-18-teams-20260216.012530106.jpg" target="_blank" rel="noopener noreferrer">
           <img
-            src="https://manliusracingleague.com/wp-content/uploads/2026/02/2026-Fees-dark-16-teams-20260202.200957052.jpg"
+            src="https://manliusracingleague.com/wp-content/uploads/2026/02/2026-Fees-dark-18-teams-20260216.012530106.jpg"
             alt="2026 Fees"
             style="
               width: 110%;
