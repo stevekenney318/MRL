@@ -10,30 +10,10 @@ header('Expires: 0');
 /**
  * race_results_single_test.php
  *
- * VERSION: v031
- * LAST MODIFIED: 3/13/2026 6:35:11 PM
+ * VERSION: v029
+ * LAST MODIFIED: 3/13/2026 4:17:49 PM
  *
  * CHANGELOG:
- * v031 (3/13/2026)
- *   - FIX: Weekly Winners build now loads team picks by each race's own segment
- *     while iterating through the season.
- *   - FIX: Prevents earlier weeks from changing when crossing into a new segment.
- *   - CHANGE: Added selected year to major section headings for clearer viewing
- *     and screenshots.
- *
- * v030 (3/13/2026)
- *   - Added temporary Debug Race Build section to the actual page logic.
- *   - Shows, for each race through the selected race:
- *       - race code
- *       - race label
- *       - race number
- *       - inferred segment
- *       - teams loaded
- *       - snapshot file used
- *       - computed weekly winner
- *       - computed weekly points
- *   - Intended to diagnose winner drift across segment boundaries.
- *
  * v029 (3/13/2026)
  *   - FIX: Weekly winners now correctly handle ties for 1st place.
  *   - Weekly winner names are joined with " / " when multiple teams share top points.
@@ -45,6 +25,22 @@ header('Expires: 0');
  *       - PASS: "No unexpected zero scores detected."
  *       - WARN: "Unexpected zero scores detected: X"
  *   - No functional logic changes.
+ *
+ * v027 (2026-03-13)
+ *   - Added validation summary panel with PASS / WARN / FAIL checks.
+ *   - Validation currently checks:
+ *       - selected race exists
+ *       - snapshot found
+ *       - teams loaded
+ *       - weekly rows generated
+ *       - weekly totals equal A+B+C+D
+ *       - weekly winner matches highest total
+ *       - weekly standings are sorted correctly
+ *       - duplicate teams
+ *       - missing drivers scored as zero
+ *   - Keeps newest year first and newest race first in dropdowns.
+ *   - Keeps cumulative calculations based on selected race number, not dropdown position.
+ *   - Keeps simplified race-name prefix stripping for older naming variants.
  *
  * PHP: 7.3 compatible.
  */
@@ -433,8 +429,6 @@ $selectedRaceMeta = [
     'driverCount' => 0,
 ];
 
-$debugRows = [];
-
 $validation = [
     'pass' => [],
     'warn' => [],
@@ -467,21 +461,13 @@ if ($selectedRace !== null) {
             continue;
         }
 
-        $raceSegment = rrsg_segment_from_race_number($raceNumber);
-        $raceTeamRows = rr_get_segment_team_picks($dbo ?? null, $dbconnect ?? null, $selectedYear, $raceSegment);
-
         $snapshotFile = rrsg_find_snapshot_file($raceFolder);
         $driverPoints = [];
         $weeklyRows = [];
-        $winner = [
-            'teamName' => '',
-            'points' => 0,
-        ];
 
         if ($snapshotFile !== '') {
             $driverPoints = rrs_load_snapshot_driver_points($snapshotFile);
-            $weeklyRows = rrsg_build_weekly_rows($raceTeamRows, $driverPoints);
-            $winner = rrsg_get_weekly_winner($weeklyRows);
+            $weeklyRows = rrsg_build_weekly_rows($teamRows, $driverPoints);
 
             foreach ($weeklyRows as $row) {
                 $teamName = (string)$row['teamName'];
@@ -500,24 +486,13 @@ if ($selectedRace !== null) {
                 }
             }
 
-            $weeklyWinners[$raceCode] = $winner;
+            $weeklyWinners[$raceCode] = rrsg_get_weekly_winner($weeklyRows);
         } else {
             $weeklyWinners[$raceCode] = [
                 'teamName' => '',
                 'points' => 0,
             ];
         }
-
-        $debugRows[] = [
-            'raceCode' => $raceCode,
-            'raceLabel' => $raceLabel,
-            'raceNumber' => $raceNumber,
-            'raceSegment' => $raceSegment,
-            'teamsLoaded' => count($raceTeamRows),
-            'snapshotBase' => ($snapshotFile !== '' ? basename($snapshotFile) : 'NOT FOUND'),
-            'winnerTeam' => (string)$winner['teamName'],
-            'winnerPoints' => (int)$winner['points'],
-        ];
 
         if ($raceCode === $selectedRaceCode) {
             $selectedRaceWeeklyRows = $weeklyRows;
@@ -750,7 +725,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
         table {
             border-collapse: collapse;
             width: 100%;
-            max-width: 1400px;
+            max-width: 1200px;
         }
 
         th, td {
@@ -781,7 +756,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
 <div class="controls">
     <form method="get" action="">
         <label for="year">Year:</label>
-        <select name="year" id="year">
+        <select name="year" id="year" onchange="this.form.submit()">
             <?php foreach ($availableYears as $yearOpt): ?>
                 <option value="<?php echo rrsg_h($yearOpt); ?>" <?php echo ($yearOpt === $selectedYear ? 'selected' : ''); ?>>
                     <?php echo rrsg_h($yearOpt); ?>
@@ -859,42 +834,6 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
 </div>
 
 <div class="block">
-    <h2><?php echo rrsg_h($selectedYear); ?> Debug Race Build Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Race</th>
-                <th>Race #</th>
-                <th>Segment Used</th>
-                <th>Teams Loaded</th>
-                <th>Snapshot Used</th>
-                <th>Computed Winner</th>
-                <th>Points</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($debugRows)): ?>
-                <tr>
-                    <td colspan="7">No debug rows generated.</td>
-                </tr>
-            <?php else: ?>
-                <?php foreach ($debugRows as $row): ?>
-                    <tr>
-                        <td><?php echo rrsg_h($row['raceCode'] . ' ' . $row['raceLabel']); ?></td>
-                        <td class="num"><?php echo rrsg_h($row['raceNumber']); ?></td>
-                        <td><?php echo rrsg_h($row['raceSegment']); ?></td>
-                        <td class="num"><?php echo rrsg_h($row['teamsLoaded']); ?></td>
-                        <td><?php echo rrsg_h($row['snapshotBase']); ?></td>
-                        <td><?php echo rrsg_h($row['winnerTeam']); ?></td>
-                        <td class="num"><?php echo rrsg_h($row['winnerPoints']); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
-</div>
-
-<div class="block">
     <h2><?php echo rrsg_h($selectedYear); ?> Weekly Winners Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
     <table>
         <thead>
@@ -961,7 +900,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
 </div>
 
 <div class="block">
-    <h2><?php echo rrsg_h($selectedYear); ?> Segment Standings Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
+    =<h2><?php echo rrsg_h($selectedYear); ?> Segment Standings Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
     <table>
         <thead>
             <tr>
