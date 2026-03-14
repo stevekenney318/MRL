@@ -10,41 +10,30 @@ header('Expires: 0');
 /**
  * weekly_standings.php
  *
- * VERSION: v031
- * LAST MODIFIED: 3/13/2026 6:35:11 PM
+ * VERSION: v032
+ * LAST MODIFIED: 3/14/2026 3:53:10 PM
  *
  * CHANGELOG:
+ * v032 (3/14/2026)
+ *   - CHANGE: Presentation polish pass for weekly standings page.
+ *   - CHANGE: Added basic responsive layout improvements for smaller screens.
+ *   - CHANGE: Year dropdown now auto-submits immediately when changed.
+ *   - CHANGE: Invalid carried-over race selection now falls back to latest race
+ *     for the selected year.
+ *   - CHANGE: Added Show Details / Hide Details toggle for validation details
+ *     and debug race build section.
+ *   - CHANGE: Shortened validation wording:
+ *       - "Weekly winner matches highest weekly total (including ties)."
+ *         -> "Weekly winner matches top weekly score."
+ *   - KEEP: Drivers read from snapshot remains visible in summary area.
+ *   - KEEP: Scoring / standings / tie logic unchanged.
+ *
  * v031 (3/13/2026)
  *   - FIX: Weekly Winners build now loads team picks by each race's own segment
  *     while iterating through the season.
  *   - FIX: Prevents earlier weeks from changing when crossing into a new segment.
  *   - CHANGE: Added selected year to major section headings for clearer viewing
  *     and screenshots.
- *
- * v030 (3/13/2026)
- *   - Added temporary Debug Race Build section to the actual page logic.
- *   - Shows, for each race through the selected race:
- *       - race code
- *       - race label
- *       - race number
- *       - inferred segment
- *       - teams loaded
- *       - snapshot file used
- *       - computed weekly winner
- *       - computed weekly points
- *   - Intended to diagnose winner drift across segment boundaries.
- *
- * v029 (3/13/2026)
- *   - FIX: Weekly winners now correctly handle ties for 1st place.
- *   - Weekly winner names are joined with " / " when multiple teams share top points.
- *   - Validation updated so tied winners pass correctly.
- *
- * v028 (2026-03-13)
- *   - Updated wording:
- *       - "Drivers Loaded For Selected Race" -> "Drivers read from snapshot"
- *       - PASS: "No unexpected zero scores detected."
- *       - WARN: "Unexpected zero scores detected: X"
- *   - No functional logic changes.
  *
  * PHP: 7.3 compatible.
  */
@@ -401,6 +390,7 @@ for ($i = 0; $i < count($pointRaces); $i++) {
 }
 
 if ($selectedRaceIndex < 0 && !empty($pointRaces)) {
+    // Invalid or carried-over race for this year -> latest race for this year
     $selectedRaceIndex = 0;
     $selectedRaceCode = (string)$pointRaces[$selectedRaceIndex]['raceCode'];
 }
@@ -641,20 +631,19 @@ if (!empty($selectedRaceWeeklyRows)) {
         if ($weeklyTotal !== $topPoints) {
             break;
         }
-        $expectedWinnerNames[] = (string)($row['teamName'] ?? '');
+        $expectedWinnerNames[] = (string)$row['teamName'];
     }
 
     $expectedWinnerString = implode(' / ', $expectedWinnerNames);
 
     if ($winner['teamName'] === $expectedWinnerString && (int)$winner['points'] === $topPoints) {
-        rrsg_add_validation($validation, 'pass', 'Weekly winner matches highest weekly total (including ties).');
+        rrsg_add_validation($validation, 'pass', 'Weekly winner matches top weekly score.');
     } else {
-        rrsg_add_validation($validation, 'fail', 'Weekly winner does not match highest weekly total.');
+        rrsg_add_validation($validation, 'fail', 'Weekly winner does not match top weekly score.');
     }
 }
 
 $validationStatus = rrsg_validation_status($validation);
-
 $segmentStandings = rrsg_sort_total_rows($segmentTotals);
 $seasonStandings = rrsg_sort_total_rows($seasonTotals);
 
@@ -663,69 +652,120 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Race Results Single Test</title>
+    <title>Weekly Standings</title>
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 14px;
-            margin: 20px;
+            font-size: 15px;
+            line-height: 1.4;
+            margin: 18px;
         }
 
-        h1, h2 {
+        h1 {
+            margin: 0 0 14px 0;
+            font-size: 28px;
+            line-height: 1.15;
+        }
+
+        h2 {
             margin: 0 0 10px 0;
-        }
-
-        .meta {
-            margin-bottom: 18px;
-            line-height: 1.5;
-        }
-
-        .block {
-            margin-bottom: 28px;
+            font-size: 18px;
+            line-height: 1.2;
         }
 
         .controls {
-            margin-bottom: 20px;
-            padding: 12px;
+            margin-bottom: 18px;
+            padding: 14px 16px;
             border: 1px solid #bbb;
             background: #f7f7f7;
-            max-width: 900px;
+            max-width: 1200px;
         }
 
         .controls form {
             display: flex;
             flex-wrap: wrap;
             gap: 10px 14px;
-            align-items: center;
+            align-items: end;
         }
 
-        .controls label {
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .control-group label {
             font-weight: bold;
+            font-size: 14px;
         }
 
         .controls select,
         .controls button {
             font: inherit;
-            padding: 4px 8px;
+            padding: 6px 10px;
         }
 
-        .validation-box {
+        .controls select {
+            min-width: 150px;
+        }
+
+        .meta-box {
+            max-width: 1200px;
+            border: 1px solid #d7d7d7;
+            background: #fcfcfc;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(240px, 1fr));
+            gap: 8px 20px;
+        }
+
+        .meta-item {
+            white-space: nowrap;
+        }
+
+        .meta-item strong {
+            display: inline-block;
+            min-width: 170px;
+        }
+
+        .details-box {
             max-width: 1200px;
             border: 1px solid #999;
+            background: #fcfcfc;
             padding: 12px 14px;
             margin-bottom: 22px;
-            background: #fcfcfc;
         }
 
-        .validation-status {
+        .details-summary {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px 14px;
+        }
+
+        .details-status {
             font-weight: bold;
-            margin-bottom: 10px;
+        }
+
+        .details-toggle {
+            font: inherit;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .details-content {
+            margin-top: 14px;
         }
 
         .validation-columns {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
+            margin-bottom: 18px;
         }
 
         .validation-column {
@@ -747,21 +787,33 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
             margin-bottom: 4px;
         }
 
+        .block {
+            margin-bottom: 26px;
+        }
+
+        .table-wrap {
+            width: 100%;
+            max-width: 1400px;
+            overflow-x: auto;
+            border: 1px solid transparent;
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
-            max-width: 1400px;
+            min-width: 760px;
         }
 
         th, td {
             border: 1px solid #999;
-            padding: 6px 8px;
+            padding: 7px 9px;
             text-align: left;
             vertical-align: top;
         }
 
         th {
             background: #f2f2f2;
+            font-weight: bold;
         }
 
         td.num {
@@ -772,253 +824,347 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
         tr:nth-child(even) td {
             background: #fafafa;
         }
+
+        .subtle {
+            color: #555;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                margin: 12px;
+                font-size: 14px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 12px;
+            }
+
+            h2 {
+                font-size: 17px;
+            }
+
+            .controls {
+                padding: 12px;
+            }
+
+            .controls form {
+                gap: 10px 10px;
+            }
+
+            .control-group {
+                width: 100%;
+            }
+
+            .controls select,
+            .controls button {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .meta-grid {
+                grid-template-columns: 1fr;
+                gap: 6px 0;
+            }
+
+            .meta-item {
+                white-space: normal;
+            }
+
+            .meta-item strong {
+                min-width: 0;
+                display: inline;
+            }
+        }
     </style>
 </head>
 <body>
 
-<h1>Race Results Single Test</h1>
+<h1>Weekly Standings</h1>
 
 <div class="controls">
     <form method="get" action="">
-        <label for="year">Year:</label>
-        <select name="year" id="year">
-            <?php foreach ($availableYears as $yearOpt): ?>
-                <option value="<?php echo rrsg_h($yearOpt); ?>" <?php echo ($yearOpt === $selectedYear ? 'selected' : ''); ?>>
-                    <?php echo rrsg_h($yearOpt); ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
+        <div class="control-group">
+            <label for="year">Year</label>
+            <select name="year" id="year" onchange="this.form.submit()">
+                <?php foreach ($availableYears as $yearOpt): ?>
+                    <option value="<?php echo rrsg_h($yearOpt); ?>" <?php echo ($yearOpt === $selectedYear ? 'selected' : ''); ?>>
+                        <?php echo rrsg_h($yearOpt); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-        <label for="race">Race:</label>
-        <select name="race" id="race">
-            <?php foreach ($pointRaces as $raceOpt): ?>
-                <option value="<?php echo rrsg_h($raceOpt['raceCode']); ?>" <?php echo ($raceOpt['raceCode'] === $selectedRaceCode ? 'selected' : ''); ?>>
-                    <?php echo rrsg_h($raceOpt['raceCode'] . ' ' . rrsg_short_race_label((string)$raceOpt['raceName'])); ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
+        <div class="control-group">
+            <label for="race">Race</label>
+            <select name="race" id="race">
+                <?php foreach ($pointRaces as $raceOpt): ?>
+                    <option value="<?php echo rrsg_h($raceOpt['raceCode']); ?>" <?php echo ($raceOpt['raceCode'] === $selectedRaceCode ? 'selected' : ''); ?>>
+                        <?php echo rrsg_h($raceOpt['raceCode'] . ' ' . rrsg_short_race_label((string)$raceOpt['raceName'])); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-        <button type="submit">Show</button>
+        <div class="control-group">
+            <label>&nbsp;</label>
+            <button type="submit">Show</button>
+        </div>
     </form>
 </div>
 
-<div class="meta">
-    <strong>Scoring Year:</strong> <?php echo rrsg_h($scoreYear); ?><br>
-    <strong>Scoring Segment:</strong> <?php echo rrsg_h($scoreSegment); ?><br>
-    <strong>Selected Race:</strong> <?php echo rrsg_h($selectedRaceCode); ?><br>
-    <strong>Teams Loaded:</strong> <?php echo count($teamRows); ?><br>
-    <strong>Selected Snapshot:</strong> <?php echo rrsg_h($selectedRaceMeta['snapshotFile'] !== '' ? basename($selectedRaceMeta['snapshotFile']) : 'NOT FOUND'); ?><br>
-    <strong>Drivers read from snapshot:</strong> <?php echo rrsg_h($selectedRaceMeta['driverCount']); ?>
-</div>
-
-<div class="validation-box">
-    <div class="validation-status">
-        Validation Status: <?php echo rrsg_h($validationStatus); ?>
-    </div>
-
-    <div class="validation-columns">
-        <div class="validation-column">
-            <h3>PASS</h3>
-            <ul>
-                <?php if (empty($validation['pass'])): ?>
-                    <li>None</li>
-                <?php else: ?>
-                    <?php foreach ($validation['pass'] as $msg): ?>
-                        <li><?php echo rrsg_h($msg); ?></li>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </ul>
-        </div>
-
-        <div class="validation-column">
-            <h3>WARN</h3>
-            <ul>
-                <?php if (empty($validation['warn'])): ?>
-                    <li>None</li>
-                <?php else: ?>
-                    <?php foreach ($validation['warn'] as $msg): ?>
-                        <li><?php echo rrsg_h($msg); ?></li>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </ul>
-        </div>
-
-        <div class="validation-column">
-            <h3>FAIL</h3>
-            <ul>
-                <?php if (empty($validation['fail'])): ?>
-                    <li>None</li>
-                <?php else: ?>
-                    <?php foreach ($validation['fail'] as $msg): ?>
-                        <li><?php echo rrsg_h($msg); ?></li>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </ul>
-        </div>
+<div class="meta-box">
+    <div class="meta-grid">
+        <div class="meta-item"><strong>Scoring Year:</strong> <?php echo rrsg_h($scoreYear); ?></div>
+        <div class="meta-item"><strong>Scoring Segment:</strong> <?php echo rrsg_h($scoreSegment); ?></div>
+        <div class="meta-item"><strong>Selected Race:</strong> <?php echo rrsg_h($selectedRaceCode); ?></div>
+        <div class="meta-item"><strong>Teams Loaded:</strong> <?php echo count($teamRows); ?></div>
+        <div class="meta-item"><strong>Selected Snapshot:</strong> <?php echo rrsg_h($selectedRaceMeta['snapshotFile'] !== '' ? basename($selectedRaceMeta['snapshotFile']) : 'NOT FOUND'); ?></div>
+        <div class="meta-item"><strong>Drivers read from snapshot:</strong> <?php echo rrsg_h($selectedRaceMeta['driverCount']); ?></div>
     </div>
 </div>
 
-<div class="block">
-    <h2><?php echo rrsg_h($selectedYear); ?> Debug Race Build Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Race</th>
-                <th>Race #</th>
-                <th>Segment Used</th>
-                <th>Teams Loaded</th>
-                <th>Snapshot Used</th>
-                <th>Computed Winner</th>
-                <th>Points</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($debugRows)): ?>
-                <tr>
-                    <td colspan="7">No debug rows generated.</td>
-                </tr>
-            <?php else: ?>
-                <?php foreach ($debugRows as $row): ?>
-                    <tr>
-                        <td><?php echo rrsg_h($row['raceCode'] . ' ' . $row['raceLabel']); ?></td>
-                        <td class="num"><?php echo rrsg_h($row['raceNumber']); ?></td>
-                        <td><?php echo rrsg_h($row['raceSegment']); ?></td>
-                        <td class="num"><?php echo rrsg_h($row['teamsLoaded']); ?></td>
-                        <td><?php echo rrsg_h($row['snapshotBase']); ?></td>
-                        <td><?php echo rrsg_h($row['winnerTeam']); ?></td>
-                        <td class="num"><?php echo rrsg_h($row['winnerPoints']); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+<div class="details-box">
+    <div class="details-summary">
+        <div class="details-status">Validation Status: <?php echo rrsg_h($validationStatus); ?></div>
+        <button type="button" class="details-toggle" id="detailsToggle" onclick="toggleDetails()">Show Details</button>
+        <div class="subtle">Validation details and debug build are hidden by default.</div>
+    </div>
+
+    <div class="details-content" id="detailsContent" style="display:none;">
+        <div class="validation-columns">
+            <div class="validation-column">
+                <h3>PASS</h3>
+                <ul>
+                    <?php if (empty($validation['pass'])): ?>
+                        <li>None</li>
+                    <?php else: ?>
+                        <?php foreach ($validation['pass'] as $msg): ?>
+                            <li><?php echo rrsg_h($msg); ?></li>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </ul>
+            </div>
+
+            <div class="validation-column">
+                <h3>WARN</h3>
+                <ul>
+                    <?php if (empty($validation['warn'])): ?>
+                        <li>None</li>
+                    <?php else: ?>
+                        <?php foreach ($validation['warn'] as $msg): ?>
+                            <li><?php echo rrsg_h($msg); ?></li>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </ul>
+            </div>
+
+            <div class="validation-column">
+                <h3>FAIL</h3>
+                <ul>
+                    <?php if (empty($validation['fail'])): ?>
+                        <li>None</li>
+                    <?php else: ?>
+                        <?php foreach ($validation['fail'] as $msg): ?>
+                            <li><?php echo rrsg_h($msg); ?></li>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </ul>
+            </div>
+        </div>
+
+        <div class="block" style="margin-bottom:0;">
+            <h2><?php echo rrsg_h($selectedYear); ?> Debug Race Build Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Race</th>
+                            <th>Race #</th>
+                            <th>Segment Used</th>
+                            <th>Teams Loaded</th>
+                            <th>Snapshot Used</th>
+                            <th>Computed Winner</th>
+                            <th>Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($debugRows)): ?>
+                            <tr>
+                                <td colspan="7">No debug rows generated.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($debugRows as $row): ?>
+                                <tr>
+                                    <td><?php echo rrsg_h($row['raceCode'] . ' ' . $row['raceLabel']); ?></td>
+                                    <td class="num"><?php echo rrsg_h($row['raceNumber']); ?></td>
+                                    <td><?php echo rrsg_h($row['raceSegment']); ?></td>
+                                    <td class="num"><?php echo rrsg_h($row['teamsLoaded']); ?></td>
+                                    <td><?php echo rrsg_h($row['snapshotBase']); ?></td>
+                                    <td><?php echo rrsg_h($row['winnerTeam']); ?></td>
+                                    <td class="num"><?php echo rrsg_h($row['winnerPoints']); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="block">
     <h2><?php echo rrsg_h($selectedYear); ?> Weekly Winners Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Race</th>
-                <th>Winner</th>
-                <th>Points</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if ($selectedRace === null): ?>
+    <div class="table-wrap">
+        <table>
+            <thead>
                 <tr>
-                    <td colspan="3">No race selected.</td>
+                    <th>Race</th>
+                    <th>Winner</th>
+                    <th>Points</th>
                 </tr>
-            <?php else: ?>
-                <?php
-                $winnerRows = $pointRaces;
-                usort($winnerRows, function ($a, $b) {
-                    return ((int)$a['number']) <=> ((int)$b['number']);
-                });
-                ?>
-                <?php foreach ($winnerRows as $race): ?>
-                    <?php if ((int)$race['number'] > $selectedRaceNumber) continue; ?>
-                    <?php $raceCode = (string)$race['raceCode']; ?>
+            </thead>
+            <tbody>
+                <?php if ($selectedRace === null): ?>
                     <tr>
-                        <td><?php echo rrsg_h($raceCode . ' ' . rrsg_short_race_label((string)$race['raceName'])); ?></td>
-                        <td><?php echo rrsg_h($weeklyWinners[$raceCode]['teamName'] ?? ''); ?></td>
-                        <td class="num"><?php echo rrsg_h($weeklyWinners[$raceCode]['points'] ?? 0); ?></td>
+                        <td colspan="3">No race selected.</td>
                     </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+                <?php else: ?>
+                    <?php
+                    $winnerRows = $pointRaces;
+                    usort($winnerRows, function ($a, $b) {
+                        return ((int)$a['number']) <=> ((int)$b['number']);
+                    });
+                    ?>
+                    <?php foreach ($winnerRows as $race): ?>
+                        <?php if ((int)$race['number'] > $selectedRaceNumber) continue; ?>
+                        <?php $raceCode = (string)$race['raceCode']; ?>
+                        <tr>
+                            <td><?php echo rrsg_h($raceCode . ' ' . rrsg_short_race_label((string)$race['raceName'])); ?></td>
+                            <td><?php echo rrsg_h($weeklyWinners[$raceCode]['teamName'] ?? ''); ?></td>
+                            <td class="num"><?php echo rrsg_h($weeklyWinners[$raceCode]['points'] ?? 0); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="block">
     <h2><?php echo rrsg_h($selectedYear . ' ' . $selectedRaceMeta['raceCode'] . ' ' . $selectedRaceMeta['raceLabel']); ?> Weekly Standings</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Team</th>
-                <th>Weekly Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($selectedRaceWeeklyRows)): ?>
+    <div class="table-wrap">
+        <table>
+            <thead>
                 <tr>
-                    <td colspan="3">No weekly rows generated.</td>
+                    <th>#</th>
+                    <th>Team</th>
+                    <th>Weekly Total</th>
                 </tr>
-            <?php else: ?>
-                <?php $rank = 1; ?>
-                <?php foreach ($selectedRaceWeeklyRows as $row): ?>
+            </thead>
+            <tbody>
+                <?php if (empty($selectedRaceWeeklyRows)): ?>
                     <tr>
-                        <td class="num"><?php echo $rank; ?></td>
-                        <td><?php echo rrsg_h($row['teamName']); ?></td>
-                        <td class="num"><strong><?php echo rrsg_h($row['weeklyTotal']); ?></strong></td>
+                        <td colspan="3">No weekly rows generated.</td>
                     </tr>
-                    <?php $rank++; ?>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+                <?php else: ?>
+                    <?php $rank = 1; ?>
+                    <?php foreach ($selectedRaceWeeklyRows as $row): ?>
+                        <tr>
+                            <td class="num"><?php echo $rank; ?></td>
+                            <td><?php echo rrsg_h($row['teamName']); ?></td>
+                            <td class="num"><strong><?php echo rrsg_h($row['weeklyTotal']); ?></strong></td>
+                        </tr>
+                        <?php $rank++; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="block">
     <h2><?php echo rrsg_h($selectedYear); ?> Segment Standings Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Team</th>
-                <th>Segment Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($segmentStandings)): ?>
+    <div class="table-wrap">
+        <table>
+            <thead>
                 <tr>
-                    <td colspan="3">No segment standings generated.</td>
+                    <th>#</th>
+                    <th>Team</th>
+                    <th>Segment Total</th>
                 </tr>
-            <?php else: ?>
-                <?php $rank = 1; ?>
-                <?php foreach ($segmentStandings as $row): ?>
+            </thead>
+            <tbody>
+                <?php if (empty($segmentStandings)): ?>
                     <tr>
-                        <td class="num"><?php echo $rank; ?></td>
-                        <td><?php echo rrsg_h($row['teamName']); ?></td>
-                        <td class="num"><strong><?php echo rrsg_h($row['total']); ?></strong></td>
+                        <td colspan="3">No segment standings generated.</td>
                     </tr>
-                    <?php $rank++; ?>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+                <?php else: ?>
+                    <?php $rank = 1; ?>
+                    <?php foreach ($segmentStandings as $row): ?>
+                        <tr>
+                            <td class="num"><?php echo $rank; ?></td>
+                            <td><?php echo rrsg_h($row['teamName']); ?></td>
+                            <td class="num"><strong><?php echo rrsg_h($row['total']); ?></strong></td>
+                        </tr>
+                        <?php $rank++; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="block">
     <h2><?php echo rrsg_h($selectedYear); ?> Season Standings Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Team</th>
-                <th>Season Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($seasonStandings)): ?>
+    <div class="table-wrap">
+        <table>
+            <thead>
                 <tr>
-                    <td colspan="3">No season standings generated.</td>
+                    <th>#</th>
+                    <th>Team</th>
+                    <th>Season Total</th>
                 </tr>
-            <?php else: ?>
-                <?php $rank = 1; ?>
-                <?php foreach ($seasonStandings as $row): ?>
+            </thead>
+            <tbody>
+                <?php if (empty($seasonStandings)): ?>
                     <tr>
-                        <td class="num"><?php echo $rank; ?></td>
-                        <td><?php echo rrsg_h($row['teamName']); ?></td>
-                        <td class="num"><strong><?php echo rrsg_h($row['total']); ?></strong></td>
+                        <td colspan="3">No season standings generated.</td>
                     </tr>
-                    <?php $rank++; ?>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+                <?php else: ?>
+                    <?php $rank = 1; ?>
+                    <?php foreach ($seasonStandings as $row): ?>
+                        <tr>
+                            <td class="num"><?php echo $rank; ?></td>
+                            <td><?php echo rrsg_h($row['teamName']); ?></td>
+                            <td class="num"><strong><?php echo rrsg_h($row['total']); ?></strong></td>
+                        </tr>
+                        <?php $rank++; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<script>
+function toggleDetails() {
+    var details = document.getElementById('detailsContent');
+    var button = document.getElementById('detailsToggle');
+
+    if (!details || !button) {
+        return;
+    }
+
+    if (details.style.display === 'none' || details.style.display === '') {
+        details.style.display = 'block';
+        button.textContent = 'Hide Details';
+    } else {
+        details.style.display = 'none';
+        button.textContent = 'Show Details';
+    }
+}
+</script>
 
 </body>
 </html>
