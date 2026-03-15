@@ -10,10 +10,27 @@ header('Expires: 0');
 /**
  * weekly_standings.php
  *
- * VERSION: v032
- * LAST MODIFIED: 3/14/2026 3:53:10 PM
+ * VERSION: v033
+ * LAST MODIFIED: 3/14/2026 4:45:00 PM
  *
  * CHANGELOG:
+ * v033 (3/14/2026)
+ *   - CHANGE: Removed large page header to reduce wasted vertical space.
+ *   - CHANGE: Reworked page toward a tighter, spreadsheet-style desktop layout.
+ *   - CHANGE: Replaced stacked meta box with a compact horizontal info strip.
+ *   - CHANGE: Moved validation status + details toggle into the compact info strip.
+ *   - CHANGE: Main report sections now render in a horizontal desktop grid:
+ *       - weekly standings
+ *       - segment standings
+ *       - season standings
+ *       - weekly winners
+ *   - CHANGE: Tightened desktop spacing, paddings, and table density.
+ *   - KEEP: Validation + debug remain available under Show Details.
+ *   - KEEP: Year change still auto-submits.
+ *   - KEEP: Invalid carried-over race selection still falls back to latest race
+ *     for the selected year.
+ *   - KEEP: Scoring / standings / tie logic unchanged.
+ *
  * v032 (3/14/2026)
  *   - CHANGE: Presentation polish pass for weekly standings page.
  *   - CHANGE: Added basic responsive layout improvements for smaller screens.
@@ -403,11 +420,13 @@ $scoreYear = $selectedYear;
 $scoreSegment = 'S1';
 $segmentBounds = ['start' => 1, 'end' => 8];
 $selectedRaceNumber = 0;
+$selectedRaceDisplay = '';
 
 if ($selectedRace !== null) {
     $selectedRaceNumber = (int)$selectedRace['number'];
     $scoreSegment = rrsg_segment_from_race_number($selectedRaceNumber);
     $segmentBounds = rrsg_segment_bounds($scoreSegment);
+    $selectedRaceDisplay = (string)$selectedRace['raceCode'] . ' ' . rrsg_short_race_label((string)$selectedRace['raceName']);
 }
 
 $teamRows = rr_get_segment_team_picks($dbo ?? null, $dbconnect ?? null, $scoreYear, $scoreSegment);
@@ -656,159 +675,138 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 15px;
-            line-height: 1.4;
-            margin: 18px;
-        }
-
-        h1 {
-            margin: 0 0 14px 0;
-            font-size: 28px;
-            line-height: 1.15;
-        }
-
-        h2 {
-            margin: 0 0 10px 0;
-            font-size: 18px;
-            line-height: 1.2;
-        }
-
-        .controls {
-            margin-bottom: 18px;
-            padding: 14px 16px;
-            border: 1px solid #bbb;
-            background: #f7f7f7;
-            max-width: 1200px;
-        }
-
-        .controls form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px 14px;
-            align-items: end;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .control-group label {
-            font-weight: bold;
             font-size: 14px;
+            line-height: 1.3;
+            margin: 12px;
+            color: #111;
         }
 
-        .controls select,
-        .controls button {
-            font: inherit;
-            padding: 6px 10px;
+        .page-wrap {
+            max-width: 1750px;
         }
 
-        .controls select {
-            min-width: 150px;
-        }
-
-        .meta-box {
-            max-width: 1200px;
-            border: 1px solid #d7d7d7;
-            background: #fcfcfc;
-            padding: 14px 16px;
-            margin-bottom: 18px;
-        }
-
-        .meta-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(240px, 1fr));
-            gap: 8px 20px;
-        }
-
-        .meta-item {
-            white-space: nowrap;
-        }
-
-        .meta-item strong {
-            display: inline-block;
-            min-width: 170px;
-        }
-
-        .details-box {
-            max-width: 1200px;
-            border: 1px solid #999;
-            background: #fcfcfc;
-            padding: 12px 14px;
-            margin-bottom: 22px;
-        }
-
-        .details-summary {
+        .top-controls {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 10px 14px;
+            gap: 6px 10px;
+            margin-bottom: 6px;
         }
 
-        .details-status {
+        .top-controls label {
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 2px;
+        }
+
+        .top-controls select,
+        .top-controls button {
+            font: inherit;
+            padding: 3px 8px;
+        }
+
+        .top-controls button {
+            cursor: pointer;
+        }
+
+        .info-strip {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 14px;
+            font-size: 12px;
+            margin: 0 0 10px 0;
+        }
+
+        .info-strip .chunk {
+            white-space: nowrap;
+        }
+
+        .info-strip strong {
             font-weight: bold;
         }
 
         .details-toggle {
             font: inherit;
-            padding: 5px 10px;
+            padding: 2px 8px;
             cursor: pointer;
         }
 
         .details-content {
-            margin-top: 14px;
+            display: none;
+            border: 1px solid #bbb;
+            padding: 8px 10px;
+            margin: 0 0 10px 0;
+            background: #fcfcfc;
         }
 
         .validation-columns {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 18px;
+            gap: 14px;
+            margin-bottom: 10px;
         }
 
         .validation-column {
-            min-width: 260px;
-            flex: 1 1 260px;
+            min-width: 240px;
+            flex: 1 1 240px;
         }
 
         .validation-column h3 {
-            margin: 0 0 8px 0;
-            font-size: 15px;
+            margin: 0 0 4px 0;
+            font-size: 14px;
         }
 
         .validation-column ul {
             margin: 0;
-            padding-left: 20px;
+            padding-left: 18px;
         }
 
         .validation-column li {
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
-        .block {
-            margin-bottom: 26px;
+        .debug-title {
+            margin: 8px 0 4px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: minmax(270px, 1fr) minmax(270px, 1fr) minmax(270px, 1fr) minmax(270px, 1fr);
+            gap: 12px;
+            align-items: start;
+        }
+
+        .report-panel {
+            min-width: 0;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin: 0 0 4px 0;
         }
 
         .table-wrap {
             width: 100%;
-            max-width: 1400px;
             overflow-x: auto;
-            border: 1px solid transparent;
         }
 
         table {
             border-collapse: collapse;
             width: 100%;
-            min-width: 760px;
+            table-layout: auto;
+            font-size: 13px;
         }
 
         th, td {
             border: 1px solid #999;
-            padding: 7px 9px;
+            padding: 4px 7px;
             text-align: left;
             vertical-align: top;
+            white-space: nowrap;
         }
 
         th {
@@ -825,113 +823,109 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
             background: #fafafa;
         }
 
-        .subtle {
-            color: #555;
+        .col-rank {
+            width: 34px;
         }
 
-        @media (max-width: 900px) {
+        .col-score {
+            width: 64px;
+        }
+
+        .col-week {
+            width: 46px;
+        }
+
+        @media (max-width: 1500px) {
+            .report-grid {
+                grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+            }
+        }
+
+        @media (max-width: 760px) {
             body {
-                margin: 12px;
-                font-size: 14px;
+                margin: 8px;
+                font-size: 13px;
             }
 
-            h1 {
-                font-size: 24px;
-                margin-bottom: 12px;
+            .top-controls {
+                gap: 4px 8px;
             }
 
-            h2 {
-                font-size: 17px;
+            .top-controls label {
+                font-size: 11px;
             }
 
-            .controls {
-                padding: 12px;
+            .top-controls select,
+            .top-controls button {
+                font-size: 12px;
+                padding: 2px 6px;
             }
 
-            .controls form {
-                gap: 10px 10px;
+            .info-strip {
+                display: block;
+                font-size: 11px;
+                margin-bottom: 8px;
             }
 
-            .control-group {
-                width: 100%;
-            }
-
-            .controls select,
-            .controls button {
-                width: 100%;
-                box-sizing: border-box;
-            }
-
-            .meta-grid {
-                grid-template-columns: 1fr;
-                gap: 6px 0;
-            }
-
-            .meta-item {
+            .info-strip .chunk {
+                display: block;
                 white-space: normal;
+                margin-bottom: 3px;
             }
 
-            .meta-item strong {
-                min-width: 0;
-                display: inline;
+            .report-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 4px 6px;
             }
         }
     </style>
 </head>
 <body>
 
-<h1>Weekly Standings</h1>
+<div class="page-wrap">
 
-<div class="controls">
-    <form method="get" action="">
-        <div class="control-group">
-            <label for="year">Year</label>
-            <select name="year" id="year" onchange="this.form.submit()">
-                <?php foreach ($availableYears as $yearOpt): ?>
-                    <option value="<?php echo rrsg_h($yearOpt); ?>" <?php echo ($yearOpt === $selectedYear ? 'selected' : ''); ?>>
-                        <?php echo rrsg_h($yearOpt); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+    <div class="top-controls">
+        <label for="year">Year</label>
+        <select name="year" id="year" form="weeklyStandingsForm" onchange="document.getElementById('weeklyStandingsForm').submit()">
+            <?php foreach ($availableYears as $yearOpt): ?>
+                <option value="<?php echo rrsg_h($yearOpt); ?>" <?php echo ($yearOpt === $selectedYear ? 'selected' : ''); ?>>
+                    <?php echo rrsg_h($yearOpt); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
 
-        <div class="control-group">
-            <label for="race">Race</label>
-            <select name="race" id="race">
-                <?php foreach ($pointRaces as $raceOpt): ?>
-                    <option value="<?php echo rrsg_h($raceOpt['raceCode']); ?>" <?php echo ($raceOpt['raceCode'] === $selectedRaceCode ? 'selected' : ''); ?>>
-                        <?php echo rrsg_h($raceOpt['raceCode'] . ' ' . rrsg_short_race_label((string)$raceOpt['raceName'])); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+        <label for="race">Race</label>
+        <select name="race" id="race" form="weeklyStandingsForm">
+            <?php foreach ($pointRaces as $raceOpt): ?>
+                <option value="<?php echo rrsg_h($raceOpt['raceCode']); ?>" <?php echo ($raceOpt['raceCode'] === $selectedRaceCode ? 'selected' : ''); ?>>
+                    <?php echo rrsg_h($raceOpt['raceCode'] . ' ' . rrsg_short_race_label((string)$raceOpt['raceName'])); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
 
-        <div class="control-group">
-            <label>&nbsp;</label>
-            <button type="submit">Show</button>
-        </div>
-    </form>
-</div>
-
-<div class="meta-box">
-    <div class="meta-grid">
-        <div class="meta-item"><strong>Scoring Year:</strong> <?php echo rrsg_h($scoreYear); ?></div>
-        <div class="meta-item"><strong>Scoring Segment:</strong> <?php echo rrsg_h($scoreSegment); ?></div>
-        <div class="meta-item"><strong>Selected Race:</strong> <?php echo rrsg_h($selectedRaceCode); ?></div>
-        <div class="meta-item"><strong>Teams Loaded:</strong> <?php echo count($teamRows); ?></div>
-        <div class="meta-item"><strong>Selected Snapshot:</strong> <?php echo rrsg_h($selectedRaceMeta['snapshotFile'] !== '' ? basename($selectedRaceMeta['snapshotFile']) : 'NOT FOUND'); ?></div>
-        <div class="meta-item"><strong>Drivers read from snapshot:</strong> <?php echo rrsg_h($selectedRaceMeta['driverCount']); ?></div>
-    </div>
-</div>
-
-<div class="details-box">
-    <div class="details-summary">
-        <div class="details-status">Validation Status: <?php echo rrsg_h($validationStatus); ?></div>
-        <button type="button" class="details-toggle" id="detailsToggle" onclick="toggleDetails()">Show Details</button>
-        <div class="subtle">Validation details and debug build are hidden by default.</div>
+        <button type="submit" form="weeklyStandingsForm">Show</button>
     </div>
 
-    <div class="details-content" id="detailsContent" style="display:none;">
+    <form id="weeklyStandingsForm" method="get" action=""></form>
+
+    <div class="info-strip">
+        <span class="chunk"><strong>Scoring:</strong> <?php echo rrsg_h($scoreYear . ' / ' . $scoreSegment . ' / ' . $selectedRaceDisplay); ?></span>
+        <span class="chunk"><strong>Teams:</strong> <?php echo count($teamRows); ?></span>
+        <span class="chunk"><strong>Drivers:</strong> <?php echo rrsg_h($selectedRaceMeta['driverCount']); ?></span>
+        <span class="chunk"><strong>Snapshot:</strong> <?php echo rrsg_h($selectedRaceMeta['snapshotFile'] !== '' ? basename($selectedRaceMeta['snapshotFile']) : 'NOT FOUND'); ?></span>
+        <span class="chunk"><strong>Status:</strong> <?php echo rrsg_h($validationStatus); ?></span>
+        <span class="chunk"><button type="button" class="details-toggle" id="detailsToggle" onclick="toggleDetails()">Show Details</button></span>
+    </div>
+
+    <div class="details-content" id="detailsContent">
         <div class="validation-columns">
             <div class="validation-column">
                 <h3>PASS</h3>
@@ -973,36 +967,170 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
             </div>
         </div>
 
-        <div class="block" style="margin-bottom:0;">
-            <h2><?php echo rrsg_h($selectedYear); ?> Debug Race Build Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
+        <div class="debug-title"><?php echo rrsg_h($selectedYear); ?> Debug Race Build Through <?php echo rrsg_h($selectedRaceCode); ?></div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Race</th>
+                        <th class="col-rank">#</th>
+                        <th>Segment</th>
+                        <th>Teams</th>
+                        <th>Snapshot Used</th>
+                        <th>Computed Winner</th>
+                        <th class="col-score">Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($debugRows)): ?>
+                        <tr>
+                            <td colspan="7">No debug rows generated.</td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($debugRows as $row): ?>
+                            <tr>
+                                <td><?php echo rrsg_h($row['raceCode'] . ' ' . $row['raceLabel']); ?></td>
+                                <td class="num"><?php echo rrsg_h($row['raceNumber']); ?></td>
+                                <td><?php echo rrsg_h($row['raceSegment']); ?></td>
+                                <td class="num"><?php echo rrsg_h($row['teamsLoaded']); ?></td>
+                                <td><?php echo rrsg_h($row['snapshotBase']); ?></td>
+                                <td><?php echo rrsg_h($row['winnerTeam']); ?></td>
+                                <td class="num"><?php echo rrsg_h($row['winnerPoints']); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="report-grid">
+        <div class="report-panel">
+            <div class="panel-title"><?php echo rrsg_h($selectedYear . ' ' . $selectedRaceCode . ' ' . $selectedRaceMeta['raceLabel']); ?></div>
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
-                            <th>Race</th>
-                            <th>Race #</th>
-                            <th>Segment Used</th>
-                            <th>Teams Loaded</th>
-                            <th>Snapshot Used</th>
-                            <th>Computed Winner</th>
-                            <th>Points</th>
+                            <th class="col-rank">#</th>
+                            <th>Team</th>
+                            <th class="col-score">Week <?php echo rrsg_h((string)$selectedRaceNumber); ?></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($debugRows)): ?>
+                        <?php if (empty($selectedRaceWeeklyRows)): ?>
                             <tr>
-                                <td colspan="7">No debug rows generated.</td>
+                                <td colspan="3">No weekly rows generated.</td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($debugRows as $row): ?>
+                            <?php $rank = 1; ?>
+                            <?php foreach ($selectedRaceWeeklyRows as $row): ?>
                                 <tr>
-                                    <td><?php echo rrsg_h($row['raceCode'] . ' ' . $row['raceLabel']); ?></td>
-                                    <td class="num"><?php echo rrsg_h($row['raceNumber']); ?></td>
-                                    <td><?php echo rrsg_h($row['raceSegment']); ?></td>
-                                    <td class="num"><?php echo rrsg_h($row['teamsLoaded']); ?></td>
-                                    <td><?php echo rrsg_h($row['snapshotBase']); ?></td>
-                                    <td><?php echo rrsg_h($row['winnerTeam']); ?></td>
-                                    <td class="num"><?php echo rrsg_h($row['winnerPoints']); ?></td>
+                                    <td class="num"><?php echo $rank; ?></td>
+                                    <td><?php echo rrsg_h($row['teamName']); ?></td>
+                                    <td class="num"><?php echo rrsg_h($row['weeklyTotal']); ?></td>
+                                </tr>
+                                <?php $rank++; ?>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="report-panel">
+            <div class="panel-title"><?php echo rrsg_h($selectedYear . ' ' . $scoreSegment); ?></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-rank">#</th>
+                            <th>Team</th>
+                            <th class="col-score"><?php echo rrsg_h($scoreSegment); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($segmentStandings)): ?>
+                            <tr>
+                                <td colspan="3">No segment standings generated.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php $rank = 1; ?>
+                            <?php foreach ($segmentStandings as $row): ?>
+                                <tr>
+                                    <td class="num"><?php echo $rank; ?></td>
+                                    <td><?php echo rrsg_h($row['teamName']); ?></td>
+                                    <td class="num"><?php echo rrsg_h($row['total']); ?></td>
+                                </tr>
+                                <?php $rank++; ?>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="report-panel">
+            <div class="panel-title"><?php echo rrsg_h($selectedYear); ?></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-rank">#</th>
+                            <th>Team</th>
+                            <th class="col-score"><?php echo rrsg_h($selectedYear); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($seasonStandings)): ?>
+                            <tr>
+                                <td colspan="3">No season standings generated.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php $rank = 1; ?>
+                            <?php foreach ($seasonStandings as $row): ?>
+                                <tr>
+                                    <td class="num"><?php echo $rank; ?></td>
+                                    <td><?php echo rrsg_h($row['teamName']); ?></td>
+                                    <td class="num"><?php echo rrsg_h($row['total']); ?></td>
+                                </tr>
+                                <?php $rank++; ?>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="report-panel">
+            <div class="panel-title"><?php echo rrsg_h($selectedYear . ' Weekly Winners'); ?></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-week">Week</th>
+                            <th>Winner</th>
+                            <th class="col-score">Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ($selectedRace === null): ?>
+                            <tr>
+                                <td colspan="3">No race selected.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php
+                            $winnerRows = $pointRaces;
+                            usort($winnerRows, function ($a, $b) {
+                                return ((int)$a['number']) <=> ((int)$b['number']);
+                            });
+                            ?>
+                            <?php foreach ($winnerRows as $race): ?>
+                                <?php if ((int)$race['number'] > $selectedRaceNumber) continue; ?>
+                                <?php $raceCode = (string)$race['raceCode']; ?>
+                                <tr>
+                                    <td class="num"><?php echo rrsg_h((string)$race['number']); ?></td>
+                                    <td><?php echo rrsg_h($weeklyWinners[$raceCode]['teamName'] ?? ''); ?></td>
+                                    <td class="num"><?php echo rrsg_h($weeklyWinners[$raceCode]['points'] ?? 0); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -1011,140 +1139,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
             </div>
         </div>
     </div>
-</div>
 
-<div class="block">
-    <h2><?php echo rrsg_h($selectedYear); ?> Weekly Winners Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Race</th>
-                    <th>Winner</th>
-                    <th>Points</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($selectedRace === null): ?>
-                    <tr>
-                        <td colspan="3">No race selected.</td>
-                    </tr>
-                <?php else: ?>
-                    <?php
-                    $winnerRows = $pointRaces;
-                    usort($winnerRows, function ($a, $b) {
-                        return ((int)$a['number']) <=> ((int)$b['number']);
-                    });
-                    ?>
-                    <?php foreach ($winnerRows as $race): ?>
-                        <?php if ((int)$race['number'] > $selectedRaceNumber) continue; ?>
-                        <?php $raceCode = (string)$race['raceCode']; ?>
-                        <tr>
-                            <td><?php echo rrsg_h($raceCode . ' ' . rrsg_short_race_label((string)$race['raceName'])); ?></td>
-                            <td><?php echo rrsg_h($weeklyWinners[$raceCode]['teamName'] ?? ''); ?></td>
-                            <td class="num"><?php echo rrsg_h($weeklyWinners[$raceCode]['points'] ?? 0); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="block">
-    <h2><?php echo rrsg_h($selectedYear . ' ' . $selectedRaceMeta['raceCode'] . ' ' . $selectedRaceMeta['raceLabel']); ?> Weekly Standings</h2>
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Team</th>
-                    <th>Weekly Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($selectedRaceWeeklyRows)): ?>
-                    <tr>
-                        <td colspan="3">No weekly rows generated.</td>
-                    </tr>
-                <?php else: ?>
-                    <?php $rank = 1; ?>
-                    <?php foreach ($selectedRaceWeeklyRows as $row): ?>
-                        <tr>
-                            <td class="num"><?php echo $rank; ?></td>
-                            <td><?php echo rrsg_h($row['teamName']); ?></td>
-                            <td class="num"><strong><?php echo rrsg_h($row['weeklyTotal']); ?></strong></td>
-                        </tr>
-                        <?php $rank++; ?>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="block">
-    <h2><?php echo rrsg_h($selectedYear); ?> Segment Standings Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Team</th>
-                    <th>Segment Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($segmentStandings)): ?>
-                    <tr>
-                        <td colspan="3">No segment standings generated.</td>
-                    </tr>
-                <?php else: ?>
-                    <?php $rank = 1; ?>
-                    <?php foreach ($segmentStandings as $row): ?>
-                        <tr>
-                            <td class="num"><?php echo $rank; ?></td>
-                            <td><?php echo rrsg_h($row['teamName']); ?></td>
-                            <td class="num"><strong><?php echo rrsg_h($row['total']); ?></strong></td>
-                        </tr>
-                        <?php $rank++; ?>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="block">
-    <h2><?php echo rrsg_h($selectedYear); ?> Season Standings Through <?php echo rrsg_h($selectedRaceCode); ?></h2>
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Team</th>
-                    <th>Season Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($seasonStandings)): ?>
-                    <tr>
-                        <td colspan="3">No season standings generated.</td>
-                    </tr>
-                <?php else: ?>
-                    <?php $rank = 1; ?>
-                    <?php foreach ($seasonStandings as $row): ?>
-                        <tr>
-                            <td class="num"><?php echo $rank; ?></td>
-                            <td><?php echo rrsg_h($row['teamName']); ?></td>
-                            <td class="num"><strong><?php echo rrsg_h($row['total']); ?></strong></td>
-                        </tr>
-                        <?php $rank++; ?>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
 </div>
 
 <script>
