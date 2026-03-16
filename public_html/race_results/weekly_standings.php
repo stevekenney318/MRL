@@ -10,10 +10,52 @@ header('Expires: 0');
 /**
  * weekly_standings.php
  *
- * VERSION: v033
- * LAST MODIFIED: 3/14/2026 4:45:00 PM
+ * VERSION: v037
+ * LAST MODIFIED: 3/15/2026 7:39:21 pm
+ *
  *
  * CHANGELOG:
+ *
+ * v037 (3/15/2026)
+ *   - CHANGE: Reworked report grid sizing so panels control visual width instead of shrinking tables.
+ *   - CHANGE: Removed fake table-width shrink approach and restored full-width tables inside each panel.
+ *   - CHANGE: Weekly Winners panel now gets slightly wider layout treatment than the other three panels.
+ *   - CHANGE: Top row simplified to Show button + compact validation status + Show Details control.
+ *   - CHANGE: Moved Scoring / Teams / Drivers / Snapshot info into the Details area.
+ *   - CHANGE: Added colored validation status dot:
+ *       - PASS = green
+ *       - WARN = yellow
+ *       - FAIL = red
+ *   - CHANGE: Team headers and team names are now left-aligned; non-team columns remain centered.
+ *   - CHANGE: Removed weekly hover highlight and open-row highlight.
+ *   - CHANGE: Restored visible alternating row striping for weekly standings using manual row classes.
+ *   - KEEP: Heavy borders, yellow headers, tighter spreadsheet-style density, and larger table font.
+ *   - KEEP: Weekly team row remains clickable across the full row.
+ *   - KEEP: Only one weekly team detail can be open at a time.
+ *   - KEEP: Driver detail indentation / point alignment retained.
+ *   - KEEP: No cursor change.
+ *
+ * v036 (3/15/2026)
+ *   - CHANGE: Weekly team row is now clickable across the full row.
+ *   - CHANGE: Added subtle hover highlight for weekly team rows.
+ *   - CHANGE: Open weekly row now stays highlighted while its detail section is shown.
+ *   - CHANGE: Removed click behavior from points-only cell; row click now feels more natural.
+ *   - CHANGE: Driver detail section indented further right.
+ *   - CHANGE: Driver detail points pulled left for a tighter, more readable breakdown.
+ *   - KEEP: No cursor change.
+ *
+ * v035 (3/14/2026)
+ *   - NEW (PASS 2): Weekly total cell now toggles hidden inline driver detail rows.
+ *   - NEW: Only one weekly team detail can be open at a time.
+ *   - NEW: Added subtle hover highlight for clickable weekly total cells.
+ *   - KEEP: No arrows, no extra label clutter, no layout changes.
+ *
+ * v034 (3/14/2026)
+ *   - NEW (PASS 1): Added hidden inline driver detail rows beneath each team row
+ *     in Weekly Standings.
+ *   - Rows render but remain hidden (foundation for click-to-open step).
+ *   - No styling or layout changes.
+ *
  * v033 (3/14/2026)
  *   - CHANGE: Removed large page header to reduce wasted vertical space.
  *   - CHANGE: Reworked page toward a tighter, spreadsheet-style desktop layout.
@@ -407,7 +449,6 @@ for ($i = 0; $i < count($pointRaces); $i++) {
 }
 
 if ($selectedRaceIndex < 0 && !empty($pointRaces)) {
-    // Invalid or carried-over race for this year -> latest race for this year
     $selectedRaceIndex = 0;
     $selectedRaceCode = (string)$pointRaces[$selectedRaceIndex]['raceCode'];
 }
@@ -666,6 +707,13 @@ $validationStatus = rrsg_validation_status($validation);
 $segmentStandings = rrsg_sort_total_rows($segmentTotals);
 $seasonStandings = rrsg_sort_total_rows($seasonTotals);
 
+$statusClass = 'status-pass';
+if ($validationStatus === 'WARN') {
+    $statusClass = 'status-warn';
+} elseif ($validationStatus === 'FAIL') {
+    $statusClass = 'status-fail';
+}
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -682,15 +730,26 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
         }
 
         .page-wrap {
-            max-width: 1750px;
+            /* max-width: 1750px; */
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         .top-controls {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 6px 10px;
+            justify-content: space-between;
+            gap: 8px 12px;
             margin-bottom: 6px;
+        }
+
+        .top-controls-left,
+        .top-controls-right {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 10px;
         }
 
         .top-controls label {
@@ -702,28 +761,43 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
         .top-controls select,
         .top-controls button {
             font: inherit;
-            padding: 3px 8px;
+            padding: 1px 8px;
         }
 
         .top-controls button {
             cursor: pointer;
         }
 
-        .info-strip {
-            display: flex;
-            flex-wrap: wrap;
+        .status-indicator {
+            display: inline-flex;
             align-items: center;
-            gap: 6px 14px;
-            font-size: 12px;
-            margin: 0 0 10px 0;
-        }
-
-        .info-strip .chunk {
-            white-space: nowrap;
-        }
-
-        .info-strip strong {
+            gap: 6px;
+            font-size: 11px;
             font-weight: bold;
+            white-space: nowrap;
+
+            margin-left: 40px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid #666;
+            box-sizing: border-box;
+        }
+
+        .status-pass .status-dot {
+            background: #2e8b57;
+        }
+
+        .status-warn .status-dot {
+            background: #f1c232;
+        }
+
+        .status-fail .status-dot {
+            background: #c00000;
         }
 
         .details-toggle {
@@ -738,6 +812,22 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
             padding: 8px 10px;
             margin: 0 0 10px 0;
             background: #fcfcfc;
+        }
+
+        .details-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 14px;
+            font-size: 12px;
+            margin: 0 0 10px 0;
+        }
+
+        .details-meta .chunk {
+            white-space: nowrap;
+        }
+
+        .details-meta strong {
+            font-weight: bold;
         }
 
         .validation-columns {
@@ -774,8 +864,9 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
 
         .report-grid {
             display: grid;
-            grid-template-columns: minmax(270px, 1fr) minmax(270px, 1fr) minmax(270px, 1fr) minmax(270px, 1fr);
-            gap: 12px;
+            /* grid-template-columns: minmax(250px, 0.95fr) minmax(250px, 0.95fr) minmax(250px, 0.5fr) minmax(300px, 1.15fr); */
+            grid-template-columns: minmax(200px, 0.75fr) minmax(200px, 0.75fr) minmax(200px, 0.75fr) minmax(250px, 1.25fr);
+            gap: 10px;
             align-items: start;
         }
 
@@ -784,9 +875,8 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
         }
 
         .panel-title {
-            font-size: 13px;
-            font-weight: bold;
-            margin: 0 0 4px 0;
+            font-size: 15px;
+            margin: 10px 0 4px 0;
         }
 
         .table-wrap {
@@ -798,41 +888,87 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
             border-collapse: collapse;
             width: 100%;
             table-layout: auto;
-            font-size: 13px;
+            font-size: 14px;
         }
 
         th, td {
-            border: 1px solid #999;
-            padding: 4px 7px;
-            text-align: left;
+            border: 2px solid #151313;
+            padding: 0px 7px;
+            text-align: center;
             vertical-align: top;
             white-space: nowrap;
         }
 
         th {
-            background: #f2f2f2;
+            background: #fbff00;
             font-weight: bold;
         }
 
         td.num {
-            text-align: right;
+            text-align: center;
             white-space: nowrap;
         }
 
         tr:nth-child(even) td {
-            background: #fafafa;
+            background: #dce6f1;
+        }
+
+        th.team-col,
+        td.team-col {
+            text-align: left;
+        }
+
+        .stripe-a td {
+            background: #ffffff;
+        }
+
+        .stripe-b td {
+            background: #dce6f1;
         }
 
         .col-rank {
-            width: 34px;
+            width: 16px;
         }
 
         .col-score {
-            width: 64px;
+            width: 20px;
         }
 
         .col-week {
             width: 46px;
+        }
+
+        .team-detail-row > td {
+            background: #fff !important;
+        }
+
+        .team-detail-inner {
+            width: auto;
+            min-width: 220px;
+            border-collapse: collapse;
+            margin-left: 24px;
+        }
+
+        .team-detail-inner td {
+            border: none;
+            padding: 2px 6px;
+            white-space: nowrap;
+            background: transparent !important;
+        }
+
+        .team-detail-inner .detail-driver {
+            padding-left: 18px;
+            text-align: left;
+        }
+
+        .team-detail-inner .detail-points {
+            width: 70px;
+            text-align: right;
+            padding-right: 10px;
+        }
+
+        .weekly-click-row td {
+            transition: none;
         }
 
         @media (max-width: 1500px) {
@@ -861,13 +997,13 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
                 padding: 2px 6px;
             }
 
-            .info-strip {
+            .details-meta {
                 display: block;
                 font-size: 11px;
                 margin-bottom: 8px;
             }
 
-            .info-strip .chunk {
+            .details-meta .chunk {
                 display: block;
                 white-space: normal;
                 margin-bottom: 3px;
@@ -885,6 +1021,20 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
             th, td {
                 padding: 4px 6px;
             }
+
+            .team-detail-inner {
+                width: 100%;
+                min-width: 0;
+                margin-left: 0;
+            }
+
+            .team-detail-inner .detail-driver {
+                padding-left: 10px;
+            }
+
+            .team-detail-inner .detail-points {
+                padding-right: 0;
+            }
         }
     </style>
 </head>
@@ -892,40 +1042,48 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
 
 <div class="page-wrap">
 
-    <div class="top-controls">
-        <label for="year">Year</label>
-        <select name="year" id="year" form="weeklyStandingsForm" onchange="document.getElementById('weeklyStandingsForm').submit()">
-            <?php foreach ($availableYears as $yearOpt): ?>
-                <option value="<?php echo rrsg_h($yearOpt); ?>" <?php echo ($yearOpt === $selectedYear ? 'selected' : ''); ?>>
-                    <?php echo rrsg_h($yearOpt); ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-
-        <label for="race">Race</label>
-        <select name="race" id="race" form="weeklyStandingsForm">
-            <?php foreach ($pointRaces as $raceOpt): ?>
-                <option value="<?php echo rrsg_h($raceOpt['raceCode']); ?>" <?php echo ($raceOpt['raceCode'] === $selectedRaceCode ? 'selected' : ''); ?>>
-                    <?php echo rrsg_h($raceOpt['raceCode'] . ' ' . rrsg_short_race_label((string)$raceOpt['raceName'])); ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-
-        <button type="submit" form="weeklyStandingsForm">Show</button>
-    </div>
-
     <form id="weeklyStandingsForm" method="get" action=""></form>
 
-    <div class="info-strip">
-        <span class="chunk"><strong>Scoring:</strong> <?php echo rrsg_h($scoreYear . ' / ' . $scoreSegment . ' / ' . $selectedRaceDisplay); ?></span>
-        <span class="chunk"><strong>Teams:</strong> <?php echo count($teamRows); ?></span>
-        <span class="chunk"><strong>Drivers:</strong> <?php echo rrsg_h($selectedRaceMeta['driverCount']); ?></span>
-        <span class="chunk"><strong>Snapshot:</strong> <?php echo rrsg_h($selectedRaceMeta['snapshotFile'] !== '' ? basename($selectedRaceMeta['snapshotFile']) : 'NOT FOUND'); ?></span>
-        <span class="chunk"><strong>Status:</strong> <?php echo rrsg_h($validationStatus); ?></span>
-        <span class="chunk"><button type="button" class="details-toggle" id="detailsToggle" onclick="toggleDetails()">Show Details</button></span>
+    <div class="top-controls">
+        <div class="top-controls-left">
+            <label for="year">Year</label>
+            <select name="year" id="year" form="weeklyStandingsForm" onchange="document.getElementById('weeklyStandingsForm').submit()">
+                <?php foreach ($availableYears as $yearOpt): ?>
+                    <option value="<?php echo rrsg_h($yearOpt); ?>" <?php echo ($yearOpt === $selectedYear ? 'selected' : ''); ?>>
+                        <?php echo rrsg_h($yearOpt); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <label for="race">Race</label>
+            <select name="race" id="race" form="weeklyStandingsForm">
+                <?php foreach ($pointRaces as $raceOpt): ?>
+                    <option value="<?php echo rrsg_h($raceOpt['raceCode']); ?>" <?php echo ($raceOpt['raceCode'] === $selectedRaceCode ? 'selected' : ''); ?>>
+                        <?php echo rrsg_h($raceOpt['raceCode'] . ' ' . rrsg_short_race_label((string)$raceOpt['raceName'])); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <button type="submit" form="weeklyStandingsForm">Show</button>
+            <span class="status-indicator <?php echo rrsg_h($statusClass); ?>">
+                <span class="status-dot"></span>
+                <span><?php echo rrsg_h($validationStatus); ?></span>
+            </span>
+            <button type="button" class="details-toggle" id="detailsToggle" onclick="toggleDetails()">Show Details</button>
+        </div>
+
+        <div class="top-controls-right">
+        </div>
     </div>
 
     <div class="details-content" id="detailsContent">
+        <div class="details-meta">
+            <span class="chunk"><strong>Scoring:</strong> <?php echo rrsg_h($scoreYear . ' / ' . $scoreSegment . ' / ' . $selectedRaceDisplay); ?></span>
+            <span class="chunk"><strong>Teams:</strong> <?php echo count($teamRows); ?></span>
+            <span class="chunk"><strong>Drivers:</strong> <?php echo rrsg_h($selectedRaceMeta['driverCount']); ?></span>
+            <span class="chunk"><strong>Snapshot:</strong> <?php echo rrsg_h($selectedRaceMeta['snapshotFile'] !== '' ? basename($selectedRaceMeta['snapshotFile']) : 'NOT FOUND'); ?></span>
+        </div>
+
         <div class="validation-columns">
             <div class="validation-column">
                 <h3>PASS</h3>
@@ -1012,7 +1170,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
                     <thead>
                         <tr>
                             <th class="col-rank">#</th>
-                            <th>Team</th>
+                            <th class="team-col">Team</th>
                             <th class="col-score">Week <?php echo rrsg_h((string)$selectedRaceNumber); ?></th>
                         </tr>
                     </thead>
@@ -1024,10 +1182,58 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
                         <?php else: ?>
                             <?php $rank = 1; ?>
                             <?php foreach ($selectedRaceWeeklyRows as $row): ?>
-                                <tr>
+                                <?php
+                                $detailId = 'weekly-detail-' . $rank;
+                                $stripeClass = ($rank % 2 === 1) ? 'stripe-a' : 'stripe-b';
+                                ?>
+                                <tr
+                                    class="team-row weekly-click-row <?php echo $stripeClass; ?>"
+                                    onclick="toggleWeeklyDetail('<?php echo rrsg_h($detailId); ?>', this)"
+                                >
                                     <td class="num"><?php echo $rank; ?></td>
-                                    <td><?php echo rrsg_h($row['teamName']); ?></td>
+                                    <td class="team-col"><?php echo rrsg_h($row['teamName']); ?></td>
                                     <td class="num"><?php echo rrsg_h($row['weeklyTotal']); ?></td>
+                                </tr>
+                                <tr class="team-detail-row" id="<?php echo rrsg_h($detailId); ?>" style="display:none;">
+                                    <td></td>
+                                    <td colspan="2">
+                                        <table class="team-detail-inner">
+                                            <tbody>
+                                                <?php if ($row['driverA'] !== ''): ?>
+                                                    <tr>
+                                                        <td class="detail-driver"><?php echo rrsg_h($row['driverA']); ?></td>
+                                                        <td class="num detail-points"><?php echo rrsg_h($row['netA']); ?></td>
+                                                    </tr>
+                                                <?php endif; ?>
+
+                                                <?php if ($row['driverB'] !== ''): ?>
+                                                    <tr>
+                                                        <td class="detail-driver"><?php echo rrsg_h($row['driverB']); ?></td>
+                                                        <td class="num detail-points"><?php echo rrsg_h($row['netB']); ?></td>
+                                                    </tr>
+                                                <?php endif; ?>
+
+                                                <?php if ($row['driverC'] !== ''): ?>
+                                                    <tr>
+                                                        <td class="detail-driver"><?php echo rrsg_h($row['driverC']); ?></td>
+                                                        <td class="num detail-points"><?php echo rrsg_h($row['netC']); ?></td>
+                                                    </tr>
+                                                <?php endif; ?>
+
+                                                <?php if ($row['driverD'] !== ''): ?>
+                                                    <tr>
+                                                        <td class="detail-driver"><?php echo rrsg_h($row['driverD']); ?></td>
+                                                        <td class="num detail-points"><?php echo rrsg_h($row['netD']); ?></td>
+                                                    </tr>
+                                                <?php endif; ?>
+
+                                                <tr>
+                                                    <td class="detail-driver"><strong>Total</strong></td>
+                                                    <td class="num detail-points"><strong><?php echo rrsg_h($row['weeklyTotal']); ?></strong></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
                                 </tr>
                                 <?php $rank++; ?>
                             <?php endforeach; ?>
@@ -1044,7 +1250,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
                     <thead>
                         <tr>
                             <th class="col-rank">#</th>
-                            <th>Team</th>
+                            <th class="team-col">Team</th>
                             <th class="col-score"><?php echo rrsg_h($scoreSegment); ?></th>
                         </tr>
                     </thead>
@@ -1058,7 +1264,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
                             <?php foreach ($segmentStandings as $row): ?>
                                 <tr>
                                     <td class="num"><?php echo $rank; ?></td>
-                                    <td><?php echo rrsg_h($row['teamName']); ?></td>
+                                    <td class="team-col"><?php echo rrsg_h($row['teamName']); ?></td>
                                     <td class="num"><?php echo rrsg_h($row['total']); ?></td>
                                 </tr>
                                 <?php $rank++; ?>
@@ -1076,7 +1282,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
                     <thead>
                         <tr>
                             <th class="col-rank">#</th>
-                            <th>Team</th>
+                            <th class="team-col">Team</th>
                             <th class="col-score"><?php echo rrsg_h($selectedYear); ?></th>
                         </tr>
                     </thead>
@@ -1090,7 +1296,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
                             <?php foreach ($seasonStandings as $row): ?>
                                 <tr>
                                     <td class="num"><?php echo $rank; ?></td>
-                                    <td><?php echo rrsg_h($row['teamName']); ?></td>
+                                    <td class="team-col"><?php echo rrsg_h($row['teamName']); ?></td>
                                     <td class="num"><?php echo rrsg_h($row['total']); ?></td>
                                 </tr>
                                 <?php $rank++; ?>
@@ -1108,7 +1314,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
                     <thead>
                         <tr>
                             <th class="col-week">Week</th>
-                            <th>Winner</th>
+                            <th class="team-col">Winner</th>
                             <th class="col-score">Points</th>
                         </tr>
                     </thead>
@@ -1129,7 +1335,7 @@ $seasonStandings = rrsg_sort_total_rows($seasonTotals);
                                 <?php $raceCode = (string)$race['raceCode']; ?>
                                 <tr>
                                     <td class="num"><?php echo rrsg_h((string)$race['number']); ?></td>
-                                    <td><?php echo rrsg_h($weeklyWinners[$raceCode]['teamName'] ?? ''); ?></td>
+                                    <td class="team-col"><?php echo rrsg_h($weeklyWinners[$raceCode]['teamName'] ?? ''); ?></td>
                                     <td class="num"><?php echo rrsg_h($weeklyWinners[$raceCode]['points'] ?? 0); ?></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -1157,6 +1363,27 @@ function toggleDetails() {
     } else {
         details.style.display = 'none';
         button.textContent = 'Show Details';
+    }
+}
+
+function toggleWeeklyDetail(detailId, rowEl) {
+    var rows = document.getElementsByClassName('team-detail-row');
+    var target = document.getElementById(detailId);
+    var isOpen = false;
+    var i;
+
+    if (!target || !rowEl) {
+        return;
+    }
+
+    isOpen = (target.style.display !== 'none' && target.style.display !== '');
+
+    for (i = 0; i < rows.length; i++) {
+        rows[i].style.display = 'none';
+    }
+
+    if (!isOpen) {
+        target.style.display = 'table-row';
     }
 }
 </script>
