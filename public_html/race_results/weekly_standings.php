@@ -10,11 +10,20 @@ header('Expires: 0');
 /**
  * weekly_standings.php
  *
- * VERSION: v037
- * LAST MODIFIED: 3/15/2026 7:39:21 pm
+ * VERSION: v038
+ * LAST MODIFIED: 3/15/2026 9:55:54 pm
  *
  *
  * CHANGELOG:
+ *
+ * v038 (3/15/2026)
+ *   - CHANGE: Warning logic now reports only zero-point drivers that belong to an actual MRL team pick.
+ *   - CHANGE: WARN messages now list the specific zero-point driver and MRL team instead of using a generic count.
+ *   - CHANGE: Debug details table Race and Computed Winner columns now left-align for easier scanning.
+ *   - CHANGE: Restored light background styling across the full expanded weekly driver detail area.
+ *   - CHANGE: Added a small amount of top and bottom padding to the expanded weekly driver detail area.
+ *   - CHANGE: Nudged expanded weekly driver detail point values slightly left for better visual balance.
+ *   - CHANGE: Added a subtle tinted background behind expanded weekly driver detail point cells.
  *
  * v037 (3/15/2026)
  *   - CHANGE: Reworked report grid sizing so panels control visual width instead of shrinking tables.
@@ -611,8 +620,8 @@ if (!empty($selectedRaceWeeklyRows)) {
 
 $duplicateTeams = [];
 $teamSeen = [];
-$missingDrivers = 0;
 $badTotals = 0;
+$zeroDrivers = [];
 
 foreach ($selectedRaceWeeklyRows as $row) {
     $teamName = (string)($row['teamName'] ?? '');
@@ -637,22 +646,18 @@ foreach ($selectedRaceWeeklyRows as $row) {
     }
 
     $drivers = [
-        (string)($row['driverA'] ?? ''),
-        (string)($row['driverB'] ?? ''),
-        (string)($row['driverC'] ?? ''),
-        (string)($row['driverD'] ?? ''),
+        ['name' => (string)($row['driverA'] ?? ''), 'net' => (int)($row['netA'] ?? 0)],
+        ['name' => (string)($row['driverB'] ?? ''), 'net' => (int)($row['netB'] ?? 0)],
+        ['name' => (string)($row['driverC'] ?? ''), 'net' => (int)($row['netC'] ?? 0)],
+        ['name' => (string)($row['driverD'] ?? ''), 'net' => (int)($row['netD'] ?? 0)],
     ];
 
-    $nets = [
-        (int)($row['netA'] ?? 0),
-        (int)($row['netB'] ?? 0),
-        (int)($row['netC'] ?? 0),
-        (int)($row['netD'] ?? 0),
-    ];
-
-    for ($i = 0; $i < 4; $i++) {
-        if ($drivers[$i] !== '' && $nets[$i] === 0) {
-            $missingDrivers++;
+    foreach ($drivers as $driverRow) {
+        if ($driverRow['name'] !== '' && $driverRow['net'] === 0) {
+            $zeroDrivers[] = [
+                'driver' => $driverRow['name'],
+                'team' => $teamName,
+            ];
         }
     }
 }
@@ -669,8 +674,14 @@ if (empty($duplicateTeams)) {
     rrsg_add_validation($validation, 'fail', 'Duplicate teams found: ' . implode(', ', array_unique($duplicateTeams)));
 }
 
-if ($missingDrivers > 0) {
-    rrsg_add_validation($validation, 'warn', 'Unexpected zero scores detected: ' . $missingDrivers);
+if (!empty($zeroDrivers)) {
+    foreach ($zeroDrivers as $zeroDriver) {
+        rrsg_add_validation(
+            $validation,
+            'warn',
+            'Unexpected zero score — ' . $zeroDriver['driver'] . ' (Team: ' . $zeroDriver['team'] . ')'
+        );
+    }
 } else {
     rrsg_add_validation($validation, 'pass', 'No unexpected zero scores detected.');
 }
@@ -918,6 +929,11 @@ if ($validationStatus === 'WARN') {
             text-align: left;
         }
 
+        th.debug-text-col,
+        td.debug-text-col {
+            text-align: left;
+        }
+
         .stripe-a td {
             background: #ffffff;
         }
@@ -939,14 +955,18 @@ if ($validationStatus === 'WARN') {
         }
 
         .team-detail-row > td {
-            background: #fff !important;
+            background: #f4f4f4 !important;
+            padding-top: 2px;
+            padding-bottom: 2px;
         }
 
         .team-detail-inner {
             width: auto;
             min-width: 220px;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             margin-left: 24px;
+            background: #f4f4f4;
         }
 
         .team-detail-inner td {
@@ -956,15 +976,24 @@ if ($validationStatus === 'WARN') {
             background: transparent !important;
         }
 
+        .team-detail-inner tbody tr:first-child td {
+            padding-top: 4px;
+        }
+
+        .team-detail-inner tbody tr:last-child td {
+            padding-bottom: 4px;
+        }
+
         .team-detail-inner .detail-driver {
             padding-left: 18px;
             text-align: left;
         }
 
         .team-detail-inner .detail-points {
-            width: 70px;
+            width: 62px;
             text-align: right;
-            padding-right: 10px;
+            padding-right: 4px;
+            background: #e9edf2 !important;
         }
 
         .weekly-click-row td {
@@ -1033,7 +1062,7 @@ if ($validationStatus === 'WARN') {
             }
 
             .team-detail-inner .detail-points {
-                padding-right: 0;
+                padding-right: 2px;
             }
         }
     </style>
@@ -1065,14 +1094,15 @@ if ($validationStatus === 'WARN') {
             </select>
 
             <button type="submit" form="weeklyStandingsForm">Show</button>
+
             <span class="status-indicator <?php echo rrsg_h($statusClass); ?>">
                 <span class="status-dot"></span>
                 <span><?php echo rrsg_h($validationStatus); ?></span>
             </span>
-            <button type="button" class="details-toggle" id="detailsToggle" onclick="toggleDetails()">Show Details</button>
         </div>
 
         <div class="top-controls-right">
+            <button type="button" class="details-toggle" id="detailsToggle" onclick="toggleDetails()">Show Details</button>
         </div>
     </div>
 
@@ -1130,12 +1160,12 @@ if ($validationStatus === 'WARN') {
             <table>
                 <thead>
                     <tr>
-                        <th>Race</th>
+                        <th class="debug-text-col">Race</th>
                         <th class="col-rank">#</th>
                         <th>Segment</th>
                         <th>Teams</th>
                         <th>Snapshot Used</th>
-                        <th>Computed Winner</th>
+                        <th class="debug-text-col">Computed Winner</th>
                         <th class="col-score">Points</th>
                     </tr>
                 </thead>
@@ -1147,12 +1177,12 @@ if ($validationStatus === 'WARN') {
                     <?php else: ?>
                         <?php foreach ($debugRows as $row): ?>
                             <tr>
-                                <td><?php echo rrsg_h($row['raceCode'] . ' ' . $row['raceLabel']); ?></td>
+                                <td class="debug-text-col"><?php echo rrsg_h($row['raceCode'] . ' ' . $row['raceLabel']); ?></td>
                                 <td class="num"><?php echo rrsg_h($row['raceNumber']); ?></td>
                                 <td><?php echo rrsg_h($row['raceSegment']); ?></td>
                                 <td class="num"><?php echo rrsg_h($row['teamsLoaded']); ?></td>
                                 <td><?php echo rrsg_h($row['snapshotBase']); ?></td>
-                                <td><?php echo rrsg_h($row['winnerTeam']); ?></td>
+                                <td class="debug-text-col"><?php echo rrsg_h($row['winnerTeam']); ?></td>
                                 <td class="num"><?php echo rrsg_h($row['winnerPoints']); ?></td>
                             </tr>
                         <?php endforeach; ?>
