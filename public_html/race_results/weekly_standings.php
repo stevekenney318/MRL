@@ -1,17 +1,21 @@
 <?php
 declare(strict_types=1);
 
-// No-cache for testing / rapid iteration
-header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-header('Cache-Control: post-check=0, pre-check=0', false);
-header('Pragma: no-cache');
-header('Expires: 0');
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config_mrl.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/functions_mrl.php';
+
+// disableCaching() defined in functions_mrl.php
+disableCaching();
+
+// visual id of a sandbox file - SK & background
+// require_once $_SERVER['DOCUMENT_ROOT'] . '/sandbox.php';
 
 /**
  * weekly_standings.php
  *
- * VERSION: v038
- * LAST MODIFIED: 3/15/2026 9:55:54 pm
+ * VERSION: v039
+ * LAST MODIFIED: 3/16/2026 11:09:21 pm
  *
  *
  * CHANGELOG:
@@ -53,60 +57,13 @@ header('Expires: 0');
  *   - CHANGE: Driver detail points pulled left for a tighter, more readable breakdown.
  *   - KEEP: No cursor change.
  *
- * v035 (3/14/2026)
- *   - NEW (PASS 2): Weekly total cell now toggles hidden inline driver detail rows.
- *   - NEW: Only one weekly team detail can be open at a time.
- *   - NEW: Added subtle hover highlight for clickable weekly total cells.
- *   - KEEP: No arrows, no extra label clutter, no layout changes.
- *
- * v034 (3/14/2026)
- *   - NEW (PASS 1): Added hidden inline driver detail rows beneath each team row
- *     in Weekly Standings.
- *   - Rows render but remain hidden (foundation for click-to-open step).
- *   - No styling or layout changes.
- *
- * v033 (3/14/2026)
- *   - CHANGE: Removed large page header to reduce wasted vertical space.
- *   - CHANGE: Reworked page toward a tighter, spreadsheet-style desktop layout.
- *   - CHANGE: Replaced stacked meta box with a compact horizontal info strip.
- *   - CHANGE: Moved validation status + details toggle into the compact info strip.
- *   - CHANGE: Main report sections now render in a horizontal desktop grid:
- *       - weekly standings
- *       - segment standings
- *       - season standings
- *       - weekly winners
- *   - CHANGE: Tightened desktop spacing, paddings, and table density.
- *   - KEEP: Validation + debug remain available under Show Details.
- *   - KEEP: Year change still auto-submits.
- *   - KEEP: Invalid carried-over race selection still falls back to latest race
- *     for the selected year.
- *   - KEEP: Scoring / standings / tie logic unchanged.
- *
- * v032 (3/14/2026)
- *   - CHANGE: Presentation polish pass for weekly standings page.
- *   - CHANGE: Added basic responsive layout improvements for smaller screens.
- *   - CHANGE: Year dropdown now auto-submits immediately when changed.
- *   - CHANGE: Invalid carried-over race selection now falls back to latest race
- *     for the selected year.
- *   - CHANGE: Added Show Details / Hide Details toggle for validation details
- *     and debug race build section.
- *   - CHANGE: Shortened validation wording:
- *       - "Weekly winner matches highest weekly total (including ties)."
- *         -> "Weekly winner matches top weekly score."
- *   - KEEP: Drivers read from snapshot remains visible in summary area.
- *   - KEEP: Scoring / standings / tie logic unchanged.
- *
- * v031 (3/13/2026)
- *   - FIX: Weekly Winners build now loads team picks by each race's own segment
- *     while iterating through the season.
- *   - FIX: Prevents earlier weeks from changing when crossing into a new segment.
- *   - CHANGE: Added selected year to major section headings for clearer viewing
- *     and screenshots.
+
  *
  * PHP: 7.3 compatible.
  */
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+
+// helper files
 require_once __DIR__ . '/race_results_team_helper.php';
 require_once __DIR__ . '/race_results_snapshot_helper.php';
 require_once __DIR__ . '/race_results_engine.php';
@@ -361,7 +318,18 @@ function rrsg_short_race_label(string $raceName): string
         'EchoPark_Automotive_Grand_Prix' => 'COTA',
         'NASCAR_Cup_Series_at_Circuit_of_the_Americas' => 'COTA',
         'NASCAR_CUP_SERIES_AT_CIRCUIT_OF_THE_AMERICAS' => 'COTA',
-        'World_Wide_Technology_Raceway' => 'World Wide Technology Raceway',
+
+        'World_Wide_Technology_Raceway' => 'World Wide Technology',
+        'NASCAR_Cup_Series_at_World_Wide_Technology_Raceway' => 'World Wide Technology',
+        'NASCAR_CUP_SERIES_AT_WORLD_WIDE_TECHNOLOGY_RACEWAY' => 'World Wide Technology',
+
+        'Indianapolis_Road_Course' => 'Indianapolis RC',
+        'NASCAR_Cup_Series_at_Indianapolis_Road_Course' => 'Indianapolis RC',
+        'NASCAR_CUP_SERIES_AT_INDIANAPOLIS_ROAD_COURSE' => 'Indianapolis RC',
+
+        'Charlotte_Road_Course' => 'Charlotte RC',
+        'NASCAR_Cup_Series_at_Charlotte_Road_Course' => 'Charlotte RC',
+        'NASCAR_CUP_SERIES_AT_CHARLOTTE_ROAD_COURSE' => 'Charlotte RC',
     ];
 
     if (isset($map[$slug])) {
@@ -371,6 +339,11 @@ function rrsg_short_race_label(string $raceName): string
     $slug = preg_replace('/^MONSTER_ENERGY_NASCAR_CUP_SERIES_AT_/i', '', $slug);
     $slug = preg_replace('/^NASCAR_CUP_SERIES_AT_/i', '', $slug);
     $slug = preg_replace('/^NASCAR_Cup_Series_at_/i', '', $slug);
+
+    $slug = str_replace('World_Wide_Technology_Raceway', 'World Wide Technology', $slug);
+    $slug = str_replace('Indianapolis_Road_Course', 'Indianapolis_RC', $slug);
+    $slug = str_replace('Charlotte_Road_Course', 'Charlotte_RC', $slug);
+    $slug = str_replace('Road_Course', 'RC', $slug);
 
     $slug = trim((string)$slug, '_');
 
@@ -425,6 +398,30 @@ function rrsg_validation_status(array $validation): string
         return 'WARN';
     }
     return 'PASS';
+}
+
+function rrsg_build_year_race_options(array $availableYears, string $baseDir): array
+{
+    $result = [];
+
+    foreach ($availableYears as $yearOpt) {
+        $yearFolder = $baseDir . '/' . $yearOpt;
+        $yearIndexFile = $yearFolder . '/_year_index.json';
+        $yearIndex = rrsg_load_year_index_file($yearIndexFile);
+        $pointRaces = rrsg_points_races_from_index($yearIndex, $yearFolder);
+
+        $result[$yearOpt] = [];
+
+        foreach ($pointRaces as $race) {
+            $result[$yearOpt][] = [
+                'raceCode' => (string)$race['raceCode'],
+                'label' => (string)$race['raceCode'] . ' ' . rrsg_short_race_label((string)$race['raceName']),
+                'number' => (int)$race['number'],
+            ];
+        }
+    }
+
+    return $result;
 }
 
 /* ------------------------------------------------------------------
@@ -725,6 +722,14 @@ if ($validationStatus === 'WARN') {
     $statusClass = 'status-fail';
 }
 
+$historicalNote = '';
+if ((int)$selectedYear < 2026 && $selectedRace !== null) {
+    $historicalNote = $selectedYear . ' ' . $selectedRaceCode . ' ' . $selectedRaceMeta['raceLabel']
+        . ' may contain minor historical scoring differences due to late picks, replacement drivers, and other league adjustments.';
+}
+
+$yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -732,6 +737,10 @@ if ($validationStatus === 'WARN') {
     <meta charset="UTF-8">
     <title>Weekly Standings</title>
     <style>
+        html {
+            scrollbar-gutter: stable;
+        }
+
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 14px;
@@ -750,7 +759,7 @@ if ($validationStatus === 'WARN') {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
             gap: 8px 12px;
             margin-bottom: 6px;
         }
@@ -779,36 +788,18 @@ if ($validationStatus === 'WARN') {
             cursor: pointer;
         }
 
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            font-weight: bold;
-            white-space: nowrap;
-
-            margin-left: 40px;
+        .nav-button {
+            min-width: 34px;
+            text-align: center;
+            padding-left: 6px;
+            padding-right: 6px;
         }
 
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            border: 1px solid #666;
-            box-sizing: border-box;
-        }
-
-        .status-pass .status-dot {
-            background: #2e8b57;
-        }
-
-        .status-warn .status-dot {
-            background: #f1c232;
-        }
-
-        .status-fail .status-dot {
-            background: #c00000;
+        .nav-button[disabled] {
+            cursor: default;
+            opacity: 0.5;
+            color: #666;
+            background: #f3f3f3;
         }
 
         .details-toggle {
@@ -817,12 +808,55 @@ if ($validationStatus === 'WARN') {
             cursor: pointer;
         }
 
+        .historical-note-slot {
+            display: inline-block;
+            width: 620px;
+            min-height: 1.2em;
+            margin-left: 6px;
+            font-size: 11px;
+            font-style: italic;
+            color: #666;
+
+            white-space: normal;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: top;
+        }
+
         .details-content {
             display: none;
-            border: 1px solid #bbb;
-            padding: 8px 10px;
-            margin: 0 0 10px 0;
-            background: #fcfcfc;
+            padding: 6px 0 8px 0;
+            margin: 0 0 8px 0;
+            background: transparent;
+            border: none;
+        }
+
+        .validation-btn {
+            font-weight: bold;
+            min-width: 125px;
+            border-radius: 25px;
+        }
+
+        .validation-btn.status-pass {
+            background: #2e8b57;
+            color: #fff;
+            border: 3px solid #1f5f3b;
+        }
+
+        .validation-btn.status-warn {
+            background: #f1c232;
+            color: #000;
+            border: 3px solid #b8961c;
+        }
+
+        .validation-btn.status-fail {
+            background: #c00000;
+            color: #fff;
+            border: 3px solid #7a0000;
+        }
+
+        .validation-btn:hover {
+            filter: brightness(0.95);
         }
 
         .details-meta {
@@ -1004,6 +1038,10 @@ if ($validationStatus === 'WARN') {
             .report-grid {
                 grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
             }
+
+            .historical-note-slot {
+                width: 480px;
+            }
         }
 
         @media (max-width: 760px) {
@@ -1024,6 +1062,13 @@ if ($validationStatus === 'WARN') {
             .top-controls button {
                 font-size: 12px;
                 padding: 2px 6px;
+            }
+
+            .historical-note-slot {
+                width: 100%;
+                white-space: normal;
+                min-height: 1.2em;
+                margin-left: 0;
             }
 
             .details-meta {
@@ -1076,7 +1121,7 @@ if ($validationStatus === 'WARN') {
     <div class="top-controls">
         <div class="top-controls-left">
             <label for="year">Year</label>
-            <select name="year" id="year" form="weeklyStandingsForm" onchange="document.getElementById('weeklyStandingsForm').submit()">
+            <select name="year" id="year" form="weeklyStandingsForm">
                 <?php foreach ($availableYears as $yearOpt): ?>
                     <option value="<?php echo rrsg_h($yearOpt); ?>" <?php echo ($yearOpt === $selectedYear ? 'selected' : ''); ?>>
                         <?php echo rrsg_h($yearOpt); ?>
@@ -1095,14 +1140,19 @@ if ($validationStatus === 'WARN') {
 
             <button type="submit" form="weeklyStandingsForm">Show</button>
 
-            <span class="status-indicator <?php echo rrsg_h($statusClass); ?>">
-                <span class="status-dot"></span>
-                <span><?php echo rrsg_h($validationStatus); ?></span>
-            </span>
+            <button type="button" class="nav-button" id="navPrevBtn" onclick="navigateRace(-1)" title="Previous Race">&lt;&lt;</button>
+            <button type="button" class="nav-button" id="navNextBtn" onclick="navigateRace(1)" title="Next Race">&gt;&gt;</button>
         </div>
 
         <div class="top-controls-right">
-            <button type="button" class="details-toggle" id="detailsToggle" onclick="toggleDetails()">Show Details</button>
+            <button type="button"
+                    class="details-toggle validation-btn <?php echo rrsg_h($statusClass); ?>"
+                    id="detailsToggle"
+                    onclick="toggleDetails()">
+                Show Validation
+            </button>
+
+            <span class="historical-note-slot" id="historicalNoteSlot"><?php echo ($historicalNote !== '' ? rrsg_h($historicalNote) : '&nbsp;'); ?></span>
         </div>
     </div>
 
@@ -1379,6 +1429,135 @@ if ($validationStatus === 'WARN') {
 </div>
 
 <script>
+var rrsgYearRaceOptions = <?php echo json_encode($yearRaceOptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
+function rrsgPadRaceCode(num) {
+    var n = parseInt(num, 10);
+    if (isNaN(n)) {
+        return '';
+    }
+    return 'R' + ('0' + n).slice(-2);
+}
+
+function rrsgRaceNumberFromCode(code) {
+    var match = String(code || '').match(/^R(\d+)$/);
+    return match ? parseInt(match[1], 10) : null;
+}
+
+function repopulateRaceOptions() {
+    var yearEl = document.getElementById('year');
+    var raceEl = document.getElementById('race');
+    var yearVal = yearEl ? yearEl.value : '';
+    var currentRace = raceEl ? raceEl.value : '';
+    var raceList = rrsgYearRaceOptions[yearVal] || [];
+    var i;
+    var found = false;
+
+    if (!raceEl) {
+        return;
+    }
+
+    raceEl.innerHTML = '';
+
+    for (i = 0; i < raceList.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = raceList[i].raceCode;
+        opt.textContent = raceList[i].label;
+        raceEl.appendChild(opt);
+
+        if (raceList[i].raceCode === currentRace) {
+            found = true;
+        }
+    }
+
+    if (found) {
+        raceEl.value = currentRace;
+    } else if (raceList.length > 0) {
+        raceEl.value = raceList[0].raceCode;
+    }
+
+    updateNavButtons();
+}
+
+function updateNavButtons() {
+    var raceEl = document.getElementById('race');
+    var prevBtn = document.getElementById('navPrevBtn');
+    var nextBtn = document.getElementById('navNextBtn');
+    var optionNumbers = [];
+    var currentNumber = rrsgRaceNumberFromCode(raceEl ? raceEl.value : '');
+    var i;
+    var idx = -1;
+
+    if (!raceEl || !prevBtn || !nextBtn) {
+        return;
+    }
+
+    for (i = 0; i < raceEl.options.length; i++) {
+        var raceNum = rrsgRaceNumberFromCode(raceEl.options[i].value);
+        if (raceNum !== null) {
+            optionNumbers.push(raceNum);
+        }
+    }
+
+    optionNumbers.sort(function (a, b) {
+        return a - b;
+    });
+
+    for (i = 0; i < optionNumbers.length; i++) {
+        if (optionNumbers[i] === currentNumber) {
+            idx = i;
+            break;
+        }
+    }
+
+    prevBtn.disabled = (idx <= 0);
+    nextBtn.disabled = (idx < 0 || idx >= optionNumbers.length - 1);
+}
+
+function navigateRace(direction) {
+    var raceEl = document.getElementById('race');
+    var formEl = document.getElementById('weeklyStandingsForm');
+    var optionNumbers = [];
+    var currentNumber = rrsgRaceNumberFromCode(raceEl ? raceEl.value : '');
+    var i;
+    var idx = -1;
+    var targetNumber;
+
+    if (!raceEl || !formEl) {
+        return;
+    }
+
+    for (i = 0; i < raceEl.options.length; i++) {
+        var raceNum = rrsgRaceNumberFromCode(raceEl.options[i].value);
+        if (raceNum !== null) {
+            optionNumbers.push(raceNum);
+        }
+    }
+
+    optionNumbers.sort(function (a, b) {
+        return a - b;
+    });
+
+    for (i = 0; i < optionNumbers.length; i++) {
+        if (optionNumbers[i] === currentNumber) {
+            idx = i;
+            break;
+        }
+    }
+
+    if (idx < 0) {
+        return;
+    }
+
+    targetNumber = optionNumbers[idx + direction];
+    if (typeof targetNumber === 'undefined') {
+        return;
+    }
+
+    raceEl.value = rrsgPadRaceCode(targetNumber);
+    formEl.submit();
+}
+
 function toggleDetails() {
     var details = document.getElementById('detailsContent');
     var button = document.getElementById('detailsToggle');
@@ -1389,10 +1568,10 @@ function toggleDetails() {
 
     if (details.style.display === 'none' || details.style.display === '') {
         details.style.display = 'block';
-        button.textContent = 'Hide Details';
+        button.textContent = 'Hide Validation';
     } else {
         details.style.display = 'none';
-        button.textContent = 'Show Details';
+        button.textContent = 'Show Validation';
     }
 }
 
@@ -1416,7 +1595,36 @@ function toggleWeeklyDetail(detailId, rowEl) {
         target.style.display = 'table-row';
     }
 }
-</script>
 
+document.addEventListener('DOMContentLoaded', function () {
+    var yearEl = document.getElementById('year');
+    var raceEl = document.getElementById('race');
+    var detailsEl = document.getElementById('detailsContent');
+    var detailsBtn = document.getElementById('detailsToggle');
+
+    if (yearEl) {
+        yearEl.addEventListener('change', function () {
+            repopulateRaceOptions();
+        });
+    }
+
+    if (raceEl) {
+        raceEl.addEventListener('change', function () {
+            updateNavButtons();
+        });
+    }
+
+    if (detailsEl) {
+        detailsEl.style.display = 'none';
+    }
+
+    if (detailsBtn) {
+        detailsBtn.textContent = 'Show Validation';
+    }
+
+    updateNavButtons();
+});
+</script>
+<?php include $_SERVER['DOCUMENT_ROOT'] . '/footer.php'; ?>
 </body>
 </html>
