@@ -15,10 +15,39 @@ disableCaching();
  * weekly_standings.php
  *
  * VERSION: v039
- * LAST MODIFIED: 3/17/2026 8:50:51 pm
+ * LAST MODIFIED: 3/17/2026 11:18:57 pm
  *
  *
  * CHANGELOG:
+ *
+ * v039 (3/17/2026 11:18:57 pm)
+ *   - Added navigation arrows (<< >>) for race cycling
+ *   - Implemented race navigation logic synced with year/race dropdowns
+ *   - Added historical disclaimer message for pre-2026 races
+ *     - Displays dynamic year and race (e.g. "2021 R34 Kansas...")
+ *     - Positioned on top control row
+ *   - Updated race naming for consistency and layout stability:
+ *     - Circuit of the Americas → COTA
+ *     - Indianapolis Road Course → Indianapolis RC
+ *     - Charlotte Road Course → Charlotte RC
+ *     - World Wide Technology Raceway → World Wide Technology
+ *   - Improved dropdown behavior:
+ *     - Year change repopulates race list without auto-submitting
+ *     - Navigation and UI reset properly when selections change
+ *   - Added "Show Validation" button styling and behavior
+ *     - Replaces previous status indicator display
+ *     - Includes hover styling and improved visual clarity
+ *   - Synced validation panel toggle behavior with race navigation
+ *     - Prevents desync when switching races
+ *   - Adjusted disabled navigation button styling:
+ *     - Reduced opacity (~0.5)
+ *     - Removed border
+ *     - Added neutral background for clarity
+ *   - Fixed layout stability issues in top control row:
+ *     - Reduced shifting caused by varying race name widths
+ *   - Minor CSS cleanup:
+ *     - Removed unused status indicator styles
+ *     - Eliminated duplicate or conflicting rules
  *
  * v038 (3/15/2026)
  *   - CHANGE: Warning logic now reports only zero-point drivers that belong to an actual MRL team pick.
