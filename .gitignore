@@ -107,3 +107,9 @@ public_html/race_results/20*/
 
 # Ignore Windows-style copy files
 * - Copy.php
+
+# my testing stuff
+race_results/sk
+
+# ChatGPT version downloads
+race_results/versions
