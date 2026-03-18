@@ -15,7 +15,7 @@ disableCaching();
  * weekly_standings.php
  *
  * VERSION: v039
- * LAST MODIFIED: 3/16/2026 11:09:21 pm
+ * LAST MODIFIED: 3/17/2026 8:50:51 pm
  *
  *
  * CHANGELOG:
@@ -1625,6 +1625,6 @@ document.addEventListener('DOMContentLoaded', function () {
     updateNavButtons();
 });
 </script>
-<?php include $_SERVER['DOCUMENT_ROOT'] . '/footer.php'; ?>
+<?php include $_SERVER['DOCUMENT_ROOT'] . '/footer-light.php'; ?>
 </body>
 </html>
