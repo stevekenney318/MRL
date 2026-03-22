@@ -9,24 +9,32 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions_mrl.php';
 disableCaching();
 
 // visual id of a sandbox file - SK & background
-require_once $_SERVER['DOCUMENT_ROOT'] . '/sandbox.php';
+// require_once $_SERVER['DOCUMENT_ROOT'] . '/sandbox.html';
 
 /**
  * weekly_standings.php
  *
  * VERSION: v040
- * LAST MODIFIED: 3/18/2026 2:25:40 pm
+ * LAST MODIFIED: 3/22/2026 1:16:25 am
  *
  *
  * CHANGELOG:
  *
  * v040 (3/18/2026)
+ *   - CHANGE: Added a Live button before the dropdowns that jumps to the latest year + latest race and dims when already on the live view.
+ *   - CHANGE: Removed the visible Year and Race labels from the top controls for a cleaner layout.
+ *   - CHANGE: Year dropdown now displays earliest → latest while initial page load still defaults to the most current year.
+ *   - CHANGE: Race dropdown now displays races in ascending order (R01 → R36) top to bottom.
  *   - CHANGE: Year change now clears the screen and resets Race to a neutral "Select Race" state.
  *   - CHANGE: Race dropdown is now the trigger; selecting a race submits without a separate Show button.
  *   - CHANGE: Added subtle placeholder text when no race is selected: "Select a race to view results".
  *   - CHANGE: Nav arrows, validation button, and historical note now reset cleanly in the no-race-selected state.
  *   - CHANGE: Initial page load still defaults to the most current year and most current race.
  *   - CHANGE: Kept sandbox include line as a commented on/off switch.
+ *   - CHANGE: Segment detail rows now list races in ascending order.
+ *   - CHANGE: Year table now supports expandable segment-total detail rows through the selected segment.
+ *   - CHANGE: Weekly Winners ties now render one winner per row.
+ *   - CHANGE: Weekly Winners tied rows now mark the week number with an asterisk and show a footnote when ties exist.
  *
  * v039 (3/16/2026)
  *   - Added navigation arrows (<< >>) for race cycling.
@@ -302,6 +310,22 @@ function rrsg_points_races_from_index(array $yearIndex, string $yearBaseFolder):
     return $rows;
 }
 
+function rrsg_sort_races_ascending(array $races): array
+{
+    usort($races, function ($a, $b) {
+        $an = (int)($a['number'] ?? 0);
+        $bn = (int)($b['number'] ?? 0);
+
+        if ($an !== $bn) {
+            return ($an <=> $bn);
+        }
+
+        return strcmp((string)($a['raceCode'] ?? ''), (string)($b['raceCode'] ?? ''));
+    });
+
+    return $races;
+}
+
 function rrsg_short_race_label(string $raceName): string
 {
     $slug = rr_sanitize_for_folder($raceName);
@@ -401,10 +425,11 @@ function rrsg_build_year_race_options(array $availableYears, string $baseDir): a
         $yearIndexFile = $yearFolder . '/_year_index.json';
         $yearIndex = rrsg_load_year_index_file($yearIndexFile);
         $pointRaces = rrsg_points_races_from_index($yearIndex, $yearFolder);
+        $pointRacesAsc = rrsg_sort_races_ascending($pointRaces);
 
         $result[$yearOpt] = [];
 
-        foreach ($pointRaces as $race) {
+        foreach ($pointRacesAsc as $race) {
             $result[$yearOpt][] = [
                 'raceCode' => (string)$race['raceCode'],
                 'label' => (string)$race['raceCode'] . ' ' . rrsg_short_race_label((string)$race['raceName']),
@@ -482,6 +507,8 @@ function rrsg_visible_segments(string $scoreSegment): array
 
 $baseDir = __DIR__;
 $availableYears = rrsg_available_years($baseDir);
+$availableYearsAsc = $availableYears;
+sort($availableYearsAsc, SORT_STRING);
 
 $selectedYear = isset($_GET['year']) ? trim((string)$_GET['year']) : '';
 if (!in_array($selectedYear, $availableYears, true)) {
@@ -492,6 +519,14 @@ $yearFolder = $baseDir . '/' . $selectedYear;
 $yearIndexFile = $yearFolder . '/_year_index.json';
 $yearIndex = rrsg_load_year_index_file($yearIndexFile);
 $pointRaces = rrsg_points_races_from_index($yearIndex, $yearFolder);
+$pointRacesAsc = rrsg_sort_races_ascending($pointRaces);
+
+$latestYear = !empty($availableYears) ? (string)$availableYears[0] : $selectedYear;
+$latestYearFolder = $baseDir . '/' . $latestYear;
+$latestYearIndexFile = $latestYearFolder . '/_year_index.json';
+$latestYearIndex = rrsg_load_year_index_file($latestYearIndexFile);
+$latestPointRaces = rrsg_points_races_from_index($latestYearIndex, $latestYearFolder);
+$latestRaceCode = !empty($latestPointRaces) ? (string)$latestPointRaces[0]['raceCode'] : '';
 
 $selectedRaceCode = isset($_GET['race']) ? trim((string)$_GET['race']) : '';
 if ($selectedRaceCode === '' && !empty($pointRaces)) {
@@ -514,6 +549,13 @@ if ($selectedRaceIndex < 0 && !empty($pointRaces)) {
 $selectedRace = ($selectedRaceIndex >= 0 && isset($pointRaces[$selectedRaceIndex]))
     ? $pointRaces[$selectedRaceIndex]
     : null;
+
+$liveUrl = '?year=' . rawurlencode($latestYear);
+if ($latestRaceCode !== '') {
+    $liveUrl .= '&race=' . rawurlencode($latestRaceCode);
+}
+
+$isLiveView = ($selectedYear === $latestYear && $selectedRaceCode === $latestRaceCode);
 
 $scoreYear = $selectedYear;
 $scoreSegment = 'S1';
@@ -799,6 +841,18 @@ if ($selectedRace !== null) {
 
 $visibleSegments = rrsg_visible_segments($scoreSegment);
 
+$weeklyWinnersHasTie = false;
+foreach ($weeklyWinners as $winnerData) {
+    $winnerNames = isset($winnerData['teamNames']) && is_array($winnerData['teamNames'])
+        ? $winnerData['teamNames']
+        : [];
+
+    if (count($winnerNames) > 1) {
+        $weeklyWinnersHasTie = true;
+        break;
+    }
+}
+
 $statusClass = 'status-pass';
 if ($validationStatus === 'WARN') {
     $statusClass = 'status-warn';
@@ -858,12 +912,6 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
             gap: 6px 10px;
         }
 
-        .top-controls label {
-            font-size: 12px;
-            font-weight: bold;
-            margin-right: 2px;
-        }
-
         .top-controls select,
         .top-controls button {
             font: inherit;
@@ -872,6 +920,34 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
 
         .top-controls button {
             cursor: pointer;
+        }
+
+        .live-btn {
+            min-width: 66px;
+            font-weight: bold;
+            border-radius: 18px;
+            background: #d9ecff;
+            color: #084298;
+            border: 3px solid #7db7ff;
+        }
+
+        .live-btn:hover {
+            filter: brightness(0.97);
+        }
+
+        .live-btn.disabled,
+        .live-btn[disabled] {
+            cursor: default;
+            opacity: 0.5;
+            color: #5f6f82;
+            background: #eef5fb;
+            border-color: #c5d7e7;
+            filter: none;
+        }
+
+        .live-btn.disabled:hover,
+        .live-btn[disabled]:hover {
+            filter: none;
         }
 
         .nav-button {
@@ -1147,6 +1223,14 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
             font-weight: bold;
         }
 
+        .winner-footnote {
+            margin-top: 4px;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+        }
+
         @media (max-width: 1500px) {
             .report-grid {
                 grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
@@ -1167,14 +1251,14 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
                 gap: 4px 8px;
             }
 
-            .top-controls label {
-                font-size: 11px;
-            }
-
             .top-controls select,
             .top-controls button {
                 font-size: 12px;
                 padding: 2px 6px;
+            }
+
+            .live-btn {
+                min-width: 58px;
             }
 
             .historical-note-slot {
@@ -1223,19 +1307,26 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
 
     <div class="top-controls">
         <div class="top-controls-left">
-            <label for="year">Year</label>
-            <select name="year" id="year" form="weeklyStandingsForm">
-                <?php foreach ($availableYears as $yearOpt): ?>
+            <button type="button"
+                    class="live-btn<?php echo ($isLiveView ? ' disabled' : ''); ?>"
+                    id="liveBtn"
+                    onclick="goLiveView()"
+                    title="Go to live view"
+                    <?php echo ($isLiveView ? 'disabled' : ''); ?>>
+                Live
+            </button>
+
+            <select name="year" id="year" form="weeklyStandingsForm" aria-label="Year">
+                <?php foreach ($availableYearsAsc as $yearOpt): ?>
                     <option value="<?php echo rrsg_h($yearOpt); ?>" <?php echo ($yearOpt === $selectedYear ? 'selected' : ''); ?>>
                         <?php echo rrsg_h($yearOpt); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
 
-            <label for="race">Race</label>
-            <select name="race" id="race" form="weeklyStandingsForm">
+            <select name="race" id="race" form="weeklyStandingsForm" aria-label="Race">
                 <option value="">Select Race</option>
-                <?php foreach ($pointRaces as $raceOpt): ?>
+                <?php foreach ($pointRacesAsc as $raceOpt): ?>
                     <option value="<?php echo rrsg_h($raceOpt['raceCode']); ?>" <?php echo ($raceOpt['raceCode'] === $selectedRaceCode ? 'selected' : ''); ?>>
                         <?php echo rrsg_h($raceOpt['raceCode'] . ' ' . rrsg_short_race_label((string)$raceOpt['raceName'])); ?>
                     </option>
@@ -1583,6 +1674,11 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
                                     <?php
                                     $winnerNames = $weeklyWinners[$raceCode]['teamNames'] ?? [];
                                     $winnerPoints = (int)($weeklyWinners[$raceCode]['points'] ?? 0);
+                                    $winnerWeekDisplay = (string)$race['number'];
+
+                                    if (count($winnerNames) > 1) {
+                                        $winnerWeekDisplay .= '*';
+                                    }
 
                                     if (empty($winnerNames)) {
                                         $winnerNames = [];
@@ -1595,14 +1691,14 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
 
                                     <?php if (empty($winnerNames)): ?>
                                         <tr>
-                                            <td class="num"><?php echo rrsg_h((string)$race['number']); ?></td>
+                                            <td class="num"><?php echo rrsg_h($winnerWeekDisplay); ?></td>
                                             <td class="team-col"></td>
                                             <td class="num">0</td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($winnerNames as $winnerName): ?>
                                             <tr>
-                                                <td class="num"><?php echo rrsg_h((string)$race['number']); ?></td>
+                                                <td class="num"><?php echo rrsg_h($winnerWeekDisplay); ?></td>
                                                 <td class="team-col"><?php echo rrsg_h($winnerName); ?></td>
                                                 <td class="num"><?php echo rrsg_h($winnerPoints); ?></td>
                                             </tr>
@@ -1613,6 +1709,9 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
                         </tbody>
                     </table>
                 </div>
+                <?php if ($selectedRace !== null && $weeklyWinnersHasTie): ?>
+                    <div class="winner-footnote">* Tie</div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -1621,6 +1720,7 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
 
 <script>
 var rrsgYearRaceOptions = <?php echo json_encode($yearRaceOptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+var rrsgLiveUrl = <?php echo json_encode($liveUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 var rrsgInitialLoad = true;
 
 function rrsgPadRaceCode(num) {
@@ -1634,6 +1734,14 @@ function rrsgPadRaceCode(num) {
 function rrsgRaceNumberFromCode(code) {
     var match = String(code || '').match(/^R(\d+)$/);
     return match ? parseInt(match[1], 10) : null;
+}
+
+function goLiveView() {
+    if (!rrsgLiveUrl) {
+        return;
+    }
+
+    window.location.href = rrsgLiveUrl;
 }
 
 function repopulateRaceOptions() {

@@ -109,7 +109,8 @@ public_html/race_results/20*/
 * - Copy.php
 
 # my testing stuff
-race_results/sk
+public_html/race_results/sk
+
 
 # ChatGPT version downloads
-race_results/versions
+public_html/race_results/versions
