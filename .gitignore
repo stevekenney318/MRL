@@ -114,3 +114,6 @@ public_html/race_results/sk
 
 # ChatGPT version downloads
 public_html/race_results/versions
+
+# misc files that don't need to be uploaded 
+**/under_review.flag
