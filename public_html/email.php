@@ -1,6 +1,21 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * email.php
+ *
+ * VERSION: v002
+ * LAST MODIFIED: 3/26/2026 4:22:33 pm
+ *
+ * CHANGELOG:
+ *
+ * v002 (3/26/2026)
+ *
+ * - CHANGE: Active email list hidden by default, revealed via Show/Hide toggle button.
+ * - CHANGE: Inactive email list hidden by default, revealed via Show/Hide toggle button.
+ *
+ */
+
 // ----------------------------
 // Session + return_to
 // ----------------------------
@@ -198,6 +213,17 @@ $inactiveOut = buildEmailOutputs($inactiveRows);
         }
 
         .copy-status { font-weight: 600; opacity: 0.85; }
+
+        .btn-show {
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: 1px solid #888;
+            background: #f3f3f3;
+            cursor: pointer;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -226,6 +252,8 @@ $inactiveOut = buildEmailOutputs($inactiveRows);
         <div class="email-title">Active email addresses</div>
         <div class="email-subtitle">Unique emails: <?php echo (int)$activeOut['count']; ?></div>
 
+        <button class="btn-show" type="button" onclick="toggleList('activeList', this)">Show</button>
+        <div id="activeList" style="display:none;">
         <div class="email-lines"><?php
             if (empty($activeOut['lines'])) {
                 echo h('No active emails found.');
@@ -233,6 +261,7 @@ $inactiveOut = buildEmailOutputs($inactiveRows);
                 echo h(implode("\n", $activeOut['lines']));
             }
         ?></div>
+        </div>
 
         <div class="divider"></div>
 
@@ -252,6 +281,8 @@ $inactiveOut = buildEmailOutputs($inactiveRows);
         <div class="email-title">Inactive email addresses</div>
         <div class="email-subtitle">Unique emails: <?php echo (int)$inactiveOut['count']; ?></div>
 
+        <button class="btn-show" type="button" onclick="toggleList('inactiveList', this)">Show</button>
+        <div id="inactiveList" style="display:none;">
         <div class="email-lines"><?php
             if (empty($inactiveOut['lines'])) {
                 echo h('No inactive emails found.');
@@ -259,6 +290,7 @@ $inactiveOut = buildEmailOutputs($inactiveRows);
                 echo h(implode("\n", $inactiveOut['lines']));
             }
         ?></div>
+        </div>
 
         <div class="divider"></div>
 
@@ -275,6 +307,18 @@ $inactiveOut = buildEmailOutputs($inactiveRows);
 </div> <!-- /email-wrap -->
 
 <script>
+function toggleList(id, btn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (el.style.display === "none") {
+        el.style.display = "block";
+        btn.textContent = "Hide";
+    } else {
+        el.style.display = "none";
+        btn.textContent = "Show";
+    }
+}
+
 function copyFromBox(textareaId, statusId) {
     var ta = document.getElementById(textareaId);
     var st = document.getElementById(statusId);
