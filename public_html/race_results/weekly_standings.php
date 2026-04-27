@@ -15,11 +15,13 @@ disableCaching();
  * weekly_standings.php
  *
  * VERSION: v055sk
- * LAST MODIFIED: 4/18/2026 11:33:14 pm
+ * LAST MODIFIED: 4/19/2026 4:18:54 pm
  *
  * CHANGELOG:
  *
- * v055 (4/18/2026)
+ * v055 (4/19/2026)
+ *   - FIX: Weekly standings now defaults Live and direct race selection to the latest race that has an actual snapshot, preventing in-progress indexed races from rendering empty standings.
+ *   - CHANGE: Race dropdown now shows only races with a saved snapshot so in-progress races do not appear selectable before standings are available.
  *   - CHANGE: Added snapshot timestamp beside the race heading using a dedicated snapshot-footnote style.
  *   - CHANGE: Appended any missing yearly roster teams from user_teams to weekly race rows as 0-point rows after normal scoring.
  *   - CHANGE: Missing-pick warnings now evaluate only within the currently selected segment.
@@ -213,6 +215,50 @@ function rrsg_find_snapshot_file(string $raceFolder): string
     sort($files, SORT_STRING);
     return (string)end($files);
 }
+
+function rrsg_filter_races_with_snapshots(array $races): array
+{
+    $result = [];
+
+    foreach ($races as $race) {
+        $raceFolder = (string)($race['raceFolder'] ?? '');
+        if ($raceFolder === '') {
+            continue;
+        }
+
+        if (rrsg_find_snapshot_file($raceFolder) === '') {
+            continue;
+        }
+
+        $result[] = $race;
+    }
+
+    return $result;
+}
+
+function rrsg_find_latest_available_view(array $availableYears, string $baseDir): array
+{
+    foreach ($availableYears as $yearOpt) {
+        $yearFolder = $baseDir . '/' . $yearOpt;
+        $yearIndexFile = $yearFolder . '/_year_index.json';
+        $yearIndex = rrsg_load_year_index_file($yearIndexFile);
+        $pointRaces = rrsg_points_races_from_index($yearIndex, $yearFolder);
+        $selectablePointRaces = rrsg_filter_races_with_snapshots($pointRaces);
+
+        if (!empty($selectablePointRaces)) {
+            return [
+                'year' => (string)$yearOpt,
+                'raceCode' => (string)$selectablePointRaces[0]['raceCode'],
+            ];
+        }
+    }
+
+    return [
+        'year' => (!empty($availableYears) ? (string)$availableYears[0] : ''),
+        'raceCode' => '',
+    ];
+}
+
 
 function rrsg_format_snapshot_timestamp(string $snapshotFile): string
 {
@@ -617,6 +663,7 @@ function rrsg_build_year_race_options(array $availableYears, string $baseDir): a
         $yearIndexFile = $yearFolder . '/_year_index.json';
         $yearIndex = rrsg_load_year_index_file($yearIndexFile);
         $pointRaces = rrsg_points_races_from_index($yearIndex, $yearFolder);
+        $pointRaces = rrsg_filter_races_with_snapshots($pointRaces);
         $pointRacesAsc = rrsg_sort_races_ascending($pointRaces);
 
         $result[$yearOpt] = [];
@@ -1097,18 +1144,17 @@ $yearFolder = $baseDir . '/' . $selectedYear;
 $yearIndexFile = $yearFolder . '/_year_index.json';
 $yearIndex = rrsg_load_year_index_file($yearIndexFile);
 $pointRaces = rrsg_points_races_from_index($yearIndex, $yearFolder);
+$selectablePointRaces = rrsg_filter_races_with_snapshots($pointRaces);
 $pointRacesAsc = rrsg_sort_races_ascending($pointRaces);
+$selectablePointRacesAsc = rrsg_sort_races_ascending($selectablePointRaces);
 
-$latestYear = !empty($availableYears) ? (string)$availableYears[0] : $selectedYear;
-$latestYearFolder = $baseDir . '/' . $latestYear;
-$latestYearIndexFile = $latestYearFolder . '/_year_index.json';
-$latestYearIndex = rrsg_load_year_index_file($latestYearIndexFile);
-$latestPointRaces = rrsg_points_races_from_index($latestYearIndex, $latestYearFolder);
-$latestRaceCode = !empty($latestPointRaces) ? (string)$latestPointRaces[0]['raceCode'] : '';
+$latestView = rrsg_find_latest_available_view($availableYears, $baseDir);
+$latestYear = (string)($latestView['year'] ?? $selectedYear);
+$latestRaceCode = (string)($latestView['raceCode'] ?? '');
 
 $selectedRaceCode = isset($_GET['race']) ? trim((string)$_GET['race']) : '';
-if ($selectedRaceCode === '' && !empty($pointRaces)) {
-    $selectedRaceCode = (string)$pointRaces[0]['raceCode'];
+if ($selectedRaceCode === '' && !empty($selectablePointRaces)) {
+    $selectedRaceCode = (string)$selectablePointRaces[0]['raceCode'];
 }
 
 $selectedRaceIndex = -1;
@@ -1119,9 +1165,21 @@ for ($i = 0; $i < count($pointRaces); $i++) {
     }
 }
 
-if ($selectedRaceIndex < 0 && !empty($pointRaces)) {
-    $selectedRaceIndex = 0;
-    $selectedRaceCode = (string)$pointRaces[$selectedRaceIndex]['raceCode'];
+$selectedRaceHasSnapshot = false;
+if ($selectedRaceIndex >= 0 && isset($pointRaces[$selectedRaceIndex])) {
+    $selectedRaceHasSnapshot = (rrsg_find_snapshot_file((string)$pointRaces[$selectedRaceIndex]['raceFolder']) !== '');
+}
+
+if ((!$selectedRaceHasSnapshot) && !empty($selectablePointRaces)) {
+    $selectedRaceCode = (string)$selectablePointRaces[0]['raceCode'];
+    $selectedRaceIndex = -1;
+
+    for ($i = 0; $i < count($pointRaces); $i++) {
+        if ((string)$pointRaces[$i]['raceCode'] === $selectedRaceCode) {
+            $selectedRaceIndex = $i;
+            break;
+        }
+    }
 }
 
 $selectedRace = ($selectedRaceIndex >= 0 && isset($pointRaces[$selectedRaceIndex]))
@@ -2047,7 +2105,7 @@ $yearRaceOptions = rrsg_build_year_race_options($availableYears, $baseDir);
 
             <select name="race" id="race" form="weeklyStandingsForm" aria-label="Race">
                 <option value="">Select Race</option>
-                <?php foreach ($pointRacesAsc as $raceOpt): ?>
+                <?php foreach ($selectablePointRacesAsc as $raceOpt): ?>
                     <option value="<?php echo rrsg_h($raceOpt['raceCode']); ?>" <?php echo ($raceOpt['raceCode'] === $selectedRaceCode ? 'selected' : ''); ?>>
                         <?php echo rrsg_h($raceOpt['raceCode'] . ' ' . rrsg_short_race_label((string)$raceOpt['raceName'])); ?>
                     </option>
