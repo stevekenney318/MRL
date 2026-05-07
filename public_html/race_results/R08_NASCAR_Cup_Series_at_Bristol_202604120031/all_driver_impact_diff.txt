@@ -1,0 +1,13 @@
+ALL DRIVER IMPACT CLASSIFICATION
+2026 R08 NASCAR Cup Series at Bristol
+
+Changed all drivers:
+
+Chad Finchum
+PTS: 0 -> 1 (+1)
+BONUS: 0 -> 0 (0)
+PENALTY: 0 -> 0 (0)
+NET: 0 -> 1 (+1)
+
+Impact classification:
+YES

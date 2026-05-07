@@ -1,0 +1,13 @@
+{
+    "year": "2026",
+    "race_code": "R08",
+    "segment": "S1",
+    "race_id": "202604120031",
+    "race_name": "NASCAR Cup Series at Bristol",
+    "impact": false,
+    "changed_drivers_count": 0,
+    "changed_drivers_label": "MRL drivers only",
+    "driver_pool_count": 23,
+    "previous_snapshot": "snapshot_20260412_190002487.html",
+    "current_snapshot": "snapshot_20260413_030202493.html"
+}

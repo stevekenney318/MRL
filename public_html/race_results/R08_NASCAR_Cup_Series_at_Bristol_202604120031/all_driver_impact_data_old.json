@@ -1,0 +1,231 @@
+{
+    "year": "2026",
+    "race_code": "R08",
+    "segment": "S1",
+    "race_id": "202604120031",
+    "source_snapshot": "snapshot_20260412_190002487.html",
+    "drivers": {
+        "AJ Allmendinger": {
+            "pts": 22,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 22
+        },
+        "Alex Bowman": {
+            "pts": 1,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 1
+        },
+        "Austin Cindric": {
+            "pts": 23,
+            "bonus": 2,
+            "penalty": 0,
+            "net": 23
+        },
+        "Austin Dillon": {
+            "pts": 19,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 19
+        },
+        "Brad Keselowski": {
+            "pts": 23,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 23
+        },
+        "Bubba Wallace": {
+            "pts": 30,
+            "bonus": 4,
+            "penalty": 0,
+            "net": 30
+        },
+        "Carson Hocevar": {
+            "pts": 38,
+            "bonus": 11,
+            "penalty": 0,
+            "net": 38
+        },
+        "Chad Finchum": {
+            "pts": 0,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 0
+        },
+        "Chase Briscoe": {
+            "pts": 45,
+            "bonus": 13,
+            "penalty": 0,
+            "net": 45
+        },
+        "Chase Elliott": {
+            "pts": 15,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 15
+        },
+        "Chris Buescher": {
+            "pts": 24,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 24
+        },
+        "Christopher Bell": {
+            "pts": 19,
+            "bonus": 9,
+            "penalty": 0,
+            "net": 19
+        },
+        "Cody Ware": {
+            "pts": 6,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 6
+        },
+        "Cole Custer": {
+            "pts": 9,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 9
+        },
+        "Connor Zilisch": {
+            "pts": 4,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 4
+        },
+        "Daniel Suarez": {
+            "pts": 25,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 25
+        },
+        "Denny Hamlin": {
+            "pts": 41,
+            "bonus": 13,
+            "penalty": 0,
+            "net": 41
+        },
+        "Erik Jones": {
+            "pts": 14,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 14
+        },
+        "Joey Logano": {
+            "pts": 33,
+            "bonus": 3,
+            "penalty": 0,
+            "net": 33
+        },
+        "John Hunter Nemechek": {
+            "pts": 2,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 2
+        },
+        "Josh Berry": {
+            "pts": 16,
+            "bonus": 11,
+            "penalty": 0,
+            "net": 16
+        },
+        "Kyle Busch": {
+            "pts": 12,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 12
+        },
+        "Kyle Larson": {
+            "pts": 54,
+            "bonus": 20,
+            "penalty": 0,
+            "net": 54
+        },
+        "Michael McDowell": {
+            "pts": 13,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 13
+        },
+        "Noah Gragson": {
+            "pts": 11,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 11
+        },
+        "Ricky Stenhouse Jr.": {
+            "pts": 20,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 20
+        },
+        "Riley Herbst": {
+            "pts": 19,
+            "bonus": 3,
+            "penalty": 0,
+            "net": 19
+        },
+        "Ross Chastain": {
+            "pts": 17,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 17
+        },
+        "Ryan Blaney": {
+            "pts": 53,
+            "bonus": 18,
+            "penalty": 0,
+            "net": 53
+        },
+        "Ryan Preece": {
+            "pts": 29,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 29
+        },
+        "Shane van Gisbergen": {
+            "pts": 3,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 3
+        },
+        "Todd Gilliland": {
+            "pts": 31,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 31
+        },
+        "Ty Dillon": {
+            "pts": 8,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 8
+        },
+        "Ty Gibbs": {
+            "pts": 59,
+            "bonus": 4,
+            "penalty": 0,
+            "net": 59
+        },
+        "Tyler Reddick": {
+            "pts": 33,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 33
+        },
+        "William Byron": {
+            "pts": 7,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 7
+        },
+        "Zane Smith": {
+            "pts": 18,
+            "bonus": 0,
+            "penalty": 0,
+            "net": 18
+        }
+    }
+}
