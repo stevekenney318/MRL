@@ -117,3 +117,9 @@ public_html/race_results/versions
 
 # misc files that don't need to be uploaded 
 **/under_review.flag
+public_html/_scheduler_launcher/heartbeat.txt
+public_html/_scheduler_launcher/log.txt
+public_html/_scheduler_launcher/state.json
+public_html/race_results/_scheduler/heartbeat.txt
+public_html/race_results/_scheduler/log.txt
+public_html/race_results/_scheduler/state.json
