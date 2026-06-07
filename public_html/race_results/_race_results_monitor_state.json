@@ -1,0 +1,42 @@
+{
+    "byYear": {
+        "2026": {
+            "latest_url": "https:\/\/www.espn.com\/racing\/raceresults\/_\/series\/sprint\/raceId\/202605314001",
+            "last_checked_at": "2026-06-01T16:38:24-04:00",
+            "latest_debug": {
+                "year": 2026,
+                "yearPage": "https:\/\/www.espn.com\/racing\/results\/_\/year\/2026",
+                "httpStatus": 200,
+                "htmlBytes": 89613,
+                "raceCount": 18,
+                "latestUrl": "https:\/\/www.espn.com\/racing\/raceresults\/_\/series\/sprint\/raceId\/202605314001",
+                "latestRaceId": "202605314001"
+            },
+            "final_sent_for_url": "https:\/\/www.espn.com\/racing\/raceresults\/_\/series\/sprint\/raceId\/202605314001",
+            "final_table_hash": "748af791e988c2b3d5cd8874d5f76c49b14947aaaa3ff993670c1ac92c20c6ae",
+            "final_check": {
+                "is_final": true,
+                "reason": "Non-zero scoring detected in scoring table.",
+                "checked_at": "2026-06-01T16:38:24-04:00",
+                "mode": "dom_table",
+                "hash": "748af791e988c2b3d5cd8874d5f76c49b14947aaaa3ff993670c1ac92c20c6ae",
+                "rows_checked": 1,
+                "non_zero_counts": {
+                    "PTS": 1,
+                    "BONUS": 1,
+                    "PENALTY": 0
+                },
+                "col_index": {
+                    "PTS": 7,
+                    "BONUS": 8,
+                    "PENALTY": 9
+                },
+                "tables_found": 1,
+                "header_row_found": true,
+                "led_has_column": true,
+                "led_rows_checked": 38,
+                "led_non_zero": 15
+            }
+        }
+    }
+}
