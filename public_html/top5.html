@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MRL Top 5 Image Maker v3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 20px;
+    background: #1f1f1f;
+    color: #f2f2f2;
+  }
+  h1 {
+    color: #ffd28a;
+    margin-bottom: 6px;
+  }
+  .note {
+    color: #d6d6d6;
+    margin-bottom: 18px;
+    line-height: 1.4;
+  }
+  .panel {
+    background: #2a2a2a;
+    border: 1px solid #555;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  label {
+    display: inline-block;
+    margin: 6px 12px 6px 0;
+  }
+  input[type="number"] {
+    width: 80px;
+  }
+  input, button {
+    font-size: 16px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #777;
+  }
+  button {
+    cursor: pointer;
+    background: #1f6fd1;
+    color: white;
+    border-color: #3a8cff;
+    font-weight: bold;
+    margin: 4px;
+  }
+  button.secondary {
+    background: #444;
+    border-color: #777;
+  }
+  .row {
+    margin-top: 8px;
+  }
+  #status {
+    color: #9dffb3;
+    margin-top: 8px;
+    font-weight: bold;
+  }
+  .canvasWrap {
+    overflow: auto;
+    max-height: 70vh;
+    background: #111;
+    border: 1px solid #444;
+    padding: 10px;
+  }
+  canvas {
+    background: white;
+  }
+  #previewCanvas {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid #777;
+  }
+  .small {
+    font-size: 13px;
+    color: #ccc;
+  }
+</style>
+</head>
+<body>
+
+<h1>MRL Top 5 Image Maker v3</h1>
+<div class="note">
+  Select Jeff's weekly PDF. This renders page 1, crops the fixed Top 5 area, and saves it as
+  <b>2026 Week XX Top 5.png</b>. No table rebuilding, no OCR, no formatting changes.
+</div>
+
+<div class="panel">
+  <div class="row">
+    <label>PDF file:
+      <input type="file" id="pdfFile" accept="application/pdf">
+    </label>
+    <label>Week:
+      <input type="number" id="weekNumber" min="1" max="36" value="11">
+    </label>
+    <label>Render Quality:
+      <select id="renderQuality">
+        <option value="1">1x</option>
+        <option value="2" selected>2x sharper</option>
+        <option value="3">3x sharpest</option>
+        <option value="4">4x very large</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="row">
+    <button id="renderBtn">Render PDF</button>
+    <button id="cropBtn">Make Top 5 Image</button>
+    <button id="downloadBtn">Download PNG</button>
+  </div>
+
+  <div class="row small">
+    Crop coordinates are based on the normal 1600 px page width. Render Quality increases sharpness without changing your crop numbers.
+  </div>
+
+  <div id="status">Waiting for PDF...</div>
+</div>
+
+<div class="panel">
+  <h2>Crop Settings</h2>
+  <div class="small">These are the default Week 11-style coordinates. Adjust only if Jeff's PDF layout shifts.</div>
+
+  <div class="row">
+    <label>Left X <input type="number" id="cropX" value="102"></label>
+    <label>Top Y <input type="number" id="cropY" value="110"></label>
+    <label>Width <input type="number" id="cropW" value="628"></label>
+    <label>Height <input type="number" id="cropH" value="132"></label>
+  </div>
+
+  <div class="row">
+    <label>Margin <input type="number" id="margin" value="7"></label>
+    <button class="secondary" id="saveSettingsBtn">Save Settings</button>
+    <button class="secondary" id="resetSettingsBtn">Reset Defaults</button>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Top 5 Preview</h2>
+  <canvas id="previewCanvas"></canvas>
+</div>
+
+<div class="panel">
+  <h2>Rendered PDF Page</h2>
+  <div class="small">This is only for checking the crop location.</div>
+  <div class="canvasWrap">
+    <canvas id="pdfCanvas"></canvas>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  const DEFAULTS = {
+    cropX: 102,
+    cropY: 110,
+    cropW: 628,
+    cropH: 132,
+    margin: 7
+  };
+
+  let renderedCanvas = null;
+  let finalBlobUrl = null;
+  let renderQualityScale = 2;
+
+  const pdfInput = document.getElementById("pdfFile");
+  const weekInput = document.getElementById("weekNumber");
+  const statusEl = document.getElementById("status");
+  const pdfCanvas = document.getElementById("pdfCanvas");
+  const previewCanvas = document.getElementById("previewCanvas");
+
+  function setStatus(text) {
+    statusEl.textContent = text;
+  }
+
+  function getNum(id) {
+    return parseInt(document.getElementById(id).value, 10);
+  }
+
+  function setNum(id, value) {
+    document.getElementById(id).value = value;
+  }
+
+  function loadSettings() {
+    const saved = localStorage.getItem("mrlTop5CropSettings");
+    if (!saved) return;
+    try {
+      const obj = JSON.parse(saved);
+      for (const key of Object.keys(DEFAULTS)) {
+        if (typeof obj[key] === "number") setNum(key, obj[key]);
+      }
+    } catch (e) {}
+  }
+
+  function saveSettings() {
+    const obj = {};
+    for (const key of Object.keys(DEFAULTS)) obj[key] = getNum(key);
+    localStorage.setItem("mrlTop5CropSettings", JSON.stringify(obj));
+    setStatus("Crop settings saved.");
+  }
+
+  function resetSettings() {
+    for (const key of Object.keys(DEFAULTS)) setNum(key, DEFAULTS[key]);
+    localStorage.removeItem("mrlTop5CropSettings");
+    setStatus("Crop settings reset.");
+    if (renderedCanvas) makeCrop();
+  }
+
+  function guessWeekFromFilename(filename) {
+    const m = filename.match(/WK[_\s-]*(\d{1,2})|Week[_\s-]*(\d{1,2})/i);
+    if (!m) return;
+    const week = m[1] || m[2];
+    if (week) weekInput.value = parseInt(week, 10);
+  }
+
+  async function renderPdf() {
+    const file = pdfInput.files[0];
+    if (!file) {
+      setStatus("Choose a PDF first.");
+      return;
+    }
+
+    guessWeekFromFilename(file.name);
+    setStatus("Rendering PDF page...");
+
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const page = await pdf.getPage(1);
+
+    const baseViewport = page.getViewport({ scale: 1 });
+
+    // The crop settings are based on a 1600px-wide reference page.
+    // Render Quality multiplies that internally for sharper text/lines.
+    renderQualityScale = parseInt(document.getElementById("renderQuality").value, 10) || 2;
+    const referenceWidth = 1600;
+    const targetWidth = referenceWidth * renderQualityScale;
+    const scale = targetWidth / baseViewport.width;
+    const viewport = page.getViewport({ scale });
+
+    pdfCanvas.width = Math.round(viewport.width);
+    pdfCanvas.height = Math.round(viewport.height);
+
+    const ctx = pdfCanvas.getContext("2d");
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    renderedCanvas = pdfCanvas;
+    setStatus("PDF rendered. Click Make Top 5 Image.");
+  }
+
+  function makeCrop() {
+    if (!renderedCanvas) {
+      setStatus("Render the PDF first.");
+      return;
+    }
+
+    const x = getNum("cropX");
+    const y = getNum("cropY");
+    const w = getNum("cropW");
+    const h = getNum("cropH");
+    const margin = getNum("margin");
+
+    // User crop settings remain in the normal 1600px reference coordinate system.
+    // Internally, multiply everything by renderQualityScale for sharper output.
+    const sx = x * renderQualityScale;
+    const sy = y * renderQualityScale;
+    const sw = w * renderQualityScale;
+    const sh = h * renderQualityScale;
+    const sm = margin * renderQualityScale;
+
+    const outW = sw + sm * 2;
+    const outH = sh + sm * 2;
+
+    previewCanvas.width = outW;
+    previewCanvas.height = outH;
+
+    const pctx = previewCanvas.getContext("2d");
+    pctx.imageSmoothingEnabled = false;
+    pctx.fillStyle = "white";
+    pctx.fillRect(0, 0, outW, outH);
+    pctx.drawImage(renderedCanvas, sx, sy, sw, sh, sm, sm, sw, sh);
+
+    if (finalBlobUrl) URL.revokeObjectURL(finalBlobUrl);
+
+    previewCanvas.toBlob(blob => {
+      finalBlobUrl = URL.createObjectURL(blob);
+      setStatus("Top 5 image ready.");
+    }, "image/png");
+  }
+
+  function downloadPng() {
+    if (!finalBlobUrl) {
+      makeCrop();
+      setTimeout(downloadPng, 250);
+      return;
+    }
+
+    const week = String(weekInput.value || "").padStart(0, "0");
+    const filename = `2026 Week ${week} Top 5.png`;
+
+    const a = document.createElement("a");
+    a.href = finalBlobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setStatus(`Downloaded ${filename}`);
+  }
+
+  document.getElementById("renderBtn").addEventListener("click", renderPdf);
+  document.getElementById("cropBtn").addEventListener("click", makeCrop);
+  document.getElementById("downloadBtn").addEventListener("click", downloadPng);
+  document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
+  document.getElementById("resetSettingsBtn").addEventListener("click", resetSettings);
+  document.getElementById("renderQuality").addEventListener("change", async () => {
+    if (pdfInput.files[0]) {
+      await renderPdf();
+      makeCrop();
+    }
+  });
+
+  for (const id of ["cropX", "cropY", "cropW", "cropH", "margin"]) {
+    document.getElementById(id).addEventListener("change", () => {
+      if (renderedCanvas) makeCrop();
+    });
+  }
+
+  loadSettings();
+</script>
+
+</body>
+</html>

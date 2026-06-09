@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MRL Top 5 Auto</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 24px; background: #1f1f1f; color: #f2f2f2; }
+  h1 { color: #ffd28a; margin-bottom: 8px; }
+  .panel { background: #2a2a2a; border: 1px solid #555; border-radius: 10px; padding: 16px; margin-bottom: 16px; max-width: 760px; }
+  label { display: inline-block; margin: 8px 14px 8px 0; font-size: 18px; }
+  select, button { font-size: 18px; padding: 8px 10px; border-radius: 7px; border: 1px solid #777; }
+  button { cursor: pointer; background: #1f6fd1; color: white; border-color: #3a8cff; font-weight: bold; margin: 6px 8px 6px 0; }
+  button.secondary { background: #444; border-color: #777; }
+  #status { margin-top: 12px; color: #9dffb3; font-weight: bold; line-height: 1.4; white-space: pre-wrap; }
+  .note { color: #d6d6d6; line-height: 1.45; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<h1>MRL Top 5 Auto</h1>
+
+<div class="panel note">
+  Choose the main <b>Manlius Racing League</b> folder once, then pick a year and week.
+  The tool reads the PDF from <b>Weekly Updates</b> and saves the PNG to <b>images</b>.
+</div>
+
+<div class="panel">
+  <button id="chooseFolderBtn" class="secondary">Choose MRL Folder</button>
+
+  <div>
+    <label>Year:
+      <select id="yearSelect"></select>
+    </label>
+
+    <label>Week:
+      <select id="weekSelect"></select>
+    </label>
+  </div>
+
+  <button id="generateBtn">Generate Top 5 PNG</button>
+
+  <div id="status">Waiting for folder selection...</div>
+</div>
+
+<canvas id="pdfCanvas" class="hidden"></canvas>
+<canvas id="outputCanvas" class="hidden"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const SETTINGS = {
+  referenceWidth: 1600,
+  renderQuality: 2,
+  cropX: 102,
+  cropY: 110,
+  cropW: 628,
+  cropH: 132,
+  margin: 7
+};
+
+let rootDirHandle = null;
+
+const statusEl = document.getElementById("status");
+const yearSelect = document.getElementById("yearSelect");
+const weekSelect = document.getElementById("weekSelect");
+const pdfCanvas = document.getElementById("pdfCanvas");
+const outputCanvas = document.getElementById("outputCanvas");
+
+function setStatus(msg) {
+  statusEl.textContent = msg;
+}
+
+function populateDropdowns() {
+  for (let y = 2026; y >= 2008; y--) {
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = String(y);
+    if (y === 2026) opt.selected = true;
+    yearSelect.appendChild(opt);
+  }
+
+  for (let w = 1; w <= 36; w++) {
+    const opt = document.createElement("option");
+    opt.value = String(w);
+    opt.textContent = "Week " + w;
+    weekSelect.appendChild(opt);
+  }
+}
+
+async function verifyPermission(handle, readWrite) {
+  const opts = {};
+  if (readWrite) opts.mode = "readwrite";
+  if ((await handle.queryPermission(opts)) === "granted") return true;
+  if ((await handle.requestPermission(opts)) === "granted") return true;
+  return false;
+}
+
+async function chooseFolder() {
+  if (!window.showDirectoryPicker) {
+    setStatus("This browser does not support folder access. Use Chrome or Edge.");
+    return;
+  }
+
+  rootDirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+  setStatus("MRL folder selected.\nReady to generate.");
+}
+
+async function getSubFolder(parent, name) {
+  return await parent.getDirectoryHandle(name, { create: false });
+}
+
+function pdfFileName(year, week) {
+  return `${year}_WK_${String(week).padStart(2, "0")}_RESULTS.pdf`;
+}
+
+function outputFileName(year, week) {
+  return `${year} Week ${week} Top 5.png`;
+}
+
+async function renderPdfToCanvas(file) {
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const page = await pdf.getPage(1);
+
+  const baseViewport = page.getViewport({ scale: 1 });
+  const targetWidth = SETTINGS.referenceWidth * SETTINGS.renderQuality;
+  const scale = targetWidth / baseViewport.width;
+  const viewport = page.getViewport({ scale });
+
+  pdfCanvas.width = Math.round(viewport.width);
+  pdfCanvas.height = Math.round(viewport.height);
+
+  const ctx = pdfCanvas.getContext("2d");
+  await page.render({ canvasContext: ctx, viewport }).promise;
+}
+
+function cropToOutputCanvas() {
+  const q = SETTINGS.renderQuality;
+
+  const sx = SETTINGS.cropX * q;
+  const sy = SETTINGS.cropY * q;
+  const sw = SETTINGS.cropW * q;
+  const sh = SETTINGS.cropH * q;
+  const sm = SETTINGS.margin * q;
+
+  outputCanvas.width = sw + sm * 2;
+  outputCanvas.height = sh + sm * 2;
+
+  const ctx = outputCanvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+  ctx.drawImage(pdfCanvas, sx, sy, sw, sh, sm, sm, sw, sh);
+}
+
+function canvasToBlob(canvas) {
+  return new Promise(resolve => {
+    canvas.toBlob(blob => resolve(blob), "image/png");
+  });
+}
+
+async function generateTop5() {
+  if (!rootDirHandle) {
+    setStatus("Choose the main Manlius Racing League folder first.");
+    return;
+  }
+
+  const year = yearSelect.value;
+  const week = parseInt(weekSelect.value, 10);
+
+  const pdfName = pdfFileName(year, week);
+  const pngName = outputFileName(year, week);
+
+  try {
+    setStatus(`Looking for:\n${year}\\Weekly Updates\\${pdfName}`);
+
+    const yearFolder = await getSubFolder(rootDirHandle, year);
+    const weeklyFolder = await getSubFolder(yearFolder, "Weekly Updates");
+    const imagesFolder = await yearFolder.getDirectoryHandle("images", { create: true });
+
+    const pdfHandle = await weeklyFolder.getFileHandle(pdfName, { create: false });
+    const okRead = await verifyPermission(pdfHandle, false);
+    if (!okRead) {
+      setStatus("Permission denied reading the PDF.");
+      return;
+    }
+
+    const pdfFile = await pdfHandle.getFile();
+
+    setStatus("Rendering PDF...");
+    await renderPdfToCanvas(pdfFile);
+
+    setStatus("Cropping Top 5 image...");
+    cropToOutputCanvas();
+
+    const blob = await canvasToBlob(outputCanvas);
+
+    const outHandle = await imagesFolder.getFileHandle(pngName, { create: true });
+    const okWrite = await verifyPermission(outHandle, true);
+    if (!okWrite) {
+      setStatus("Permission denied writing the PNG.");
+      return;
+    }
+
+    const writable = await outHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+
+    setStatus(`Done.\nSaved:\n${year}\\images\\${pngName}`);
+  } catch (err) {
+    setStatus("Error:\n" + err.message + "\n\nCheck that the PDF exists and folders are named exactly:\nWeekly Updates\nimages");
+  }
+}
+
+document.getElementById("chooseFolderBtn").addEventListener("click", chooseFolder);
+document.getElementById("generateBtn").addEventListener("click", generateTop5);
+
+populateDropdowns();
+</script>
+
+</body>
+</html>
