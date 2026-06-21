@@ -1,14 +1,15 @@
 {
     "signature": "WEEKLY_STANDINGS_AUDIT_BUILDER v001",
     "version": "v001",
-    "generated_at": "2026-06-20 11:35:27",
+    "generated_at": "2026-06-21 02:45:36",
     "timezone": "America/New_York",
     "source": "weekly_standings_audit_builder.php",
     "scope": "local_mrl_artifacts_only",
     "notes": [
         "This helper does not call ESPN or fetch remote pages.",
         "Pending review is stored as metadata and does not block audit-chain discovery.",
-        "Direct events come from saved race snapshot pairs. Indirect candidates are projected only from direct events with MRL Impact YES.",
+        "Direct events come from saved race snapshot pairs. Pair-level classifier history is preferred when present.",
+        "Indirect candidates are projected only from direct events with MRL Impact YES.",
         "Existing history may have gaps if weekly standings snapshots were not being archived at the time."
     ],
     "year": "2026",
@@ -19,16 +20,23 @@
         "classification_summary": {
             "path": "_race_results_classification_summary.json",
             "present": true,
-            "modified": "6/20/2026 6:00:06 am",
+            "modified": "6/21/2026 2:44:30 am",
             "size_bytes": 15223,
             "size_label": "14.9 KB"
         },
         "classification_last_run": {
             "path": "_race_results_classification_last_run.json",
             "present": true,
-            "modified": "6/20/2026 6:00:06 am",
+            "modified": "6/21/2026 2:44:30 am",
             "size_bytes": 15223,
             "size_label": "14.9 KB"
+        },
+        "pair_classification_history": {
+            "path": "_race_results_pair_classification_history.json",
+            "present": true,
+            "modified": "6/21/2026 2:44:30 am",
+            "size_bytes": 17253,
+            "size_label": "16.8 KB"
         },
         "year_index": {
             "path": "2026/_year_index.json",
@@ -50,10 +58,10 @@
         "races_with_snapshots": 16,
         "pending_review": 0,
         "released_or_captured": 16,
-        "direct_revision_events": 8,
+        "direct_revision_events": 7,
         "direct_mrl_impact_events": 0,
         "indirect_candidates": 0,
-        "superseded_snapshots": 8,
+        "superseded_snapshots": 7,
         "gaps": 0
     },
     "races": [
@@ -142,6 +150,12 @@
                     "size_label": ""
                 },
                 "all_driver_impact_summary": {
+                    "present": false,
+                    "modified": "",
+                    "size_bytes": 0,
+                    "size_label": ""
+                },
+                "mrl_impact_pair_history": {
                     "present": false,
                     "modified": "",
                     "size_bytes": 0,
@@ -251,6 +265,12 @@
                     "size_bytes": 0,
                     "size_label": ""
                 },
+                "mrl_impact_pair_history": {
+                    "present": false,
+                    "modified": "",
+                    "size_bytes": 0,
+                    "size_label": ""
+                },
                 "revision_meta": {
                     "present": false,
                     "modified": "",
@@ -355,6 +375,12 @@
                     "size_bytes": 0,
                     "size_label": ""
                 },
+                "mrl_impact_pair_history": {
+                    "present": false,
+                    "modified": "",
+                    "size_bytes": 0,
+                    "size_label": ""
+                },
                 "revision_meta": {
                     "present": false,
                     "modified": "",
@@ -380,17 +406,8 @@
             "status": "released_or_captured",
             "pending_review": false,
             "under_review_flag": false,
-            "snapshot_count": 3,
+            "snapshot_count": 2,
             "snapshots": [
-                {
-                    "snapshot_id": "20260308_203801892",
-                    "snapshot_file": "snapshot_20260308_203801892.html",
-                    "snapshot_display": "3/8/2026 8:38:01 pm",
-                    "modified": "3/8/2026 8:38:01 pm",
-                    "size_bytes": 86603,
-                    "summary_file": "snapshot_summary_20260308_203801892.txt",
-                    "summary_present": true
-                },
                 {
                     "snapshot_id": "20260308_204802115",
                     "snapshot_file": "snapshot_20260308_204802115.html",
@@ -411,12 +428,12 @@
                 }
             ],
             "first_snapshot": {
-                "snapshot_id": "20260308_203801892",
-                "snapshot_file": "snapshot_20260308_203801892.html",
-                "snapshot_display": "3/8/2026 8:38:01 pm",
-                "modified": "3/8/2026 8:38:01 pm",
-                "size_bytes": 86603,
-                "summary_file": "snapshot_summary_20260308_203801892.txt",
+                "snapshot_id": "20260308_204802115",
+                "snapshot_file": "snapshot_20260308_204802115.html",
+                "snapshot_display": "3/8/2026 8:48:02 pm",
+                "modified": "3/8/2026 8:48:02 pm",
+                "size_bytes": 86620,
+                "summary_file": "snapshot_summary_20260308_204802115.txt",
                 "summary_present": true
             },
             "latest_snapshot": {
@@ -438,15 +455,6 @@
                 "summary_present": true
             },
             "superseded_snapshots": [
-                {
-                    "snapshot_id": "20260308_203801892",
-                    "snapshot_file": "snapshot_20260308_203801892.html",
-                    "snapshot_display": "3/8/2026 8:38:01 pm",
-                    "modified": "3/8/2026 8:38:01 pm",
-                    "size_bytes": 86603,
-                    "summary_file": "snapshot_summary_20260308_203801892.txt",
-                    "summary_present": true
-                },
                 {
                     "snapshot_id": "20260308_204802115",
                     "snapshot_file": "snapshot_20260308_204802115.html",
@@ -486,15 +494,21 @@
                 },
                 "mrl_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1509,
-                    "size_label": "1.5 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1766,
+                    "size_label": "1.7 KB"
                 },
                 "all_driver_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1319,
-                    "size_label": "1.3 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1576,
+                    "size_label": "1.5 KB"
+                },
+                "mrl_impact_pair_history": {
+                    "present": true,
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 2881,
+                    "size_label": "2.8 KB"
                 },
                 "revision_meta": {
                     "present": false,
@@ -595,6 +609,12 @@
                     "size_label": ""
                 },
                 "all_driver_impact_summary": {
+                    "present": false,
+                    "modified": "",
+                    "size_bytes": 0,
+                    "size_label": ""
+                },
+                "mrl_impact_pair_history": {
                     "present": false,
                     "modified": "",
                     "size_bytes": 0,
@@ -704,6 +724,12 @@
                     "size_bytes": 0,
                     "size_label": ""
                 },
+                "mrl_impact_pair_history": {
+                    "present": false,
+                    "modified": "",
+                    "size_bytes": 0,
+                    "size_label": ""
+                },
                 "revision_meta": {
                     "present": false,
                     "modified": "",
@@ -803,6 +829,12 @@
                     "size_label": ""
                 },
                 "all_driver_impact_summary": {
+                    "present": false,
+                    "modified": "",
+                    "size_bytes": 0,
+                    "size_label": ""
+                },
+                "mrl_impact_pair_history": {
                     "present": false,
                     "modified": "",
                     "size_bytes": 0,
@@ -921,15 +953,21 @@
                 },
                 "mrl_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1504,
-                    "size_label": "1.5 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1761,
+                    "size_label": "1.7 KB"
                 },
                 "all_driver_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1314,
-                    "size_label": "1.3 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1571,
+                    "size_label": "1.5 KB"
+                },
+                "mrl_impact_pair_history": {
+                    "present": true,
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 2876,
+                    "size_label": "2.8 KB"
                 },
                 "revision_meta": {
                     "present": false,
@@ -1030,6 +1068,12 @@
                     "size_label": ""
                 },
                 "all_driver_impact_summary": {
+                    "present": false,
+                    "modified": "",
+                    "size_bytes": 0,
+                    "size_label": ""
+                },
+                "mrl_impact_pair_history": {
                     "present": false,
                     "modified": "",
                     "size_bytes": 0,
@@ -1148,15 +1192,21 @@
                 },
                 "mrl_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1506,
-                    "size_label": "1.5 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1763,
+                    "size_label": "1.7 KB"
                 },
                 "all_driver_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1316,
-                    "size_label": "1.3 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1573,
+                    "size_label": "1.5 KB"
+                },
+                "mrl_impact_pair_history": {
+                    "present": true,
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 2884,
+                    "size_label": "2.8 KB"
                 },
                 "revision_meta": {
                     "present": false,
@@ -1271,15 +1321,21 @@
                 },
                 "mrl_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1538,
-                    "size_label": "1.5 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1795,
+                    "size_label": "1.8 KB"
                 },
                 "all_driver_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1349,
-                    "size_label": "1.3 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1606,
+                    "size_label": "1.6 KB"
+                },
+                "mrl_impact_pair_history": {
+                    "present": true,
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 2908,
+                    "size_label": "2.8 KB"
                 },
                 "revision_meta": {
                     "present": false,
@@ -1394,15 +1450,21 @@
                 },
                 "mrl_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1511,
-                    "size_label": "1.5 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1768,
+                    "size_label": "1.7 KB"
                 },
                 "all_driver_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1321,
-                    "size_label": "1.3 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1578,
+                    "size_label": "1.5 KB"
+                },
+                "mrl_impact_pair_history": {
+                    "present": true,
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 2895,
+                    "size_label": "2.8 KB"
                 },
                 "revision_meta": {
                     "present": false,
@@ -1508,6 +1570,12 @@
                     "size_bytes": 0,
                     "size_label": ""
                 },
+                "mrl_impact_pair_history": {
+                    "present": false,
+                    "modified": "",
+                    "size_bytes": 0,
+                    "size_label": ""
+                },
                 "revision_meta": {
                     "present": false,
                     "modified": "",
@@ -1607,6 +1675,12 @@
                     "size_label": ""
                 },
                 "all_driver_impact_summary": {
+                    "present": false,
+                    "modified": "",
+                    "size_bytes": 0,
+                    "size_label": ""
+                },
+                "mrl_impact_pair_history": {
                     "present": false,
                     "modified": "",
                     "size_bytes": 0,
@@ -1725,15 +1799,21 @@
                 },
                 "mrl_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 916,
-                    "size_label": "916 B"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1173,
+                    "size_label": "1.1 KB"
                 },
                 "all_driver_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 727,
-                    "size_label": "727 B"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 984,
+                    "size_label": "984 B"
+                },
+                "mrl_impact_pair_history": {
+                    "present": true,
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 2101,
+                    "size_label": "2.1 KB"
                 },
                 "revision_meta": {
                     "present": false,
@@ -1848,15 +1928,21 @@
                 },
                 "mrl_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:05 am",
-                    "size_bytes": 1503,
-                    "size_label": "1.5 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1760,
+                    "size_label": "1.7 KB"
                 },
                 "all_driver_impact_summary": {
                     "present": true,
-                    "modified": "6/20/2026 6:00:06 am",
-                    "size_bytes": 1313,
-                    "size_label": "1.3 KB"
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 1570,
+                    "size_label": "1.5 KB"
+                },
+                "mrl_impact_pair_history": {
+                    "present": true,
+                    "modified": "6/21/2026 2:44:30 am",
+                    "size_bytes": 2875,
+                    "size_label": "2.8 KB"
                 },
                 "revision_meta": {
                     "present": false,
@@ -1874,34 +1960,6 @@
         }
     ],
     "direct_revision_events": [
-        {
-            "event_id": "20260308_204802115",
-            "event_display": "3/8/2026 8:48:02 pm",
-            "event_type": "direct_race_result_revision",
-            "source_type": "direct",
-            "race_code": "R04",
-            "race_number": 4,
-            "race_name": "NASCAR Cup Series at Phoenix",
-            "short_name": "Phoenix",
-            "race_status": "released_or_captured",
-            "previous_snapshot": "snapshot_20260308_203801892.html",
-            "current_snapshot": "snapshot_20260308_204802115.html",
-            "previous_snapshot_id": "20260308_203801892",
-            "current_snapshot_id": "20260308_204802115",
-            "classification_matched": false,
-            "mrl_impact": false,
-            "standings_effect": "none_detected_for_mrl_standings",
-            "changed_all_drivers_count": null,
-            "changed_mrl_listed_drivers_count": null,
-            "changed_segment_picked_drivers_count": null,
-            "change_status": "snapshot_pair_only_no_classifier_row",
-            "change_status_label": "No classifier row for this pair",
-            "pending_review": false,
-            "changed_driver_details": [],
-            "notes": [
-                "Snapshot pair exists, but the current classifier summary does not include this exact older pair."
-            ]
-        },
         {
             "event_id": "20260308_205601920",
             "event_display": "3/8/2026 8:56:01 pm",
