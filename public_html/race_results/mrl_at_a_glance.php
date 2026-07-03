@@ -1,25 +1,5 @@
 <?php
 /**
- * install_mrl_at_a_glance_v004.php
- *
- * VERSION: v004
- * LAST MODIFIED: 6/28/2026 12:33:29 pm
- *
- * CHANGELOG:
- * v004 (6/28/2026 12:33:29 pm)
- * - Installs mrl_at_a_glance.php v004.
- * - Latest Snapshot now uses standings_timeline-style snapshot/version labels.
- */
-
-declare(strict_types=1);
-date_default_timezone_set('America/New_York');
-
-$target = __DIR__ . '/mrl_at_a_glance.php';
-$backup = '';
-
-$content = <<<'MRL_ENDPOINT'
-<?php
-/**
  * mrl_at_a_glance.php
  *
  * VERSION: v004
@@ -404,26 +384,3 @@ echo json_encode(array(
         'heartbeat_file' => $heartbeatFile !== '' ? basename($heartbeatFile) : ''
     )
 ), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-
-MRL_ENDPOINT;
-
-echo "<!doctype html><html><head><meta charset=\"utf-8\"><title>MRL At a Glance Installer</title>";
-echo "<style>body{font-family:Arial,sans-serif;margin:24px;line-height:1.45}.ok{color:#0a7a2f;font-weight:bold}pre{background:#f4f4f4;padding:12px;border:1px solid #ccc;white-space:pre-wrap}</style>";
-echo "</head><body><h1>MRL At a Glance Installer</h1>";
-
-if (is_file($target)) {
-    $backup = $target . '.bak_' . date('Ymd_His');
-    @copy($target, $backup);
-}
-
-if (@file_put_contents($target, $content) === false) {
-    echo "<p>ERROR — could not write mrl_at_a_glance.php.</p></body></html>";
-    exit;
-}
-
-echo "<p class=\"ok\">SUCCESS — mrl_at_a_glance.php v004 was installed.</p>";
-echo "<h2>Report</h2><pre>";
-if ($backup !== '') echo "Backup created: " . htmlspecialchars(basename($backup), ENT_QUOTES, 'UTF-8') . "\n";
-echo "Updated: mrl_at_a_glance.php\n";
-echo "Change: Latest Snapshot uses standings_timeline-style labels\n";
-echo "</pre><p>After a successful test, delete this installer.</p></body></html>";
