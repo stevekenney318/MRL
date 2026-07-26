@@ -1,7 +1,7 @@
 {
     "signature": "MRL_RACE_FINISH_CONFIRMATION_MONITOR v004 STATE",
     "version": "v004",
-    "updated_at": "2026-07-26 10:35:03",
+    "updated_at": "2026-07-26 10:44:02",
     "finish_watch_active": false,
     "idle_reason": "NASCAR cache is not Cup Series data; finish watch remains idle.",
     "last_progress_percent": 100,
