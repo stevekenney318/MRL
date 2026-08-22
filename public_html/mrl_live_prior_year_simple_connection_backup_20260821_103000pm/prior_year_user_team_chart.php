@@ -2,8 +2,8 @@
 session_start();
 
 date_default_timezone_set("America/New_York");
-require_once "config.php"; // setup variables for database connection 
-require_once "config_mrl.php"; // setup variables for the current MRL season & segment
+include "config.php"; // setup variables for database connection 
+include "config_mrl.php"; // setup variables for the current MRL season & segment
 
 // Get the user ID from the session array
 // $uid = isset($_SESSION['userSession']) ? $_SESSION['userSession'] : null;
@@ -12,7 +12,7 @@ require_once "config_mrl.php"; // setup variables for the current MRL season & s
 // echo "User ID: $uid";
 
 date_default_timezone_set("America/New_York");
-require_once "config.php"; // setup variables for database connection 
+include "config.php"; // setup variables for database connection 
 // include "config_mrl.php"; // setup variables for current MRL season & segment
 
 
