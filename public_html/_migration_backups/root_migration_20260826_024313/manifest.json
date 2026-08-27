@@ -1,0 +1,222 @@
+{
+    "created_at": "2026-08-26 02:43:13 EDT",
+    "installer_version": "v001",
+    "test_root": "/home/u809830586/domains/manliusracingleague.com/public_html/testphp8",
+    "live_root": "/home/u809830586/domains/manliusracingleague.com/public_html",
+    "package": {
+        "admin_pick_adjustment.php": {
+            "test_version": "v002",
+            "test_sha256": "512b63908bdbc3ec73af979fb4f74e7de887a10d0a593277dcdc8326791bae71",
+            "live_sha256": ""
+        },
+        "admin_setup.php": {
+            "test_version": "v004",
+            "test_sha256": "a9c2b6f462d903af44adf0007acca73af8d6e942b034e211a40e2d60f29d50ea",
+            "live_sha256": "9aa3ca2ff447434b8c5e48b3dd16e7ff6362375c4c337d1d1434d41ad7905ca0"
+        },
+        "config_mrl.php": {
+            "test_version": "v003",
+            "test_sha256": "34eef0d70d79e243c124239bb361a2fd4f1ab0bcca6b93141be0c75a0f40543a",
+            "live_sha256": "c5429e99a4d297ac421526134f3fcadd727efdfcbf334a2c8a65a3151977084c"
+        },
+        "current_segment_chart.php": {
+            "test_version": "v007",
+            "test_sha256": "9a9550d334d18b828c9173f37299f428d84d2edc804b049cf4b0703cbec9680c",
+            "live_sha256": "d19a1dad1e83c94b17fd438d39581ec6da14b58e00b4e60270fbf07327ce78e0"
+        },
+        "current_segment_chart_by_entry_time.php": {
+            "test_version": "v004",
+            "test_sha256": "1d572c08a85fb90eb243874995195b8653b5bdc3193100fb26e8468fe26b7fe4",
+            "live_sha256": "632beefb0ec63d6607d8f5178cebd551ad5c5aad240ddb670403ddf54b76cf16"
+        },
+        "current_user_team_chart.php": {
+            "test_version": "v005",
+            "test_sha256": "7176e440667b06ea6b18e3401e9e2973c52fdf40362c8811e2ef3fc2c1e130ae",
+            "live_sha256": "55d9cbf5abcf20f195cf083cfadd61dd1e5e6e9108d631add6667d3a068c80a9"
+        },
+        "form-team-picks.php": {
+            "test_version": "v007",
+            "test_sha256": "7d27ae72f865243ecca758a5403cc75bd370dbbf2f6f2cca820bcc41ef7042b5",
+            "live_sha256": ""
+        },
+        "pick_window_helper.php": {
+            "test_version": "v003",
+            "test_sha256": "e73a04a0847d38d3329814fe616e647052e90194acc92e9b886fb1c0c7d8e3dc",
+            "live_sha256": ""
+        },
+        "prior_year_user_team_chart.php": {
+            "test_version": "v004",
+            "test_sha256": "1047c91029327e91f5edca9705d151293ef74abcc0bde8935fcba0804cc548cb",
+            "live_sha256": "5d2cd620457af785a8711689dc25e8e1729bdab052a56a9067cc045750cf5714"
+        },
+        "submit-team-picks.php": {
+            "test_version": "v011",
+            "test_sha256": "797bcfe1f8f9155d04573fde40aa551b384156c0e889f411b1e198e89ddc97d1",
+            "live_sha256": ""
+        },
+        "submitted_teams_count.php": {
+            "test_version": "v001",
+            "test_sha256": "bf82df10b92d31c17cca5a380cace80d846f6da7788b1bdffe1f644b9a7df66f",
+            "live_sha256": "083e648694d737b45820917e30f0bc95e274c3f8dc727ef61a149992855812a2"
+        },
+        "team-late-pick.php": {
+            "test_version": "v005",
+            "test_sha256": "89233a4e25774a521b75193217c2dd74c82215428ab171c5c75cf230bd351dcb",
+            "live_sha256": "506afb336a2a10658df13d2e10f2e415cceef113d7a53ddd56d6479d58875b43"
+        },
+        "team.php": {
+            "test_version": "v034",
+            "test_sha256": "ea4542182638143549230d4b47ec51e6148ff018d0a799c1a8c7af0971cfcdfc",
+            "live_sha256": "68ccd765b93bc61be0d528ab6c9be64c8fcf85bfd6f1df22da04907b0b32d384"
+        },
+        "team_chart.php": {
+            "test_version": "v018",
+            "test_sha256": "bc546f3b99855ff85fed0342090ced35977da8ddc1171ff676a904cef57255e1",
+            "live_sha256": "9467e26e7cc4a74ea889ed1f6dab0f8d04bb830f67524905c5d7bc1b3b1117a0"
+        },
+        "team_replacement_driver.php": {
+            "test_version": "v010",
+            "test_sha256": "e7a30d2768c249b8bd993ea81fa2845b85284c7bb0987a57acef0be66f8c87f1",
+            "live_sha256": ""
+        }
+    },
+    "preflight": {
+        "source_gate": true,
+        "live_gate": true,
+        "dependency_gate": true,
+        "protected_live_gate": true,
+        "shutdown_checklist_gate": true
+    },
+    "protected_live": [
+        {
+            "path": "email.php",
+            "live": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/email.php",
+                "version": "v002",
+                "sha256": "9dd7755aa2189288b55c68a826330b82297c7969eb6356f1bc82c9a456a0853c",
+                "size": 10464,
+                "mtime": "2026-03-26 16:26:57 EDT"
+            },
+            "baseline_unchanged": true,
+            "action": "PRESERVE_LIVE"
+        },
+        {
+            "path": "conf.inc.php",
+            "live": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/conf.inc.php",
+                "version": "",
+                "sha256": "3436b55ecabf4c2307998c42ea15a2e28a8a134b66ab2f7816a8706628e91860",
+                "size": 182,
+                "mtime": "2026-02-22 14:11:11 EST"
+            },
+            "baseline_unchanged": true,
+            "action": "PRESERVE_LIVE"
+        },
+        {
+            "path": "config.php",
+            "live": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/config.php",
+                "version": "",
+                "sha256": "f8b4e6531dd8c0e88d6927587f9f7e7f0ee9e6c3c31657d79590496550a163a2",
+                "size": 1641,
+                "mtime": "2025-12-14 00:06:20 EST"
+            },
+            "baseline_unchanged": true,
+            "action": "PRESERVE_LIVE"
+        },
+        {
+            "path": "dbconfig.php",
+            "live": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/dbconfig.php",
+                "version": "",
+                "sha256": "a9f977e431c241d233058c0f9923eb111c75f24c7630a0f088f98b3ac95d27a1",
+                "size": 684,
+                "mtime": "2025-12-13 15:55:06 EST"
+            },
+            "baseline_unchanged": true,
+            "action": "PRESERVE_LIVE"
+        },
+        {
+            "path": "wp-config.php",
+            "live": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/wp-config.php",
+                "version": "",
+                "sha256": "c4f2e54f62be414b55ae839244c14316db0794b0a03aa2a646512a76d7ead48e",
+                "size": 3107,
+                "mtime": "2025-12-09 04:19:24 EST"
+            },
+            "baseline_unchanged": true,
+            "action": "PRESERVE_LIVE"
+        }
+    ],
+    "shutdown_checklist": [
+        {
+            "path": "default.php",
+            "test": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/testphp8/default.php",
+                "version": "",
+                "sha256": "aba5b5856471c610e4dd52c322c7a72a895fc9bf98ac1d027528d0e7de1f7e45",
+                "size": 16369,
+                "mtime": "2026-03-04 07:37:26 EST"
+            },
+            "live": null,
+            "test_unchanged": true,
+            "live_unchanged": true,
+            "status": "HOLD_FOR_TESTPHP8_SHUTDOWN_REVIEW"
+        },
+        {
+            "path": "rebuild_year_index.php",
+            "test": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/testphp8/rebuild_year_index.php",
+                "version": "",
+                "sha256": "fa62c5bff0fe31622ec1f393b3a32e826eeb0afbea4bb61405ddfaa262f18494",
+                "size": 4147,
+                "mtime": "2026-03-12 07:41:38 EDT"
+            },
+            "live": null,
+            "test_unchanged": true,
+            "live_unchanged": true,
+            "status": "HOLD_FOR_TESTPHP8_SHUTDOWN_REVIEW"
+        },
+        {
+            "path": "logout.php",
+            "test": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/testphp8/logout.php",
+                "version": "",
+                "sha256": "d6fcfb1b937e417f3480f985e4f1ce9abe0fb1b4c54bbd3c56a0b77c6875e5d3",
+                "size": 215,
+                "mtime": "2026-03-05 03:37:05 EST"
+            },
+            "live": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/logout.php",
+                "version": "",
+                "sha256": "b6b406cb824821440b01f02c14e4139a6a2f0fd485c8c911d7234bcab718fb54",
+                "size": 245,
+                "mtime": "2025-12-09 04:19:24 EST"
+            },
+            "test_unchanged": true,
+            "live_unchanged": true,
+            "status": "HOLD_FOR_TESTPHP8_SHUTDOWN_REVIEW"
+        },
+        {
+            "path": "races.html",
+            "test": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/testphp8/races.html",
+                "version": "",
+                "sha256": "688203b72b10d0b38ca84e901114fe3370f73b20225f19f9a175eda185af2ac3",
+                "size": 13420,
+                "mtime": "2026-05-12 23:09:06 EDT"
+            },
+            "live": {
+                "path": "/home/u809830586/domains/manliusracingleague.com/public_html/races.html",
+                "version": "",
+                "sha256": "066f1ec64e73f34bc73bb36c3dd893739eaa60d608fb32d6510f00add65751f6",
+                "size": 13486,
+                "mtime": "2026-05-13 00:49:12 EDT"
+            },
+            "test_unchanged": true,
+            "live_unchanged": true,
+            "status": "HOLD_FOR_TESTPHP8_SHUTDOWN_REVIEW"
+        }
+    ]
+}

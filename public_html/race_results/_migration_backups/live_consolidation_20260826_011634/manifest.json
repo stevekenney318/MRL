@@ -1,0 +1,121 @@
+{
+    "created_at": "2026-08-26 01:16:34 EDT",
+    "version": "v003",
+    "test_root": "/home/u809830586/domains/manliusracingleague.com/public_html/testphp8/race_results",
+    "live_root": "/home/u809830586/domains/manliusracingleague.com/public_html/race_results",
+    "baseline": {
+        "race_results_monitor.php": {
+            "test_version": "v139",
+            "test_sha256": "5b5a11d6dc9257a88465c08ddf3357fad9c7faacf75e6b56b461bf84a482678e",
+            "live_exists": true,
+            "live_version": "v138",
+            "live_sha256": "57d5f61289e0b21d3760a3059a838e8fc99f9cfca9f22c19550de5489a919d7a"
+        },
+        "race_results_rd_helper.php": {
+            "test_version": "v005",
+            "test_sha256": "f82b6f238ca577018d8e2aa2fb8a89bc925f09d2f4f49602dbceba81d77de08d",
+            "live_exists": true,
+            "live_version": "v003",
+            "live_sha256": "a41651346006b57cd0b661bbf99e4e7863dbcd0b53506012878248e164b41d66"
+        },
+        "race_schedule_helper.php": {
+            "test_version": "v003",
+            "test_sha256": "9ed17b411be162140f73173808e974e0468d3c335872dc0ef31487375933ec62",
+            "live_exists": false,
+            "live_version": "",
+            "live_sha256": ""
+        }
+    },
+    "preflight": [
+        {
+            "label": "Expected TESTPHP8 location",
+            "status": "PASS",
+            "detail": "/home/u809830586/domains/manliusracingleague.com/public_html/testphp8/race_results"
+        },
+        {
+            "label": "TEST source race_results_monitor.php",
+            "status": "PASS",
+            "detail": "v139 | 5b5a11d6dc9257a88465c08ddf3357fad9c7faacf75e6b56b461bf84a482678e"
+        },
+        {
+            "label": "LIVE baseline race_results_monitor.php",
+            "status": "PASS",
+            "detail": "v138 | 57d5f61289e0b21d3760a3059a838e8fc99f9cfca9f22c19550de5489a919d7a"
+        },
+        {
+            "label": "TEST source race_results_rd_helper.php",
+            "status": "PASS",
+            "detail": "v005 | f82b6f238ca577018d8e2aa2fb8a89bc925f09d2f4f49602dbceba81d77de08d"
+        },
+        {
+            "label": "LIVE baseline race_results_rd_helper.php",
+            "status": "PASS",
+            "detail": "v003 | a41651346006b57cd0b661bbf99e4e7863dbcd0b53506012878248e164b41d66"
+        },
+        {
+            "label": "TEST source race_schedule_helper.php",
+            "status": "PASS",
+            "detail": "v003 | 9ed17b411be162140f73173808e974e0468d3c335872dc0ef31487375933ec62"
+        },
+        {
+            "label": "LIVE baseline race_schedule_helper.php",
+            "status": "PASS",
+            "detail": "ABSENT (expected for new helper)"
+        },
+        {
+            "label": "Monitor references RD helper",
+            "status": "PASS",
+            "detail": "Expected reference found."
+        },
+        {
+            "label": "RD helper references schedule helper",
+            "status": "PASS",
+            "detail": "Expected reference found."
+        },
+        {
+            "label": "Schedule helper uses canonical _race_results_schedule.json",
+            "status": "PASS",
+            "detail": "Expected reference found."
+        },
+        {
+            "label": "Schedule helper uses mrl_points_races",
+            "status": "PASS",
+            "detail": "Expected reference found."
+        },
+        {
+            "label": "LIVE canonical schedule",
+            "status": "PASS",
+            "detail": "Valid JSON with 36 mrl_points_races rows."
+        },
+        {
+            "label": "LIVE race_finish_confirmation scheduler task",
+            "status": "PASS",
+            "detail": "Active task found and ready for controlled retirement."
+        },
+        {
+            "label": "LIVE race_results_menu.php experiment reference",
+            "status": "PASS",
+            "detail": "Expected reference found and ready for controlled removal."
+        },
+        {
+            "label": "LIVE race_finish_confirmation_monitor.php",
+            "status": "PASS",
+            "detail": "Found v006"
+        },
+        {
+            "label": "LIVE race_finish_confirmation_dashboard.php",
+            "status": "PASS",
+            "detail": "Found v006"
+        },
+        {
+            "label": "Historical _race_finish_confirmation data directory",
+            "status": "PASS",
+            "detail": "Present and will remain untouched."
+        },
+        {
+            "label": "Unexpected active race_finish_confirmation references",
+            "status": "PASS",
+            "detail": "None found outside the expected menu reference."
+        }
+    ]
+}

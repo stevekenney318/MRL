@@ -1,12 +1,37 @@
 {
-    "signature": "MRL_RACE_FINISH_CONFIRMATION_MONITOR v004 STATE",
-    "version": "v004",
-    "updated_at": "2026-07-26 10:44:02",
+    "signature": "MRL_RACE_FINISH_CONFIRMATION_MONITOR v006 STATE",
+    "version": "v006",
+    "updated_at": "2026-08-26 01:15:01",
     "finish_watch_active": false,
-    "idle_reason": "NASCAR cache is not Cup Series data; finish watch remains idle.",
+    "idle_reason": "Existing NASCAR Cup status is stale; ignoring old late-race/checkered data.",
     "last_progress_percent": 100,
     "last_flag_label": "CHECKERED",
     "last_status_source": "_mrl_nascar_live_status.json",
-    "last_status_checked_at": "2026-07-26 10:35:02",
-    "last_raw_hashes": []
+    "last_status_checked_at": "2026-08-23 19:43:04",
+    "last_raw_hashes": {
+        "racing_reference_race": "03e3a0f4a0ca5d2878747dd45ebed9f9e30e7de7b1f4e8d6846958e61601ee02",
+        "racing_reference_season": "c96c13027689be3689e448fac18fe51b8a16c27d6171d9e32dda8db345307081",
+        "jayski_index": "271f44ab490082184e63d0186ae268ee0f77f511ffe808cd7b2399c85eca398f",
+        "jayski_results": "f8c456072c82479a1258117f3d6f299e4d44dae315bf92fbc63d75ddaf763796",
+        "racing_reference_results": "03e3a0f4a0ca5d2878747dd45ebed9f9e30e7de7b1f4e8d6846958e61601ee02"
+    },
+    "source_first_transitions": {
+        "racing_reference_results": {
+            "waiting_results": "2026-08-09 18:30:02",
+            "results_posted": "2026-08-09 19:04:01"
+        },
+        "racing_reference_race": {
+            "waiting_results": "2026-08-09 18:30:02",
+            "results_posted": "2026-08-09 19:04:01"
+        },
+        "racing_reference_season": {
+            "season_row_not_found": "2026-08-09 18:30:02"
+        },
+        "jayski": {
+            "waiting_results": "2026-08-09 18:30:02",
+            "winner_posted": "2026-08-09 18:42:02",
+            "winner_and_results_posted": "2026-08-09 19:04:01",
+            "index_request_failed": "2026-08-14 20:41:02"
+        }
+    }
 }

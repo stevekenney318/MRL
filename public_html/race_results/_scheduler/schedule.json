@@ -78,19 +78,6 @@
                 "post_final_12h_to_48h": 360
             },
             "description": "Revision-aware schedule. Normal daily checks are used until a new final-result handoff is detected; then revision monitor runs more frequently for post-race stabilization before scaling back."
-        },
-        "race_finish_confirmation_monitor": {
-            "enabled": true,
-            "type": "interval",
-            "script": "race_finish_confirmation_monitor.php",
-            "args": [
-                "{year}"
-            ],
-            "interval_minutes": 1,
-            "lock_minutes": 2,
-            "timeout_seconds": 90,
-            "run_method": "url",
-            "description": "Observation-only MRL vs NASCAR vs secondary-source late-race monitor. Cup Series only; does not influence MRL decisions."
         }
     }
 }

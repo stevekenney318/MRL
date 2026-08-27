@@ -32,7 +32,7 @@ $theme_name = wp_get_theme()->name;
         <span class="st-sa-notification-wrapper-headline"><?php echo esc_html(sprintf(/* translators: %s is the theme name */__("Get Started with %s", 'minimalistblogger'), $theme_name)); ?></span>
         <span class="st-sa-notification-wrapper-paragraph"><?php echo esc_html(sprintf(/* translators: %s is the theme name */__("Install the %s companion plugin to unlock all theme features. This quick and free installation takes a few seconds and requires just one click.", 'minimalistblogger'), $theme_name)); ?>
             <span class="st-sa-notification-buttons-wrapper">
-                <a href="<?php echo esc_url($nonce_url); ?>" class="st-sa-notification-buttons-purple"><?php echo esc_html__("Install & Activate", 'minimalistblogger'); ?></a>
+                <a href="<?php echo esc_url($nonce_url); ?>" class="st-sa-notification-buttons-purple spbtic-addons-install"><span class="dashicons dashicons-update hidden spbtic-addons-spinner"></span><span class="spbtic-addons-label"><?php echo esc_html__("Install & Activate", 'minimalistblogger'); ?></span></a>
             </span>
         </span>
         <style>
@@ -115,34 +115,34 @@ $theme_name = wp_get_theme()->name;
             a.st-sa-notification-buttons-white,
             a.st-sa-notification-buttons-white:hover,
             a.st-sa-notification-buttons-white:active {
-                border: 1px solid #cfd8dc;
-                padding: 10px 15px;
-                -webkit-box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.26);
-                box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.26);
-                color: #263238;
-                font-weight: 500;
-                margin-right: 15px;
-                text-decoration: none;
-                border-radius: 6px;
-                margin: 10px 10px 0 0;
+                border: 1px solid #cfd8dc !important;
+                padding: 10px 15px !important;
+                -webkit-box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.26) !important;
+                box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.26) !important;
+                color: #263238 !important;
+                font-weight: 500 !important;
+                margin-right: 15px !important;
+                text-decoration: none !important;
+                border-radius: 6px !important;
+                margin: 10px 10px 0 0 !important;
             }
 
             a.st-sa-notification-buttons-purple,
             a.st-sa-notification-buttons-purple:hover,
             a.st-sa-notification-buttons-purple:active {
-                border: 1px solid #cfd8dc;
-                padding: 10px 20px;
-                -webkit-box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0);
-                box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0);
-                color: #fff;
-                font-weight: 500;
-                font-size: 16px;
-                margin-right: 15px;
-                text-decoration: none;
-                background: #00BC87;
-                border-radius: 6px;
-                border: 2px solid #00d096;
-                margin: 20px 10px 0 0;
+                border: 1px solid #cfd8dc !important;
+                padding: 10px 20px !important;
+                -webkit-box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0) !important;
+                box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0) !important;
+                color: #fff !important;
+                font-weight: 500 !important;
+                font-size: 16px !important;
+                margin-right: 15px !important;
+                text-decoration: none !important;
+                background: #00BC87 !important;
+                border-radius: 6px !important;
+                border: 2px solid #00d096 !important;
+                margin: 20px 10px 0 0 !important;
             }
 
             @media screen and (max-width: 1200px) {

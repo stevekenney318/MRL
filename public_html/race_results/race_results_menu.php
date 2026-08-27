@@ -143,7 +143,6 @@ function mrl_menu_discover_extra_pages($baseDir, $selfFile, array $registeredPat
         'cron_master_scheduler.php',
         'race_results_monitor.php',
         'race_results_revision_monitor.php',
-        'race_finish_confirmation_monitor.php',
         'functions_mrl.php'
     );
 
@@ -325,7 +324,8 @@ $sectionDefinitions = array(
                 'title' => 'Race Results Schedule',
                 'description' => 'Current race schedule data used by the monitoring system.',
                 'paths' => array('_race_results_schedule.json'),
-                'icon' => 'ğŸ“…',
+                'icon' => 'ğŸ“
+',
                 'badge' => 'Data'
             ),
             array(
@@ -926,3 +926,4 @@ $generatedAt = date('n/j/Y g:i:s a');
 
 </body>
 </html>
+

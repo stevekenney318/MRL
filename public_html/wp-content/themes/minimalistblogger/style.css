@@ -4,8 +4,8 @@ Theme URI: https://superbthemes.com/minimalistblogger/minimalistblogger-info/
 Author: ThemeEverest
 Author URI: http://superbthemes.com/
 Description: MinimalistBlogger is a responsive WordPress blog and news theme made for bloggers and newspapers. Its elegant and minimalistic look makes it an attractive theme for writers who wish to write about their view on food, fashion, travel, clothing, movies, or their lifestyle in general. Minimalistblogger is of course modern in the ways that it is both fast and search engine optimized (SEO friendly) as a theme should be nowadays. The sidebar allows widgets, Adsense affiliate links, or whatever else you wish to put there. Installing and setting up the theme is simple for any author, we have tried to optimise the user friendliness by making the interface clean and so it is as easy as possible to set up and start using. If the business aspect is important for you, for example, if you are using it as a newspaper or personal writing/journalist portfolio then it's great since your website is able to rank everywhere on the internet with our theme, for example in Yahoo, Bing or Google.
-Version: 9.1
-Tested up to: 6.9
+Version: 10.2
+Tested up to: 7.0
 Requires PHP: 4.0
 License: GNU General Public License v2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -2732,4 +2732,86 @@ input#wp-comment-cookies-consent {
 	border-top:0px solid #fff;
 	border-bottom:0px solid #fff;
 }
+}
+
+
+.wpcf7 {
+	max-width: 720px;
+	margin: 0 auto;
+}
+
+.wpcf7 p {
+	margin-bottom: 18px;
+}
+
+.wpcf7 label {
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	color: #000;
+}
+
+.wpcf7 input,
+.wpcf7 textarea,
+.wpcf7 select {
+	width: 100%;
+	border: 1px solid #000;
+	background: #fff;
+	color: #000;
+	padding: 14px 16px;
+	margin-top: 6px;
+	border-radius: 0;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wpcf7 textarea {
+	min-height: 160px;
+	resize: vertical;
+}
+
+.wpcf7 input:focus,
+.wpcf7 textarea:focus,
+.wpcf7 select:focus {
+	outline: none;
+	border-color: #000;
+	box-shadow: 0 0 0 2px rgba(0,0,0,0.12);
+}
+
+.wpcf7 .wpcf7-submit {
+	width: auto;
+	min-width: 180px;
+	background: #000;
+	color: #fff;
+	border: 1px solid #000;
+	padding: 14px 26px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	transition: background 0.2s ease, color 0.2s ease;
+}
+
+.wpcf7 .wpcf7-submit:hover {
+	background: #fff;
+	color: #000;
+	opacity: 1;
+}
+
+.wpcf7-not-valid-tip {
+	font-size: 13px;
+	margin-top: 6px;
+	color: #b00020;
+}
+
+.wpcf7 form .wpcf7-response-output {
+	margin: 20px 0 0;
+	padding: 14px 16px;
+	border: 1px solid #000;
+	font-size: 14px;
+}
+
+@media screen and (max-width: 700px) {
+	.wpcf7 .wpcf7-submit {
+		width: 100%;
+	}
 }

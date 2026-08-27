@@ -1,18 +1,22 @@
 {
-    "checked_at": "2026-07-19 23:29:03",
+    "checked_at": "2026-08-23 19:43:04",
     "year": 2026,
-    "race_number": 21,
-    "race_code": "R21",
-    "race_folder": "R21_NASCAR_Cup_Series_at_North_Wilkesboro_202607195827",
+    "race_number": 25,
+    "race_code": "R25",
+    "race_folder": "R25_NASCAR_Cup_Series_at_New_Hampshire_202608230010",
     "segment": "S3",
     "status": "OK",
     "message": "No RD eligibility found.",
-    "completed_race_count": 4,
+    "completed_race_count": 8,
     "completed_races": [
         18,
         19,
         20,
-        21
+        21,
+        22,
+        23,
+        24,
+        25
     ],
     "team_count": 18,
     "eligible_count": 0,
@@ -22,5 +26,5 @@
     "email_failed_count": 0,
     "eligible_teams": [],
     "manual_required_teams": [],
-    "written_at": "2026-07-19T23:29:03"
+    "written_at": "2026-08-23T19:43:04"
 }

@@ -96,7 +96,62 @@ class AdminNoticeController
         self::$notices = $notices;
 
         add_action('admin_notices', array(__CLASS__, 'AdminNotices'));
+        add_action('admin_enqueue_scripts', array(__CLASS__, 'EnqueueAddonsInstallScript'));
         add_action('wp_ajax_spbtic_dismiss_notice', array(__CLASS__, 'MaybeDismissNotice'));
+    }
+
+    public static function EnqueueAddonsInstallScript()
+    {
+        if (!current_user_can('manage_options') || !current_user_can('install_plugins')) {
+            return;
+        }
+
+        if (!class_exists('TGM_Plugin_Activation')) {
+            return;
+        }
+
+        $tgmpa = \TGM_Plugin_Activation::get_instance();
+        if (!isset($tgmpa->plugins['superb-blocks']) || $tgmpa->is_plugin_active('superb-blocks')) {
+            return;
+        }
+
+        $plugin_basename = 'superb-blocks/plugin.php';
+        $plugin_status = $tgmpa->is_plugin_installed('superb-blocks') ? 'installed' : 'not-installed';
+        $activation_url = wp_nonce_url(
+            self_admin_url('plugins.php?action=activate&plugin=' . $plugin_basename),
+            'activate-plugin_' . $plugin_basename
+        );
+
+        wp_enqueue_script(
+            'spbtic-addons-notice',
+            trailingslashit(get_template_directory_uri()) . 'inc/superbthemes-info-content/admin-notice/assets/addons-notice.js',
+            array('jquery', 'updates'),
+            '1.0.0',
+            true
+        );
+
+        wp_localize_script(
+            'spbtic-addons-notice',
+            'spbticAddonsNotice',
+            array(
+                'slug'           => 'superb-blocks',
+                'nonce'          => wp_create_nonce('updates'),
+                'ajaxUrl'        => admin_url('admin-ajax.php'),
+                'pluginStatus'   => $plugin_status,
+                'activationUrl'  => $activation_url,
+                'installing'     => __('Installing...', 'minimalistblogger'),
+                'activating'     => __('Activating...', 'minimalistblogger'),
+                'done'           => __('Done!', 'minimalistblogger'),
+            )
+        );
+
+        wp_add_inline_style('dashicons', '
+            .spbtic-addons-install { display: inline-flex !important; align-items: center; gap: 6px; }
+            .spbtic-addons-install .spbtic-addons-spinner { box-sizing: border-box; width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spbtic-addons-spin 0.8s linear infinite; opacity: 0.8; flex: 0 0 auto; }
+            .spbtic-addons-install .spbtic-addons-spinner:before { content: none !important; }
+            .spbtic-addons-install .spbtic-addons-spinner.hidden { display: none; }
+            @keyframes spbtic-addons-spin { 100% { transform: rotate(360deg); } }
+        ');
     }
 
     public static function AdminNotices()
