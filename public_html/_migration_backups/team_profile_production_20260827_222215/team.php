@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v035
- * LAST MODIFIED: 8/27/2026 10:16:02 pm
+ * VERSION: v034
+ * LAST MODIFIED: 8/25/2026 12:26:16 am
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,87 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v035 (8/27/2026 10:16:02 pm)
- * - PRODUCTION: Promotes the fully tested team redesign into team.php.
- * - UI: Uses the consolidated 85% themed layout with Cars, Starry Night, Dark and Light.
- * - ADMIN: Uses JSON-managed League & Team, Hosting & Infrastructure, League Information and Team Menu panels.
- * - PROFILE: Production links now target profile.php.
- * - CLEANUP: Retains the consolidated v009-v011 component-boundary and Light-theme fixes.
- * - PRESERVE: Normal picks, LP, RP/RD, scoring, charts, View-As and scheduler behavior.
- *
- * v011 (8/27/2026 8:47:32 pm)
- * - FIX: Light theme status-panel text is black for maximum readability.
- * - FIX: Links inside Light-theme status panels remain blue.
- * - PRESERVE: All non-Light themes, charts, forms, menus, themes, profile,
- *             pick/LP/RP-RD/scoring behavior, and production pages.
- *
- * v010 (8/27/2026 8:21:46 pm)
- * - FIX: Restores black table/form text inside included chart and pick components.
- * - ARCHITECTURE: Tightens parent-page CSS boundary so included components keep their own table presentation.
- * - PRESERVE: v009 consolidated layout, four-panel menus, themes, charts,
- *             pick/LP/RP-RD/scoring behavior, profile integration, and production pages.
- *
- * v009 (8/27/2026 7:36:25 pm)
- * - CLEANUP: Consolidates redesign CSS into one current stylesheet.
- * - CLEANUP: Removes two unused legacy helper functions and an unused timestamp variable.
- * - CLEANUP: Removes superseded presentation selectors from earlier redesign passes.
- * - PRESERVE: Current v008 layout, four-panel JSON menus, themes, charts,
- *             pick/LP/RP-RD/scoring behavior, profile integration, and production pages.
- *
- * v008 (8/27/2026 7:13:18 pm)
- * - FIX: Loads all four JSON-driven panels, including both Admin panels.
- * - CLEANUP: Removes obsolete Connected DB diagnostic/environment URL helpers.
- * - CLEANUP: Uses one explicit four-panel content schema for fallback + JSON merge.
- * - PRESERVE: User-edited JSON content/order, themes, profile integration, charts,
- *             picks/scoring behavior, and production team.php/profile.php.
- *
- * v007 (8/27/2026 6:57:28 pm)
- * - FIX: Admin menu data-state repair / Content Manager v003 compatibility.
- * - PRESERVE: No visual/chart/theme changes.
- *
- * v006 (8/27/2026 6:33:12 pm)
- * - ORGANIZATION: uses /mrl_team/ for JSON/helper/content manager.
- * - ADMIN: all four panels JSON-driven; Manager control fixed.
- * - THEME: Light contrast/readability cleanup.
- * - PRESERVE: charts and production pages untouched.
- *
- * v005 (8/27/2026 5:27:00 pm)
- * - UI: Dedicated non-collapsible pick/submission status panels.
- * - ADMIN: Hard-wired Manage Team Page Content action.
- * - THEME: Per-user Cars / Starry Night / Dark / Light themes.
- * - PROFILE: Profile redesign/theme selector integration.
- * - PRESERVE: Chart presentation and production team.php/profile.php.
- *
- * v004 (8/27/2026 4:46:58 pm)
- * - THEME: Built-in cars.jpg background with rgba(10,20,15,0.70) overlay.
- * - THEME: Body remains transparent so the fixed background shows through.
- * - ARCHITECTURE: Named theme variables added for future per-user Cars/Dark/Light themes.
- * - PRESERVE: v003 layout, chart presentation, data and production team.php isolation.
- *
- * v003 (8/27/2026 3:51:57 pm)
- * - ARCHITECTURE: One common 85% width shell now controls header, menus and chart sections.
- * - UI: Chart-section decorative borders removed; table presentation remains unchanged.
- * - UI: Admin Menu is one collapsible +/- section containing two desktop columns.
- * - MOBILE: Admin modules stack; chart shells permit horizontal overflow when needed.
- * - PRESERVE: Production team.php and all chart/pick/scoring data behavior remain unchanged.
- *
- * v002 (8/27/2026 3:23:36 pm)
- * - UI: Base display width increased to 85% and aligned across header/menu/chart panels.
- * - UI: Admin area moved above League/Team menus and split into two side-by-side panels.
- * - UI: Installer-style typography, spacing, bullets and colors with greater transparency.
- * - FIX: Dark fallback replaces white background when no custom background image is active.
- * - FIX: Pick-window closed/open status text receives an explicit readable gold style.
- * - PRESERVE: Production team.php remains untouched; application/pick/scoring logic unchanged.
- *
- * v001 (8/27/2026 12:36:47 pm)
- * - DESIGN TEST: Isolated team-page presentation redesign; production team.php remains untouched.
- * - UI: Narrow centered sticky header based on race_results_dashboard.php / admin_setup.php styling.
- * - UI: Native JavaScript live clock replaces the external clock iframe on this test page.
- * - UI: Admin, League Information and Team Menu use translucent modular panels.
- * - NEW: League/Team links load from mrl_team_page_content.json with built-in fallback defaults.
- * - CHANGE: DB debug banner disabled on this test page.
- * - PRESERVE: Inherited v034 pick, LP, RP/RD, scoring, privacy and scheduler behavior.
  *
  * v034 (8/25/2026 12:26:16 am)
  * - UI: Previous Years now uses + / − instead of the native caret.
@@ -290,14 +209,105 @@ if (!$user_home->is_logged_in()) {
 date_default_timezone_set('America/New_York');
 require 'config.php';
 require 'config_mrl.php';
-require_once __DIR__ . '/mrl_team/mrl_theme_helper.php';
 require_once __DIR__ . '/race_results/race_schedule_helper.php';
 
 $currentTimeIs = date('n/j/Y g:i a');
 
+$showDbDebugBanner = true;
+
 function teampage_h(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function teampage_current_host(): string
+{
+    return isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== ''
+        ? (string)$_SERVER['HTTP_HOST']
+        : 'manliusracingleague.com';
+}
+
+function teampage_absolute_url(string $path): string
+{
+    $path = trim($path);
+    if ($path === '') {
+        $path = '/';
+    }
+    if ($path[0] !== '/') {
+        $path = '/' . $path;
+    }
+
+    return 'https://' . teampage_current_host() . $path;
+}
+
+function teampage_hostinger_site_url(string $suffix = ''): string
+{
+    $host = teampage_current_host();
+    $base = 'https://hpanel.hostinger.com/websites/' . rawurlencode($host);
+
+    if ($suffix === '') {
+        return $base;
+    }
+    if ($suffix[0] !== '/') {
+        $suffix = '/' . $suffix;
+    }
+
+    return $base . $suffix;
+}
+
+function teampage_get_current_db_names(USER $user_home, $dbo, $dbconnect): array
+{
+    $userDbName = '';
+    $pdoDbName  = '';
+    $myDbName   = '';
+
+    try {
+        $stmtDb = $user_home->runQuery("SELECT DATABASE() AS db");
+        $stmtDb->execute();
+        $rowDb = $stmtDb->fetch(PDO::FETCH_ASSOC);
+        $userDbName = isset($rowDb['db']) ? (string)$rowDb['db'] : '';
+    } catch (Throwable $e) {
+        $userDbName = '';
+    }
+
+    try {
+        if (isset($dbo) && $dbo instanceof PDO) {
+            $pdoDbName = (string)$dbo->query("SELECT DATABASE()")->fetchColumn();
+        }
+    } catch (Throwable $e) {
+        $pdoDbName = '';
+    }
+
+    try {
+        if (isset($dbconnect) && $dbconnect instanceof mysqli) {
+            $res = mysqli_query($dbconnect, "SELECT DATABASE() AS db");
+            if ($res) {
+                $row = mysqli_fetch_assoc($res);
+                $myDbName = isset($row['db']) ? (string)$row['db'] : '';
+            }
+        }
+    } catch (Throwable $e) {
+        $myDbName = '';
+    }
+
+    return [
+        'userDbName' => $userDbName,
+        'pdoDbName'  => $pdoDbName,
+        'myDbName'   => $myDbName,
+    ];
+}
+
+function teampage_render_db_debug_banner(array $dbNames): string
+{
+    $parts = [];
+    $parts[] = 'USER(PDO): ' . teampage_h($dbNames['userDbName'] !== '' ? $dbNames['userDbName'] : '(unknown)');
+    $parts[] = 'dbo(PDO): ' . teampage_h($dbNames['pdoDbName'] !== '' ? $dbNames['pdoDbName'] : '(unknown)');
+    $parts[] = 'dbconnect(mysqli): ' . teampage_h($dbNames['myDbName'] !== '' ? $dbNames['myDbName'] : '(unknown)');
+    $parts[] = 'HOST: ' . teampage_h(teampage_current_host());
+
+    return '<div style="padding:8px 12px; color:#fff; background:#333; font-family:Arial, sans-serif; font-size:14px;">Connected DBs: '
+        . implode(' | ', $parts)
+        . '</div>';
 }
 
 function teampage_user_has_change_auth(USER $user_home, int $uid): bool
@@ -456,6 +466,26 @@ function teampage_rd_changed_group(array $baseRow, array $rdRow): string
     }
 
     return count($changed) === 1 ? $changed[0] : '';
+}
+
+function teampage_user_has_rd_for_segment(PDO $dbo, int $uid, string $raceYear, string $segment): bool
+{
+    $sql = "SELECT pickID
+            FROM user_picks
+            WHERE userID = :uid
+              AND raceYear = :raceYear
+              AND segment = :segment
+              AND pick_type = 'RD'
+            LIMIT 1";
+
+    $stmt = $dbo->prepare($sql);
+    $stmt->execute([
+        ':uid' => $uid,
+        ':raceYear' => $raceYear,
+        ':segment' => $segment,
+    ]);
+
+    return ($stmt->fetch(PDO::FETCH_ASSOC) !== false);
 }
 
 function teampage_get_segment_base_pick_row(PDO $dbo, int $uid, string $raceYear, string $segment): ?array
@@ -638,6 +668,25 @@ function teampage_rd_should_show(?array $rdPending): bool
     return ($rdPending !== null);
 }
 
+function teampage_user_has_active_segment_pick(PDO $dbo, int $uid, string $raceYear, string $segment): bool
+{
+    $sql = "SELECT pickID
+            FROM user_picks
+            WHERE userID = :uid
+              AND raceYear = :raceYear
+              AND segment = :segment
+            LIMIT 1";
+
+    $stmt = $dbo->prepare($sql);
+    $stmt->execute([
+        ':uid' => $uid,
+        ':raceYear' => $raceYear,
+        ':segment' => $segment,
+    ]);
+
+    return ($stmt->fetch(PDO::FETCH_ASSOC) !== false);
+}
+
 function teampage_lp_effective_race_exists(string $raceYear, string $segment): bool
 {
     try {
@@ -776,6 +825,8 @@ function teampage_determine_form_mode(USER $user_home, PDO $dbo, int $uid, strin
     return 'NORMAL';
 }
 
+$dbNames = teampage_get_current_db_names($user_home, $dbo, $dbconnect);
+
 $stmt = $user_home->runQuery("SELECT * FROM users WHERE userID = :uid");
 $stmt->execute([':uid' => $_SESSION['userSession']]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -785,7 +836,6 @@ $first_name = $name_parts[0] ?? '';
 
 $uid = (int)($_SESSION['userSession'] ?? 0);
 $isAdmin = isAdmin($uid);
-$mrlTheme = mrl_theme_get($dbo, $uid);
 
 require_once 'team_name.php';
 
@@ -953,652 +1003,258 @@ if ($rdPendingInfo !== null) {
     }
 }
 
-/*
- * team.php presentation content.
- * The JSON file is deliberately separate from application logic so the page
- * can later be managed by an admin editor without editing this PHP file.
- */
-$teamPageContentDefaults = [
-    'admin_league_panel' => [
-        'title' => 'League & Team',
-        'items' => [
-            ['label' => 'Weekly Standings / scoring - Beta', 'url' => '/race_results/weekly_standings.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Setup Year / Pick Window', 'url' => '/admin_setup.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Paid Status by year', 'url' => '/Paid_Status_Year.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'View Team page as alternate user', 'url' => '/team_view_as.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Email addresses', 'url' => '/email.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Special user authorization', 'url' => '/change_user_auth.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Approve LP as regular segment pick', 'url' => '/admin_pick_adjustment.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Add drivers for a new year', 'url' => '/addDrivers.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Current segment chart by entry time', 'url' => '/current_segment_chart_by_entry_time.php', 'enabled' => true, 'new_tab' => true],
-        ],
-    ],
-    'admin_hosting_panel' => [
-        'title' => 'Hosting & Infrastructure',
-        'items' => [
-            ['label' => 'phpMyAdmin (Hostinger)', 'url' => 'https://hpanel.hostinger.com/', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'WP Admin', 'url' => '/wp-admin/', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Hostinger Backups', 'url' => 'https://hpanel.hostinger.com/', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Hostinger hPanel', 'url' => 'https://hpanel.hostinger.com/', 'enabled' => true, 'new_tab' => true],
-        ],
-    ],
-    'league_panel' => [
-        'title' => 'League Information',
-        'items' => [
-            ['label' => '{year} Fees & Payment Info', 'url' => '/{year}_Fees.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => '{year} Rules', 'url' => '/{year}_Rules.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => '{year} Race Schedule - PDF', 'url' => '/wp-content/uploads/{year}/01/{year}_Schedule_MRL.pdf', 'enabled' => true, 'new_tab' => true],
-            ['label' => '{year} Race Schedule - Spreadsheet', 'url' => '/wp-content/uploads/{year}/01/{year}_Schedule_MRL.xlsx', 'enabled' => true, 'new_tab' => true],
-            ['label' => '{year} Race Schedule on NASCAR.com', 'url' => 'https://www.nascar.com/nascar-cup-series/{year}/schedule/', 'enabled' => true, 'new_tab' => true],
-        ],
-    ],
-    'team_panel' => [
-        'title' => 'Team Menu',
-        'items' => [
-            ['label' => 'Driver Chart(s) - view, print for any year', 'url' => '/showDrivers.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Team Chart(s) - view, PDF, spreadsheet for any year/segment', 'url' => '/team_chart.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Submitted Teams for Current Segment', 'url' => '/submitted_teams.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Your Profile page', 'url' => '/profile.php', 'enabled' => true, 'new_tab' => true],
-        ],
-    ],
-];
-
-$teamPageContentPanelKeys = [
-    'admin_league_panel',
-    'admin_hosting_panel',
-    'league_panel',
-    'team_panel',
-];
-
-$teamPageContent = $teamPageContentDefaults;
-$teamPageContentPath = __DIR__ . '/mrl_team/mrl_team_page_content.json';
-
-if (is_file($teamPageContentPath)) {
-    $teamPageContentRaw = @file_get_contents($teamPageContentPath);
-
-    if (is_string($teamPageContentRaw) && trim($teamPageContentRaw) !== '') {
-        $teamPageContentDecoded = json_decode($teamPageContentRaw, true);
-
-        if (is_array($teamPageContentDecoded)) {
-            foreach ($teamPageContentPanelKeys as $panelKey) {
-                if (isset($teamPageContentDecoded[$panelKey])
-                    && is_array($teamPageContentDecoded[$panelKey])) {
-                    $teamPageContent[$panelKey] = array_replace(
-                        $teamPageContentDefaults[$panelKey],
-                        $teamPageContentDecoded[$panelKey]
-                    );
-                }
-            }
-        }
-    }
-}
-
-function teampage_redesign_token(string $value, string $raceYear): string
-{
-    return str_replace('{year}', $raceYear, $value);
-}
-
-function teampage_redesign_render_links(array $panel, string $raceYear): void
-{
-    $items = isset($panel['items']) && is_array($panel['items']) ? $panel['items'] : [];
-    echo '<ul class="mrl-rd-list">';
-
-    foreach ($items as $item) {
-        if (!is_array($item) || empty($item['enabled'])) {
-            continue;
-        }
-
-        $label = teampage_redesign_token((string)($item['label'] ?? ''), $raceYear);
-        $url = teampage_redesign_token((string)($item['url'] ?? ''), $raceYear);
-        if ($label === '' || $url === '') {
-            continue;
-        }
-
-        $newTab = !empty($item['new_tab']);
-        $target = $newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
-
-        echo '<li><a href="' . teampage_h($url) . '"' . $target . '>'
-            . teampage_h($label)
-            . '</a></li>';
-    }
-
-    echo '</ul>';
-}
-
+$wpAdminUrl = teampage_absolute_url('/wp-login.php');
+$hostingerBackupsUrl = teampage_hostinger_site_url('/files/backups');
+$hostingerPanelUrl = teampage_hostinger_site_url();
+$phpMyAdminDb = $dbNames['myDbName'] !== '' ? $dbNames['myDbName'] : ($dbNames['pdoDbName'] !== '' ? $dbNames['pdoDbName'] : '');
+$phpMyAdminUrl = $phpMyAdminDb !== ''
+    ? 'https://auth-db1928.hstgr.io/index.php?db=' . rawurlencode($phpMyAdminDb)
+    : 'https://auth-db1928.hstgr.io/';
 ?>
 <!DOCTYPE html>
-<html class="no-js mrl-theme-<?php echo teampage_h($mrlTheme); ?>">
+<html class="no-js">
 <head>
     <title><?php echo teampage_h($first_name); ?>'s Team Page</title>
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
     <link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet" media="screen">
     <link href="assets/styles.css" rel="stylesheet" media="screen">
     <style>
-        /* =====================================================================
-         * team.php v009 - consolidated current presentation
-         * =================================================================== */
-        :root{
-            --mrl-page-width:85%;
-            --mrl-page-max:1600px;
-            --mrl-rd-panel:rgba(28,28,28,.48);
-            --mrl-rd-panel-header:rgba(34,34,34,.42);
-            --mrl-rd-border:rgba(195,195,195,.34);
-            --mrl-rd-gold:#f1c97f;
-            --mrl-rd-text:#f2f2f2;
-            --mrl-rd-muted:#d4d0c7;
-            --mrl-rd-blue:#43b7f0;
-            --mrl-rd-shadow:0 10px 28px rgba(0,0,0,.30);
+        body {
+            background-color: #222222;
+            padding-top: 60px;
         }
 
-        html{
-            min-height:100%;
-            background:#151515;
+        /*
+         * v030: keep the form/chart geometry untouched at the existing
+         * team-page content width.  The panel border is decorative only
+         * and is drawn outside the content box so it cannot narrow tables.
+         */
+        .mrl-pick-panel {
+            position: relative;
+            box-sizing: border-box;
+            width: 100%;
+            margin: 28px 0 34px 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
         }
 
-        html.mrl-theme-cars{
-            --mrl-rd-panel:rgba(28,28,28,.48);
-            --mrl-rd-panel-header:rgba(34,34,34,.42);
-            --mrl-rd-border:rgba(195,195,195,.34);
-            --mrl-rd-gold:#f1c97f;
-            --mrl-rd-text:#f2f2f2;
-            --mrl-rd-muted:#d4d0c7;
-            --mrl-rd-blue:#43b7f0;
-            background:
-                linear-gradient(rgba(10,20,15,.70),rgba(10,20,15,.70)),
-                url("/images/cars.jpg") center/cover no-repeat fixed!important;
+        .mrl-pick-panel::before {
+            content: "";
+            position: absolute;
+            top: -18px;
+            right: -22px;
+            bottom: -18px;
+            left: -22px;
+            border: 1px solid #666666;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.018);
+            pointer-events: none;
+            z-index: 0;
         }
 
-        html.mrl-theme-starry-night{
-            --mrl-rd-panel:rgba(19,22,31,.56);
-            --mrl-rd-panel-header:rgba(24,27,39,.50);
-            --mrl-rd-border:rgba(190,198,221,.34);
-            --mrl-rd-gold:#e8cf9a;
-            --mrl-rd-text:#f2f3f7;
-            --mrl-rd-muted:#d4d7e2;
-            --mrl-rd-blue:#67bdf2;
-            background:
-                linear-gradient(rgba(5,8,18,.60),rgba(5,8,18,.60)),
-                url("/images/starry_night.jpg") center/cover no-repeat fixed!important;
+        .mrl-pick-panel > * {
+            position: relative;
+            z-index: 1;
         }
 
-        html.mrl-theme-dark{
-            --mrl-rd-panel:rgba(28,28,28,.88);
-            --mrl-rd-panel-header:rgba(34,34,34,.92);
-            --mrl-rd-border:rgba(195,195,195,.34);
-            --mrl-rd-gold:#f1c97f;
-            --mrl-rd-text:#f2f2f2;
-            --mrl-rd-muted:#d4d0c7;
-            --mrl-rd-blue:#43b7f0;
-            background:#151515!important;
+        /*
+         * v031: Previous Years uses the same geometry model as the v030
+         * pick/form panel.  The section stays full-page for layout purposes,
+         * while the decorative border is positioned around the established
+         * ~80% chart footprint.  The charts are NOT nested inside an 80%
+         * width parent, so their existing width is preserved.
+         */
+        .mrl-previous-years {
+            position: relative;
+            width: 100%;
+            margin: 26px 0 34px 0;
+            border: 0;
+            background: transparent;
         }
 
-        html.mrl-theme-light{
-            --mrl-rd-panel:rgba(255,255,255,.90);
-            --mrl-rd-panel-header:rgba(244,244,244,.96);
-            --mrl-rd-border:rgba(60,60,60,.28);
-            --mrl-rd-gold:#8b5b00;
-            --mrl-rd-text:#202020;
-            --mrl-rd-muted:#555;
-            --mrl-rd-blue:#006eaa;
-            background:#eceff1!important;
+        .mrl-previous-years::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            right: calc(10% - 22px);
+            bottom: -10px;
+            left: calc(10% - 22px);
+            border: 1px solid #666666;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.018);
+            pointer-events: none;
+            z-index: 0;
         }
 
-        body{
-            min-height:100%;
-            padding-top:0!important;
-            background:transparent!important;
-            color:var(--mrl-rd-text);
+        .mrl-previous-years > * {
+            position: relative;
+            z-index: 1;
         }
-
-        .mrl-rd-shell,
-        .mrl-rd-top,
-        .mrl-rd-chart-shell{
-            width:var(--mrl-page-width)!important;
-            max-width:var(--mrl-page-max)!important;
-            box-sizing:border-box;
-            margin-left:auto!important;
-            margin-right:auto!important;
+        .mrl-previous-years summary {
+            box-sizing: border-box;
+            width: 80%;
+            margin: 0 auto;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 20.0pt;
+            font-weight: bold;
+            color: #dfcca8;
+            outline: none;
+            border: 0;
+            background: transparent;
         }
-
-        /* Sticky header */
-        .mrl-rd-sticky{
-            position:sticky;
-            top:8px;
-            z-index:1000;
-            margin-top:8px!important;
-            margin-bottom:14px!important;
-            border:1px solid rgba(67,142,94,.72);
-            border-radius:14px;
-            background:linear-gradient(180deg,rgba(18,58,40,.78),rgba(20,35,29,.74));
-            backdrop-filter:blur(3px);
-            -webkit-backdrop-filter:blur(3px);
-            box-shadow:var(--mrl-rd-shadow);
+        .mrl-previous-years-content {
+            width: 100%;
+            padding: 10px 0 18px 0;
+            color: #000000;
         }
-
-        .mrl-rd-header{
-            min-height:58px;
-            display:grid;
-            grid-template-columns:minmax(170px,1fr) minmax(260px,2fr) minmax(190px,1fr);
-            align-items:center;
-            gap:12px;
-            padding:8px 14px;
-        }
-
-        .mrl-rd-user{position:relative;justify-self:start}
-
-        .mrl-rd-user-button{
-            appearance:none;
-            border:1px solid rgba(239,201,130,.34);
-            border-radius:999px;
-            background:rgba(255,255,255,.045);
-            color:var(--mrl-rd-text);
-            padding:7px 12px;
-            font:600 15px/1.1 Tahoma,Verdana,Segoe UI,sans-serif;
-            cursor:pointer;
-        }
-
-        .mrl-rd-user-button:hover{
-            border-color:rgba(239,201,130,.72);
-            background:rgba(255,255,255,.08);
-        }
-
-        .mrl-rd-user-menu{
-            display:none;
-            position:absolute;
-            top:calc(100% + 7px);
-            left:0;
-            min-width:190px;
-            padding:7px;
-            border:1px solid var(--mrl-rd-border);
-            border-radius:10px;
-            background:rgba(22,22,22,.97);
-            box-shadow:var(--mrl-rd-shadow);
-        }
-
-        .mrl-rd-user.open .mrl-rd-user-menu{display:block}
-
-        .mrl-rd-user-menu a{
-            display:block;
-            padding:8px 10px;
-            border-radius:7px;
-            color:#f2f2f2!important;
-            font:14px/1.2 Tahoma,Verdana,Segoe UI,sans-serif;
-            text-decoration:none;
-        }
-
-        .mrl-rd-user-menu a:hover{background:#333;color:#fff!important}
-
-        .mrl-rd-title{
-            min-width:0;
-            text-align:center;
-            color:#fff5e2;
-            font:800 20px/1.1 Tahoma,Verdana,Segoe UI,sans-serif;
-            letter-spacing:.5px;
-        }
-
-        .mrl-rd-title small{
-            display:block;
-            margin-top:2px;
-            color:var(--mrl-rd-gold);
-            font-size:12px;
-            font-weight:700;
-            letter-spacing:.2px;
-        }
-
-        .mrl-rd-clock{
-            justify-self:end;
-            text-align:right;
-            color:var(--mrl-rd-text);
-            font:700 14px/1.15 Tahoma,Verdana,Segoe UI,sans-serif;
-            white-space:nowrap;
-        }
-
-        .mrl-rd-clock small{
-            display:block;
-            margin-top:2px;
-            color:var(--mrl-rd-muted);
-            font-size:11px;
-            font-weight:600;
-        }
-
-        /* Top navigation panels */
-        .mrl-rd-top{
-            margin-bottom:18px!important;
-            color:var(--mrl-rd-text);
-            font-family:Tahoma,Verdana,Segoe UI,sans-serif;
-        }
-
-        .mrl-rd-greeting{
-            margin:6px 2px 10px;
-            color:var(--mrl-rd-gold);
-            font-size:18px;
-            line-height:1.3;
-        }
-
-        .mrl-rd-admin-wrap{
-            margin:12px 0 18px;
-            padding:0;
-            border:1px solid var(--mrl-rd-border);
-            border-radius:14px;
-            background:rgba(28,28,28,.48);
-            overflow:hidden;
-            backdrop-filter:blur(2px);
-            -webkit-backdrop-filter:blur(2px);
-        }
-
-        .mrl-rd-admin-wrap>summary{
-            list-style:none;
-            cursor:pointer;
-            padding:12px 18px;
-            color:var(--mrl-rd-gold);
-            font:800 18px/1.25 Tahoma,Verdana,Segoe UI,sans-serif;
-            outline:none;
-        }
-
-        .mrl-rd-admin-wrap>summary::-webkit-details-marker{display:none}
-        .mrl-rd-admin-wrap>summary::before{content:"+ ";font-weight:500}
-        .mrl-rd-admin-wrap[open]>summary::before{content:"− "}
-        .mrl-rd-admin-wrap[open]>summary{border-bottom:1px solid rgba(255,255,255,.09)}
-
-        .mrl-rd-admin-fixed-control{
-            margin:12px 14px 0;
-            padding:10px 14px;
-            border:1px solid var(--mrl-rd-border);
-            border-radius:10px;
-            background:rgba(0,0,0,.16);
-        }
-
-        .mrl-rd-admin-fixed-control a{
-            color:var(--mrl-rd-blue)!important;
-            text-decoration:none!important;
-            font-weight:800;
-        }
-
-        .mrl-rd-admin-grid,
-        .mrl-rd-main-grid{
-            display:grid;
-            grid-template-columns:repeat(2,minmax(0,1fr));
-            gap:14px;
-            align-items:start;
-        }
-
-        .mrl-rd-admin-wrap .mrl-rd-admin-grid{margin:0;padding:14px}
-        .mrl-rd-main-grid{margin-top:12px;margin-bottom:14px}
-
-        .mrl-rd-card{
-            border:1px solid var(--mrl-rd-border);
-            border-radius:14px;
-            background:var(--mrl-rd-panel);
-            backdrop-filter:blur(2px);
-            -webkit-backdrop-filter:blur(2px);
-            box-shadow:0 8px 22px rgba(0,0,0,.18);
-            overflow:hidden;
-        }
-
-        .mrl-rd-admin-wrap .mrl-rd-card{background:rgba(28,28,28,.40)}
-
-        .mrl-rd-card-title{
-            padding:13px 18px 11px;
-            color:var(--mrl-rd-gold);
-            background:var(--mrl-rd-panel-header);
-            border-bottom:1px solid rgba(255,255,255,.10);
-            font:800 18px/1.25 Tahoma,Verdana,Segoe UI,sans-serif;
-        }
-
-        .mrl-rd-card-body{
-            padding:14px 20px 16px;
-            color:var(--mrl-rd-text);
-            font:16px/1.4 Tahoma,Verdana,Segoe UI,sans-serif;
-        }
-
-        .mrl-rd-list{
-            margin:0;
-            padding-left:24px;
-            color:var(--mrl-rd-text);
-        }
-
-        .mrl-rd-list li{margin:0 0 8px;padding-left:2px;line-height:1.35}
-        .mrl-rd-list li:last-child{margin-bottom:0}
-        .mrl-rd-list li::marker{color:#eee}
-        .mrl-rd-list a{color:var(--mrl-rd-blue)!important;text-decoration:none!important}
-        .mrl-rd-list a:hover{color:#85d5ff!important;text-decoration:underline!important}
-
-        /* Chart/form shells: geometry only; chart cells remain untouched. */
-        .mrl-rd-chart-shell{
-            position:relative;
-            margin-top:18px!important;
-            margin-bottom:28px!important;
-            padding:0!important;
-            border:0!important;
-            background:transparent!important;
-            overflow-x:auto;
-            -webkit-overflow-scrolling:touch;
-        }
-
-        .mrl-user-info-panel,
-        .mrl-previous-years{width:var(--mrl-page-width)!important}
-
-        .mrl-user-info-panel table,
-        .mrl-previous-years-content table{
-            width:100%!important;
-            max-width:none!important;
-            margin-left:0!important;
-            margin-right:0!important;
-        }
-
-        .mrl-pick-panel{
-            position:relative;
-            box-sizing:border-box;
-            width:100%!important;
-            margin:0!important;
-            padding:0!important;
-            border:0!important;
-            background:transparent!important;
-            color:#f1d49a!important;
-            font:18px/1.35 "Century Gothic",Tahoma,Verdana,sans-serif!important;
-            text-shadow:none!important;
-            filter:none!important;
-        }
-
-        .mrl-rd-pick-section .mrl-pick-panel>table{width:100%!important}
-
-        /* Included components own their table presentation.  The team-page shell
-         * controls geometry only and must not leak theme text colors into tables. */
-        .mrl-user-info-panel table,
-        .mrl-user-info-panel th,
-        .mrl-user-info-panel td,
-        .mrl-rd-pick-section .mrl-pick-panel table,
-        .mrl-rd-pick-section .mrl-pick-panel th,
-        .mrl-rd-pick-section .mrl-pick-panel td{
-            color:#000!important;
-            text-shadow:none!important;
-            filter:none!important;
-        }
-
-        .mrl-rd-pick-section .mrl-pick-panel select,
-        .mrl-rd-pick-section .mrl-pick-panel input,
-        .mrl-rd-pick-section .mrl-pick-panel button{
-            color:#000!important;
-            text-shadow:none!important;
-        }
-
-        .mrl-rd-notice-panel{
-            box-sizing:border-box;
-            width:100%;
-            margin:14px 0 18px;
-            padding:13px 18px;
-            border:1px solid var(--mrl-rd-border);
-            border-radius:12px;
-            background:var(--mrl-rd-panel);
-            color:var(--mrl-rd-gold);
-            font:18px/1.45 "Century Gothic",Tahoma,Verdana,sans-serif;
-            backdrop-filter:blur(2px);
-            -webkit-backdrop-filter:blur(2px);
-        }
-
-        .mrl-rd-submission-panel{margin-top:18px;margin-bottom:18px}
-        .mrl-rd-submission-panel a{color:var(--mrl-rd-blue)!important}
-
-        .mrl-previous-years{
-            position:relative;
-            margin-top:24px!important;
-            margin-bottom:28px!important;
-            border:0;
-            background:transparent;
-        }
-
-        .mrl-previous-years summary{
-            list-style:none;
-            box-sizing:border-box;
-            width:100%!important;
-            margin:0!important;
-            padding:12px 0 14px!important;
-            cursor:pointer;
-            color:#dfcca8;
-            font:400 20pt/1.2 "Century Gothic",Tahoma,Verdana,sans-serif;
-            outline:none;
-        }
-
-        .mrl-previous-years summary::-webkit-details-marker{display:none}
-        .mrl-previous-years summary::before{content:"+ ";font-weight:400}
-        .mrl-previous-years[open] summary::before{content:"− "}
-
-        .mrl-previous-years-content{
-            width:100%!important;
-            padding:6px 0 0!important;
-            color:#000;
-        }
-
         .mrl-previous-years-content table,
         .mrl-previous-years-content th,
-        .mrl-previous-years-content td{color:#000!important}
-
-        /* Light theme requires explicit contrast instead of dark-theme inheritance. */
-        html.mrl-theme-light body{color:#202020!important}
-        html.mrl-theme-light .mrl-rd-sticky,
-        html.mrl-theme-light .mrl-rd-sticky *{color:#fff7e6!important}
-        html.mrl-theme-light .mrl-rd-user,
-        html.mrl-theme-light .mrl-rd-user *{color:#fff!important}
-        html.mrl-theme-light .mrl-rd-user-menu{background:#242424!important;border-color:#555!important}
-        html.mrl-theme-light .mrl-rd-user-menu a{color:#f2f2f2!important}
-        html.mrl-theme-light .mrl-rd-user-menu a:hover{color:#fff!important;background:#333!important}
-        html.mrl-theme-light .mrl-rd-title small,
-        html.mrl-theme-light .mrl-rd-clock,
-        html.mrl-theme-light .mrl-rd-clock *{color:#fff3d5!important}
-        html.mrl-theme-light .mrl-rd-greeting{color:#8b5b00!important}
-        html.mrl-theme-light .mrl-rd-admin-wrap{background:rgba(255,255,255,.58)!important;color:#202020!important}
-        html.mrl-theme-light .mrl-rd-admin-wrap>summary{color:#8b5b00!important}
-        html.mrl-theme-light .mrl-rd-card{background:rgba(255,255,255,.90)!important;color:#202020!important}
-        html.mrl-theme-light .mrl-rd-card-title{background:rgba(244,244,244,.98)!important;color:#8b5b00!important}
-        html.mrl-theme-light .mrl-rd-card-body{color:#202020!important}
-        html.mrl-theme-light .mrl-rd-list{color:#202020!important}
-        html.mrl-theme-light .mrl-rd-list li::marker{color:#555!important}
-        html.mrl-theme-light .mrl-rd-list a{color:#006eaa!important}
-        html.mrl-theme-light .mrl-rd-admin-fixed-control{background:rgba(255,255,255,.78)!important}
-        html.mrl-theme-light .mrl-rd-admin-fixed-control a{color:#006eaa!important}
-        html.mrl-theme-light .mrl-rd-notice-panel{background:rgba(255,255,255,.88)!important;color:#000!important}
-        html.mrl-theme-light .mrl-rd-notice-panel *{color:#000!important}
-        html.mrl-theme-light .mrl-rd-notice-panel a{color:#006eaa!important}
-        html.mrl-theme-light .mrl-previous-years summary{color:#8b5b00!important;opacity:1!important}
-
-        @media(max-width:1000px){
-            :root{--mrl-page-width:94%}
-            .mrl-rd-header{grid-template-columns:1fr auto;gap:8px}
-            .mrl-rd-title{grid-column:1/-1;grid-row:1;text-align:left}
-            .mrl-rd-user{grid-column:1;grid-row:2}
-            .mrl-rd-clock{grid-column:2;grid-row:2}
-            .mrl-rd-admin-grid,
-            .mrl-rd-main-grid{grid-template-columns:1fr!important}
-            .mrl-rd-admin-wrap .mrl-rd-admin-grid{padding:10px}
+        .mrl-previous-years-content td {
+            color: #000000 !important;
         }
 
-        @media(max-width:600px){
-            .mrl-rd-header{padding:8px 10px}
-            .mrl-rd-title{font-size:17px}
-            .mrl-rd-clock{font-size:12px}
-            .mrl-rd-user-button{font-size:13px}
+        /* v033 presentation-only section framing */
+        .mrl-section-panel{position:relative;box-sizing:border-box;width:100%;margin:12px 0 18px;padding:0;border:0;background:transparent}
+        .mrl-section-panel::before{content:"";position:absolute;top:-10px;right:-22px;bottom:-10px;left:-22px;border:1px solid #666;border-radius:12px;background:rgba(255,255,255,.018);pointer-events:none;z-index:0}
+        .mrl-section-panel>*{position:relative;z-index:1}
+        .mrl-section-panel-title,.mrl-admin-menu-panel>summary{font-size:20pt;color:#dfcca8;line-height:120%}
+        .mrl-section-panel-title{margin-bottom:8px}.mrl-section-panel-content{padding:4px 0 2px}
+        .mrl-admin-menu-panel>summary{cursor:pointer;list-style:none;outline:none}
+        .mrl-admin-menu-panel>summary::-webkit-details-marker{display:none}
+        .mrl-admin-menu-panel>summary::before{content:"+ ";font-weight:normal}
+        .mrl-admin-menu-panel[open]>summary::before{content:"− "}
+        .mrl-admin-menu-panel[open]>summary{margin-bottom:8px}
+        .mrl-user-info-panel{position:relative;box-sizing:border-box;width:100%;margin:18px 0 28px;padding:0;border:0;background:transparent}
+        .mrl-user-info-panel::before{content:"";position:absolute;top:-10px;right:calc(10% - 22px);bottom:-10px;left:calc(10% - 22px);border:1px solid #666;border-radius:12px;background:rgba(255,255,255,.018);pointer-events:none;z-index:0}
+        .mrl-user-info-panel>*{position:relative;z-index:1}
+
+        /*
+         * v034 Previous Years toggle alignment:
+         * Match the Admin Menu summary typography and +/- behavior.
+         */
+        .mrl-previous-years summary {
+            list-style: none;
+            font-size: 20.0pt;
+            font-weight: normal;
+            line-height: 120%;
+        }
+
+        .mrl-previous-years summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .mrl-previous-years summary::before {
+            content: "+ ";
+            font-weight: normal;
+        }
+
+        .mrl-previous-years[open] summary::before {
+            content: "− ";
         }
     </style>
 </head>
 
 <body>
 
-<div class="mrl-rd-shell mrl-rd-sticky">
-    <div class="mrl-rd-header">
-        <div class="mrl-rd-user" id="mrl-rd-user">
-            <button type="button" class="mrl-rd-user-button" id="mrl-rd-user-button"
-                    aria-expanded="false" aria-controls="mrl-rd-user-menu">
-                👤 <?php echo teampage_h($first_name); ?> ▾
-            </button>
-            <div class="mrl-rd-user-menu" id="mrl-rd-user-menu">
-                <a href="<?php echo teampage_h((string)$mrl); ?>">MRL Home</a>
-                <a href="<?php echo teampage_h((string)$mrl); ?>profile.php">Profile Page</a>
-                <a href="<?php echo teampage_h((string)$mrl); ?>logout.php">Logout</a>
-            </div>
-        </div>
+<?php if ($showDbDebugBanner): ?>
+    <?php echo teampage_render_db_debug_banner($dbNames); ?>
+<?php endif; ?>
 
-        <div class="mrl-rd-title">
-            <?php echo teampage_h((string)$sitename); ?>
-            <small>My Team Page</small>
-        </div>
+<div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container-fluid">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
 
-        <div class="mrl-rd-clock" id="mrl-rd-clock">
-            <span id="mrl-rd-clock-time">--:--:--</span>
-            <small id="mrl-rd-clock-date">America/New_York</small>
+            <ul class="nav pull-left">
+                <li class="dropdown">
+                    <a href="#" role="button" class="dropdown-toggle" id="mrl-user-menu-toggle" aria-haspopup="true" aria-expanded="false"
+                       onclick="var d=this.parentNode; var o=d.classList.contains('open'); if(o){d.classList.remove('open');this.setAttribute('aria-expanded','false');}else{d.classList.add('open');this.setAttribute('aria-expanded','true');} return false;">
+                        <i class="icon-user"></i>
+                        <?php echo teampage_h($first_name); ?> <i class="caret"></i>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a tabindex="-1" href="<?php echo teampage_h((string)$mrl); ?>">MRL Home</a>
+                            <a tabindex="-2" href="<?php echo teampage_h((string)$mrl); ?>profile.php">Profile Page</a>
+                            <a tabindex="-3" href="<?php echo teampage_h((string)$mrl); ?>logout.php">Logout</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+            <a class="brand">
+                <ol align='center'><?php echo teampage_h((string)$sitename); ?> - My Team Page</ol>
+            </a>
+
+            <iframe src="https://freesecure.timeanddate.com/clock/i7eqrnfz/n777/fn16/fs18/bas/bat0/pd2/tt0/tw1/tm2" frameborder="1px" width="330" height="28"></iframe>
         </div>
     </div>
 </div>
 
-<div class="mrl-rd-top">
-    <div class="mrl-rd-greeting">Hi <?php echo teampage_h($first_name); ?> ...</div>
+<div style="width:80%; margin:0 auto; text-align:left;">
+    <div style="color:#dfcca8; font-size:16.0pt; line-height:120%; font-family:'Century Gothic',sans-serif;">
+        Hi <?php echo teampage_h($first_name); ?> ... <br>
 
-    <?php if ($isAdmin): ?>
-        <details class="mrl-rd-admin-wrap">
-            <summary>Admin Menu</summary>
-            <div class="mrl-rd-admin-fixed-control">
-                <a href="/mrl_team/admin_team_page_content.php" target="_blank" rel="noopener noreferrer">Manage Team Page Content</a>
-            </div>
-            <div class="mrl-rd-admin-grid">
-                <section class="mrl-rd-card">
-                    <div class="mrl-rd-card-title"><?php echo teampage_h((string)($teamPageContent['admin_league_panel']['title'] ?? 'League & Team')); ?></div>
-                    <div class="mrl-rd-card-body"><?php teampage_redesign_render_links($teamPageContent['admin_league_panel'] ?? [], (string)$raceYear); ?></div>
-                </section>
-                <section class="mrl-rd-card">
-                    <div class="mrl-rd-card-title"><?php echo teampage_h((string)($teamPageContent['admin_hosting_panel']['title'] ?? 'Hosting & Infrastructure')); ?></div>
-                    <div class="mrl-rd-card-body"><?php teampage_redesign_render_links($teamPageContent['admin_hosting_panel'] ?? [], (string)$raceYear); ?></div>
-                </section>
-            </div>
-        </details>
-    <?php endif; ?>
+        <?php if ($isAdmin): ?>
+            <br>
+            <details class="mrl-section-panel mrl-admin-menu-panel">
+                <summary>Admin Menu</summary>
+                <div class="mrl-section-panel-content">
+                    <a href="/race_results/weekly_standings.php" target="_blank">- Weekly Standings / scoring - Beta</a><br>
+                    <a href="/admin_setup.php" target="_blank">- Setup Year/Segment & Submission Date</a><br>
+                    <a href="/Paid_Status_Year.php" target="_blank">- See Paid Status for selectable year</a><br>
+                    <a href="/team_view_as.php" target="_blank">- View Team page as alternate user</a><br>
+                    <a href="/email.php" target="_blank">- List all email addresses - active & inactive</a><br>
+                    <a href="/change_user_auth.php" target="_blank">- Toggle user status to make late picks or change driver</a><br>
+                    <a href="/admin_pick_adjustment.php" target="_blank">- Approve LP as regular segment pick</a><br>
+                    <a href="/addDrivers.php" target="_blank">- Add drivers for a new year.</a><br>
+                    <a href="/current_segment_chart_by_entry_time.php" target="_blank">- Show current segment team chart sorted by Entry Time.</a><br><br>
+                    <a href="<?php echo teampage_h($phpMyAdminUrl); ?>" target="_blank">- phpMyAdmin (Hostinger)</a><br>
+                    <a href="<?php echo teampage_h($wpAdminUrl); ?>" target="_blank">- WP Admin (Hostinger)</a><br>
+                    <a href="<?php echo teampage_h($hostingerBackupsUrl); ?>" target="_blank">- Backups (Hostinger)</a><br>
+                    <a href="<?php echo teampage_h($hostingerPanelUrl); ?>" target="_blank">- hPanel (Hostinger)</a>
+                </div>
+            </details>
+            <br>
+        <?php endif; ?>
 
-    <div class="mrl-rd-main-grid">
-        <section class="mrl-rd-card">
-            <div class="mrl-rd-card-title">
-                <?php echo teampage_h((string)($teamPageContent['league_panel']['title'] ?? 'League Information')); ?>
-            </div>
-            <div class="mrl-rd-card-body">
-                <?php teampage_redesign_render_links($teamPageContent['league_panel'], (string)$raceYear); ?>
-            </div>
-        </section>
+        <br>
+        Welcome to your team page.<br>
+        <br>
+        2026 Fees & Payment info is <a href="/2026_Fees.php" target="_blank" rel="noopener noreferrer">here</a><br>
+        2026 Rules are <a href="/2026_Rules.php" target="_blank" rel="noopener noreferrer">here</a><br>
+        2026 Race Schedule - PDF (on MRL) is <a href="/wp-content/uploads/2026/01/2026_Schedule_MRL.pdf" target="_blank" rel="noopener noreferrer">here</a><br>
+        2026 Race Schedule - Spreadsheet (on MRL) is <a href="/wp-content/uploads/2026/01/2026_Schedule_MRL.xlsx" target="_blank" rel="noopener noreferrer">here</a><br>
+        2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here</a><br>
+        <br>
 
-        <section class="mrl-rd-card">
-            <div class="mrl-rd-card-title">
-                <?php echo teampage_h((string)($teamPageContent['team_panel']['title'] ?? 'Team Menu')); ?>
+        <div class="mrl-section-panel mrl-team-menu-panel">
+            <div class="mrl-section-panel-title">Team Menu</div>
+            <div class="mrl-section-panel-content">
+                <a href="/showDrivers.php" target="_blank" rel="noopener noreferrer">- Driver Chart(s) - view, print for any year.</a><br>
+                <a href="/team_chart.php" target="_blank" rel="noopener noreferrer">- Team Chart(s) - view, pdf, spreadsheet for any year/segment.</a><br>
+                <a href="/submitted_teams.php" target="_blank" rel="noopener noreferrer">- Submitted Teams for Current Segment</a><br>
+                <a href="/profile.php" target="_blank" rel="noopener noreferrer">- Your Profile page (change your email addresses, etc)</a> - Or use dropdown menu - upper left at your name.<br>
             </div>
-            <div class="mrl-rd-card-body">
-                <?php teampage_redesign_render_links($teamPageContent['team_panel'], (string)$raceYear); ?>
-            </div>
-        </section>
+        </div>
+        <br>
     </div>
 </div>
 
 <a name="current_user_team_chart"></a>
-<section class="mrl-rd-chart-shell mrl-user-info-panel">
+<div class="mrl-user-info-panel">
     <?php include 'current_user_team_chart.php'; ?>
-</section>
+</div>
 
-<section class="mrl-rd-chart-shell mrl-rd-pick-section">
+<div style="width:80%; margin:0 auto; text-align:left;">
     <div style="color:#dfcca8; font-size:16.0pt; line-height:120%; font-family:'Century Gothic',sans-serif;">
+        <br>
         <div class="mrl-pick-panel">
         <?php
         $end_ts = strtotime((string)$formLockDate);
@@ -1606,6 +1262,7 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
         $normalPickWindowOpen = isset($pickWindowIsOpen)
             ? (bool)$pickWindowIsOpen
             : ($end_ts !== false && $end_ts > $user_ts);
+        $pickWindowOpenTs = isset($pickWindowOpenAt) ? strtotime((string)$pickWindowOpenAt) : false;
 
         if ($formLocked === 'no') {
             if ($normalPickWindowOpen) {
@@ -1638,9 +1295,7 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
                 } else {
 
                     include $currentForm;
-                    echo "<div class='mrl-rd-notice-panel mrl-rd-submission-panel'>";
                     include 'submitted_teams_count.php';
-                    echo "</div>";
 
                 }
 
@@ -1663,7 +1318,6 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
                             ? (string)$scoringSegmentName
                             : (string)$segmentName;
 
-                        echo "<div class='mrl-rd-notice-panel mrl-rd-pick-status-panel'>";
                         echo teampage_h((string)$raceYear) . " " . teampage_h($closedSegmentLabel) . " picks are closed.";
 
                         if (isset($nextSegment) && trim((string)$nextSegment) !== ''
@@ -1673,7 +1327,7 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
                                 . " picks open on " . teampage_h((string)$nextPickWindowOpenAt) . ".";
                         }
 
-                        echo "</div>";
+                        echo "<br><br>";
                         include 'current_segment_chart.php';
                     }
                 }
@@ -1685,9 +1339,11 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
         ?>
         </div>
     </div>
-</section>
+</div>
 
-<details class="mrl-previous-years mrl-rd-chart-shell">
+<br>
+
+<details class="mrl-previous-years">
     <summary>Previous Years Picks</summary>
     <div class="mrl-previous-years-content">
         <?php
@@ -1705,7 +1361,7 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
 
 <br>
 
-<div style="width:85%; margin:0 auto; border:none; text-align:left;">
+<div style="width:80%; margin:0 auto; border:none; text-align:left;">
     <p style='font-size:12.0pt; line-height:120%; font-family:"Century Gothic",sans-serif; color:#dfcca8;'>
         Copyright &copy; 2017-<script>document.write(new Date().getFullYear())</script> Manlius Racing League
     </p>
@@ -1714,55 +1370,6 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
 <script src="bootstrap/js/jquery-1.9.1.min.js"></script>
 <script src="bootstrap/js/bootstrap.min.js"></script>
 <script src="assets/scripts.js"></script>
-
-
-<script>
-(function () {
-    'use strict';
-
-    var user = document.getElementById('mrl-rd-user');
-    var button = document.getElementById('mrl-rd-user-button');
-
-    if (user && button) {
-        button.addEventListener('click', function (event) {
-            event.stopPropagation();
-            var open = user.classList.toggle('open');
-            button.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-
-        document.addEventListener('click', function () {
-            user.classList.remove('open');
-            button.setAttribute('aria-expanded', 'false');
-        });
-    }
-
-    var timeNode = document.getElementById('mrl-rd-clock-time');
-    var dateNode = document.getElementById('mrl-rd-clock-date');
-
-    function updateClock() {
-        if (!timeNode || !dateNode) return;
-
-        var now = new Date();
-        timeNode.textContent = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'America/New_York',
-            hour: 'numeric',
-            minute: '2-digit',
-            second: '2-digit'
-        }).format(now);
-
-        dateNode.textContent = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'America/New_York',
-            weekday: 'short',
-            month: 'numeric',
-            day: 'numeric',
-            year: 'numeric'
-        }).format(now) + ' ET';
-    }
-
-    updateClock();
-    window.setInterval(updateClock, 1000);
-}());
-</script>
 
 </body>
 </html>

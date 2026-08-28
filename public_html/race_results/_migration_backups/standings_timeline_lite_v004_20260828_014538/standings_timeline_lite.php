@@ -5,26 +5,10 @@ declare(strict_types=1);
 /**
  * standings_timeline_lite.php
  *
- * VERSION: v005
- * LAST MODIFIED: 8/28/2026 1:56:47 am
+ * VERSION: v003
+ * LAST MODIFIED: 8/28/2026 1:01:11 am
  *
  * CHANGELOG:
- * v005 (8/28/2026 1:56:47 am)
- *   - VISUAL MATCH: Corrected the final measured vertical offset; Timeline Lite's yellow table-header band was 6px too high versus weekly_standings.php at the same 1920x971 viewport.
- *   - VISUAL MATCH: Third column in all four tables now uses the same centered alignment as weekly_standings.php instead of Timeline Lite's previous right alignment.
- *   - UI: Removed seconds from the displayed as-of snapshot timestamps in both the top status pill and Table 1 title footnote.
- *   - PRESERVE: Existing table widths, row heights, winner segment colors, subdued as-of pill, unofficial pill, and all timeline logic remain unchanged.
- *   - PRESERVE: No snapshot selection, reconstruction, race navigation, ranking values, weekly-winner values, LP/RD overlay, or timeline calculation logic changes.
- *
- * v004 (8/28/2026 1:40:58 am)
- *   - VISUAL MATCH: Corrected Timeline Lite's vertical report position to match weekly_standings.php exactly at the same viewport.
- *   - VISUAL MATCH: Confirmed/carry-forward exact 1400px wrapper, four equal report columns, 10px gaps, 16px table text, 28px row pitch, 42px rank/week column, and 64px score column used by weekly_standings.php.
- *   - VISUAL MATCH: Snapshot timestamp in Table 1 title now uses the same parenthesized footnote presentation as weekly_standings.php.
- *   - VISUAL MATCH: Weekly Winners now uses the exact S1/S2/S3/S4 segment row colors from weekly_standings.php.
- *   - VISUAL MATCH: Tie ranks/week numbers are bolded to match weekly_standings.php presentation.
- *   - PRESERVE: Subdued Standings as of ... pill and AUTO-SCORING – UNOFFICIAL pill retained unchanged.
- *   - PRESERVE: No snapshot selection, reconstruction, race navigation, ranking values, weekly-winner values, LP/RD overlay, or timeline calculation logic changes.
- *
  * v003 (8/28/2026 1:01:11 am)
  *   - UI: Visually aligned the four standings tables with weekly_standings.php while preserving all existing timeline-lite data behavior.
  *   - UI: Replaced the heavy dark as-of banner with a subdued rounded Standings as of ... status pill.
@@ -77,22 +61,6 @@ function stlite_compact_snapshot_value(string $value): string
     return is_string($compact) && $compact !== '' ? $compact : $value;
 }
 
-function stlite_display_without_seconds(string $value): string
-{
-    $value = trim($value);
-    if ($value === '') {
-        return '';
-    }
-
-    $trimmed = preg_replace(
-        '/^(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}):\d{2}(\s*[ap]m)$/i',
-        '$1$2',
-        $value
-    );
-
-    return is_string($trimmed) && $trimmed !== '' ? $trimmed : $value;
-}
-
 function stlite_url(array $params): string
 {
     $query = array_merge($_GET, $params);
@@ -112,26 +80,9 @@ function stlite_render_score_table(array $rows, string $scoreKey, string $scoreL
     if (empty($rows)) {
         echo '<tr><td colspan="3" class="empty-cell">No rows available.</td></tr>';
     } else {
-        $rankCounts = [];
         foreach ($rows as $row) {
-            $rankKey = (string)($row['rank'] ?? '');
-            if ($rankKey !== '') {
-                if (!isset($rankCounts[$rankKey])) {
-                    $rankCounts[$rankKey] = 0;
-                }
-                $rankCounts[$rankKey]++;
-            }
-        }
-
-        foreach ($rows as $row) {
-            $rankText = (string)($row['rank'] ?? '');
-            $rankHtml = stlite_h($rankText);
-            if ($rankText !== '' && (int)($rankCounts[$rankText] ?? 0) > 1) {
-                $rankHtml = '<span class="tie-rank">' . stlite_h($rankText) . '</span>';
-            }
-
             echo '<tr>';
-            echo '<td class="col-rank">' . $rankHtml . '</td>';
+            echo '<td class="col-rank">' . stlite_h((string)($row['rank'] ?? '')) . '</td>';
             echo '<td class="team-col">' . stlite_h((string)($row['team_name'] ?? '')) . '</td>';
             echo '<td class="col-score">' . stlite_h((string)(int)($row[$scoreKey] ?? 0)) . '</td>';
             echo '</tr>';
@@ -149,29 +100,11 @@ function stlite_render_weekly_winners_table(array $rows): void
     if (empty($rows)) {
         echo '<tr><td colspan="3" class="empty-cell">No weekly winners available.</td></tr>';
     } else {
-        $weekCounts = [];
         foreach ($rows as $row) {
             $raceCode = (string)($row['race_code'] ?? '');
             $week = preg_match('/^R(\d+)$/', $raceCode, $m) ? (string)((int)$m[1]) : $raceCode;
-            if (!isset($weekCounts[$week])) {
-                $weekCounts[$week] = 0;
-            }
-            $weekCounts[$week]++;
-        }
-
-        foreach ($rows as $row) {
-            $raceCode = (string)($row['race_code'] ?? '');
-            $week = preg_match('/^R(\d+)$/', $raceCode, $m) ? (string)((int)$m[1]) : $raceCode;
-            $raceNumber = preg_match('/^R(\d+)$/', $raceCode, $n) ? (int)$n[1] : 0;
-            $segment = $raceNumber > 0 ? st_segment_from_race_number($raceNumber) : 'S1';
-
-            $weekHtml = stlite_h($week);
-            if ((int)($weekCounts[$week] ?? 0) > 1) {
-                $weekHtml = '<span class="tie-rank">' . stlite_h($week) . '</span>';
-            }
-
-            echo '<tr class="weekly-winner-segment-row weekly-winner-segment-' . stlite_h($segment) . '">';
-            echo '<td class="col-week">' . $weekHtml . '</td>';
+            echo '<tr>';
+            echo '<td class="col-week">' . stlite_h($week) . '</td>';
             echo '<td class="team-col">' . stlite_h((string)($row['team_name'] ?? '')) . '</td>';
             echo '<td class="col-score">' . stlite_h((string)(int)($row['points'] ?? 0)) . '</td>';
             echo '</tr>';
@@ -189,7 +122,7 @@ function stlite_print_button_disabled_attr(): string
 $asOfRaceText = trim((string)($asOfRaceCode ?? '') . ' ' . (string)($asOfRaceLabel ?? ''));
 $viewRaceText = trim((string)($selectedViewRaceCode ?? '') . ' ' . (string)($selectedViewRaceLabel ?? ''));
 $versionLabel = (string)($selectedSnapshot['version_label'] ?? '');
-$asOfDisplay = stlite_display_without_seconds((string)($selectedSnapshotDisplay ?? ''));
+$asOfDisplay = (string)($selectedSnapshotDisplay ?? '');
 $selectedSnapshotValueText = (string)($selectedSnapshotValue ?? '');
 $topBannerText = 'Standings as of ' . trim($asOfRaceText . ' ' . $versionLabel) . ' — ' . $asOfDisplay;
 
@@ -199,9 +132,7 @@ $selectedViewRaceNumberText = (string)($selectedViewRaceNumber ?? '');
 $selectedSegmentText = (string)($selectedSegment ?? '');
 $selectedViewSnapshotDisplay = '';
 if (isset($snapshotByRaceNumber) && is_array($snapshotByRaceNumber) && isset($snapshotByRaceNumber[(int)($selectedViewRaceNumber ?? 0)])) {
-    $selectedViewSnapshotDisplay = stlite_display_without_seconds(
-        st_snapshot_display(st_snapshot_key_from_file((string)$snapshotByRaceNumber[(int)$selectedViewRaceNumber]))
-    );
+    $selectedViewSnapshotDisplay = st_snapshot_display(st_snapshot_key_from_file((string)$snapshotByRaceNumber[(int)$selectedViewRaceNumber]));
 }
 if ($selectedViewSnapshotDisplay === '') {
     $selectedViewSnapshotDisplay = $asOfDisplay;
@@ -240,7 +171,7 @@ if ($selectedViewSnapshotDisplay === '') {
         flex-wrap: nowrap;
         align-items: center;
         gap: 8px;
-        margin-bottom: 43px;
+        margin-bottom: 64px;
     }
 
     .top-controls select,
@@ -413,27 +344,13 @@ if ($selectedViewSnapshotDisplay === '') {
 
     .col-score {
         width: 64px;
-        text-align: center;
+        text-align: right;
     }
 
     .empty-cell {
         color: #666;
         font-style: italic;
         text-align: center;
-    }
-
-    .tie-rank {
-        font-weight: bold;
-    }
-
-    /* Exact Weekly Standings Table 4 segment colors */
-    .weekly-winner-segment-row.weekly-winner-segment-S1 td { background: #c5d9f1 !important; }
-    .weekly-winner-segment-row.weekly-winner-segment-S2 td { background: #c4bd97 !important; }
-    .weekly-winner-segment-row.weekly-winner-segment-S3 td { background: #fcd5b4 !important; }
-    .weekly-winner-segment-row.weekly-winner-segment-S4 td { background: #c4d79b !important; }
-    .weekly-winner-segment-row td {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
     }
 
     .asof-id {
@@ -565,7 +482,7 @@ if ($selectedViewSnapshotDisplay === '') {
 
     <div class="report-grid">
         <div class="report-panel">
-            <div class="panel-title"><?php echo stlite_h($yearDisplay . ' ' . $viewRaceText); ?><?php if ($selectedViewSnapshotDisplay !== ''): ?> <span class="snapshot-footnote">(<?php echo stlite_h($selectedViewSnapshotDisplay); ?>)</span><?php endif; ?></div>
+            <div class="panel-title"><?php echo stlite_h($yearDisplay . ' ' . $viewRaceText); ?> <span class="snapshot-footnote"><?php echo stlite_h($selectedViewSnapshotDisplay); ?></span></div>
             <div class="table-wrap"><?php stlite_render_score_table($selectedWeeklyRows ?? [], 'weekly_total', 'Week ' . $selectedViewRaceNumberText); ?></div>
         </div>
 

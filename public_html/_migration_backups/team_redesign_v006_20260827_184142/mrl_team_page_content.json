@@ -1,0 +1,68 @@
+{
+    "schema_version": 1,
+    "updated_at": "2026-08-27 17:52:16",
+    "league_panel": {
+        "title": "League Information",
+        "items": [
+            {
+                "label": "{year} Fees & Payment Info",
+                "url": "/{year}_Fees.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Rules",
+                "url": "/{year}_Rules.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Race Schedule - PDF",
+                "url": "/wp-content/uploads/{year}/01/{year}_Schedule_MRL.pdf",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Race Schedule - Spreadsheet",
+                "url": "/wp-content/uploads/{year}/01/{year}_Schedule_MRL.xlsx",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Race Schedule on NASCAR.com",
+                "url": "https://www.nascar.com/nascar-cup-series/{year}/schedule/",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    },
+    "team_panel": {
+        "title": "Team Menu",
+        "items": [
+            {
+                "label": "Team Chart(s) - view, PDF, spreadsheet for any year/segment",
+                "url": "/team_chart.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Driver Chart(s) - view, print for any year",
+                "url": "/showDrivers.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Submitted Teams for Current Segment",
+                "url": "/submitted_teams.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Your Profile page",
+                "url": "/profile.php",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    }
+}

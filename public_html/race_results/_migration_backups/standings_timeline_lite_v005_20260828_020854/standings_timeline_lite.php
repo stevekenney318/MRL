@@ -5,17 +5,10 @@ declare(strict_types=1);
 /**
  * standings_timeline_lite.php
  *
- * VERSION: v005
- * LAST MODIFIED: 8/28/2026 1:56:47 am
+ * VERSION: v004
+ * LAST MODIFIED: 8/28/2026 1:40:58 am
  *
  * CHANGELOG:
- * v005 (8/28/2026 1:56:47 am)
- *   - VISUAL MATCH: Corrected the final measured vertical offset; Timeline Lite's yellow table-header band was 6px too high versus weekly_standings.php at the same 1920x971 viewport.
- *   - VISUAL MATCH: Third column in all four tables now uses the same centered alignment as weekly_standings.php instead of Timeline Lite's previous right alignment.
- *   - UI: Removed seconds from the displayed as-of snapshot timestamps in both the top status pill and Table 1 title footnote.
- *   - PRESERVE: Existing table widths, row heights, winner segment colors, subdued as-of pill, unofficial pill, and all timeline logic remain unchanged.
- *   - PRESERVE: No snapshot selection, reconstruction, race navigation, ranking values, weekly-winner values, LP/RD overlay, or timeline calculation logic changes.
- *
  * v004 (8/28/2026 1:40:58 am)
  *   - VISUAL MATCH: Corrected Timeline Lite's vertical report position to match weekly_standings.php exactly at the same viewport.
  *   - VISUAL MATCH: Confirmed/carry-forward exact 1400px wrapper, four equal report columns, 10px gaps, 16px table text, 28px row pitch, 42px rank/week column, and 64px score column used by weekly_standings.php.
@@ -75,22 +68,6 @@ function stlite_compact_snapshot_value(string $value): string
 {
     $compact = preg_replace('/^(\d{8}_\d{6}).*_(R\d{2})$/', '$1_$2', $value);
     return is_string($compact) && $compact !== '' ? $compact : $value;
-}
-
-function stlite_display_without_seconds(string $value): string
-{
-    $value = trim($value);
-    if ($value === '') {
-        return '';
-    }
-
-    $trimmed = preg_replace(
-        '/^(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}):\d{2}(\s*[ap]m)$/i',
-        '$1$2',
-        $value
-    );
-
-    return is_string($trimmed) && $trimmed !== '' ? $trimmed : $value;
 }
 
 function stlite_url(array $params): string
@@ -189,7 +166,7 @@ function stlite_print_button_disabled_attr(): string
 $asOfRaceText = trim((string)($asOfRaceCode ?? '') . ' ' . (string)($asOfRaceLabel ?? ''));
 $viewRaceText = trim((string)($selectedViewRaceCode ?? '') . ' ' . (string)($selectedViewRaceLabel ?? ''));
 $versionLabel = (string)($selectedSnapshot['version_label'] ?? '');
-$asOfDisplay = stlite_display_without_seconds((string)($selectedSnapshotDisplay ?? ''));
+$asOfDisplay = (string)($selectedSnapshotDisplay ?? '');
 $selectedSnapshotValueText = (string)($selectedSnapshotValue ?? '');
 $topBannerText = 'Standings as of ' . trim($asOfRaceText . ' ' . $versionLabel) . ' — ' . $asOfDisplay;
 
@@ -199,9 +176,7 @@ $selectedViewRaceNumberText = (string)($selectedViewRaceNumber ?? '');
 $selectedSegmentText = (string)($selectedSegment ?? '');
 $selectedViewSnapshotDisplay = '';
 if (isset($snapshotByRaceNumber) && is_array($snapshotByRaceNumber) && isset($snapshotByRaceNumber[(int)($selectedViewRaceNumber ?? 0)])) {
-    $selectedViewSnapshotDisplay = stlite_display_without_seconds(
-        st_snapshot_display(st_snapshot_key_from_file((string)$snapshotByRaceNumber[(int)$selectedViewRaceNumber]))
-    );
+    $selectedViewSnapshotDisplay = st_snapshot_display(st_snapshot_key_from_file((string)$snapshotByRaceNumber[(int)$selectedViewRaceNumber]));
 }
 if ($selectedViewSnapshotDisplay === '') {
     $selectedViewSnapshotDisplay = $asOfDisplay;
@@ -240,7 +215,7 @@ if ($selectedViewSnapshotDisplay === '') {
         flex-wrap: nowrap;
         align-items: center;
         gap: 8px;
-        margin-bottom: 43px;
+        margin-bottom: 37px;
     }
 
     .top-controls select,
@@ -413,7 +388,7 @@ if ($selectedViewSnapshotDisplay === '') {
 
     .col-score {
         width: 64px;
-        text-align: center;
+        text-align: right;
     }
 
     .empty-cell {

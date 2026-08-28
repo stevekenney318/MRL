@@ -2,22 +2,16 @@
 declare(strict_types=1);
 
 /**
- * profile.php
+ * profile_redesign.php
  *
  * VERSION: v003
- * LAST MODIFIED: 8/27/2026 10:16:02 pm
+ * LAST MODIFIED: 8/27/2026 9:24:30 pm
  *
  * PURPOSE:
  * Modern MRL profile page with integrated email management and per-user theme selection.
  * Production profile.php remains untouched while this page is tested.
  *
  * CHANGELOG:
- *
- * v003 (8/27/2026 10:16:02 pm)
- * - PRODUCTION: Promotes the tested profile redesign into profile.php.
- * - PROFILE: Login Email and Secondary Email remain integrated directly on the page.
- * - THEME: Cars, Starry Night, Dark and Light remain user-selectable and database-backed.
- * - SECURITY: Authenticated userSession identity, CSRF protection and email validation preserved.
  *
  * v003 (8/27/2026 9:24:30 pm)
  * - PROFILE: Integrates Login Email editing directly into the profile page.
@@ -174,7 +168,7 @@ html.mrl-theme-light .header,html.mrl-theme-light .header *{color:#fff7e6!import
 </style>
 </head>
 <body>
-<header class="shell header"><div><a href="/team.php">← Team Page</a></div><div class="title">Manlius Racing League <div style="font-size:12px;color:#f1c97f">My Profile Page</div></div><div class="right"><a href="/logout.php">Logout</a></div></header>
+<header class="shell header"><div><a href="/team_redesign.php">← Team Page</a></div><div class="title">Manlius Racing League <div style="font-size:12px;color:#f1c97f">My Profile Page · redesign test</div></div><div class="right"><a href="/logout.php">Logout</a></div></header>
 <main class="shell">
 <div style="margin:16px 2px;color:var(--gold);font-size:18px">Hi <?php echo pr_h($firstName); ?> ...</div>
 <?php if ($message !== ''): ?><div class="message <?php echo pr_h($messageType); ?>"><?php echo pr_h($message); ?></div><?php endif; ?>

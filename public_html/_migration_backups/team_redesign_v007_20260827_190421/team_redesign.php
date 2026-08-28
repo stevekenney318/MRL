@@ -2,10 +2,10 @@
 declare(strict_types=1);
 
 /**
- * team.php
+ * team_redesign.php
  *
- * VERSION: v035
- * LAST MODIFIED: 8/27/2026 10:16:02 pm
+ * VERSION: v006
+ * LAST MODIFIED: 8/27/2026 6:33:12 pm
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,44 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v035 (8/27/2026 10:16:02 pm)
- * - PRODUCTION: Promotes the fully tested team redesign into team.php.
- * - UI: Uses the consolidated 85% themed layout with Cars, Starry Night, Dark and Light.
- * - ADMIN: Uses JSON-managed League & Team, Hosting & Infrastructure, League Information and Team Menu panels.
- * - PROFILE: Production links now target profile.php.
- * - CLEANUP: Retains the consolidated v009-v011 component-boundary and Light-theme fixes.
- * - PRESERVE: Normal picks, LP, RP/RD, scoring, charts, View-As and scheduler behavior.
- *
- * v011 (8/27/2026 8:47:32 pm)
- * - FIX: Light theme status-panel text is black for maximum readability.
- * - FIX: Links inside Light-theme status panels remain blue.
- * - PRESERVE: All non-Light themes, charts, forms, menus, themes, profile,
- *             pick/LP/RP-RD/scoring behavior, and production pages.
- *
- * v010 (8/27/2026 8:21:46 pm)
- * - FIX: Restores black table/form text inside included chart and pick components.
- * - ARCHITECTURE: Tightens parent-page CSS boundary so included components keep their own table presentation.
- * - PRESERVE: v009 consolidated layout, four-panel menus, themes, charts,
- *             pick/LP/RP-RD/scoring behavior, profile integration, and production pages.
- *
- * v009 (8/27/2026 7:36:25 pm)
- * - CLEANUP: Consolidates redesign CSS into one current stylesheet.
- * - CLEANUP: Removes two unused legacy helper functions and an unused timestamp variable.
- * - CLEANUP: Removes superseded presentation selectors from earlier redesign passes.
- * - PRESERVE: Current v008 layout, four-panel JSON menus, themes, charts,
- *             pick/LP/RP-RD/scoring behavior, profile integration, and production pages.
- *
- * v008 (8/27/2026 7:13:18 pm)
- * - FIX: Loads all four JSON-driven panels, including both Admin panels.
- * - CLEANUP: Removes obsolete Connected DB diagnostic/environment URL helpers.
- * - CLEANUP: Uses one explicit four-panel content schema for fallback + JSON merge.
- * - PRESERVE: User-edited JSON content/order, themes, profile integration, charts,
- *             picks/scoring behavior, and production team.php/profile.php.
- *
- * v007 (8/27/2026 6:57:28 pm)
- * - FIX: Admin menu data-state repair / Content Manager v003 compatibility.
- * - PRESERVE: No visual/chart/theme changes.
  *
  * v006 (8/27/2026 6:33:12 pm)
  * - ORGANIZATION: uses /mrl_team/ for JSON/helper/content manager.
@@ -295,9 +257,101 @@ require_once __DIR__ . '/race_results/race_schedule_helper.php';
 
 $currentTimeIs = date('n/j/Y g:i a');
 
+$showDbDebugBanner = false;
+
 function teampage_h(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function teampage_current_host(): string
+{
+    return isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== ''
+        ? (string)$_SERVER['HTTP_HOST']
+        : 'manliusracingleague.com';
+}
+
+function teampage_absolute_url(string $path): string
+{
+    $path = trim($path);
+    if ($path === '') {
+        $path = '/';
+    }
+    if ($path[0] !== '/') {
+        $path = '/' . $path;
+    }
+
+    return 'https://' . teampage_current_host() . $path;
+}
+
+function teampage_hostinger_site_url(string $suffix = ''): string
+{
+    $host = teampage_current_host();
+    $base = 'https://hpanel.hostinger.com/websites/' . rawurlencode($host);
+
+    if ($suffix === '') {
+        return $base;
+    }
+    if ($suffix[0] !== '/') {
+        $suffix = '/' . $suffix;
+    }
+
+    return $base . $suffix;
+}
+
+function teampage_get_current_db_names(USER $user_home, $dbo, $dbconnect): array
+{
+    $userDbName = '';
+    $pdoDbName  = '';
+    $myDbName   = '';
+
+    try {
+        $stmtDb = $user_home->runQuery("SELECT DATABASE() AS db");
+        $stmtDb->execute();
+        $rowDb = $stmtDb->fetch(PDO::FETCH_ASSOC);
+        $userDbName = isset($rowDb['db']) ? (string)$rowDb['db'] : '';
+    } catch (Throwable $e) {
+        $userDbName = '';
+    }
+
+    try {
+        if (isset($dbo) && $dbo instanceof PDO) {
+            $pdoDbName = (string)$dbo->query("SELECT DATABASE()")->fetchColumn();
+        }
+    } catch (Throwable $e) {
+        $pdoDbName = '';
+    }
+
+    try {
+        if (isset($dbconnect) && $dbconnect instanceof mysqli) {
+            $res = mysqli_query($dbconnect, "SELECT DATABASE() AS db");
+            if ($res) {
+                $row = mysqli_fetch_assoc($res);
+                $myDbName = isset($row['db']) ? (string)$row['db'] : '';
+            }
+        }
+    } catch (Throwable $e) {
+        $myDbName = '';
+    }
+
+    return [
+        'userDbName' => $userDbName,
+        'pdoDbName'  => $pdoDbName,
+        'myDbName'   => $myDbName,
+    ];
+}
+
+function teampage_render_db_debug_banner(array $dbNames): string
+{
+    $parts = [];
+    $parts[] = 'USER(PDO): ' . teampage_h($dbNames['userDbName'] !== '' ? $dbNames['userDbName'] : '(unknown)');
+    $parts[] = 'dbo(PDO): ' . teampage_h($dbNames['pdoDbName'] !== '' ? $dbNames['pdoDbName'] : '(unknown)');
+    $parts[] = 'dbconnect(mysqli): ' . teampage_h($dbNames['myDbName'] !== '' ? $dbNames['myDbName'] : '(unknown)');
+    $parts[] = 'HOST: ' . teampage_h(teampage_current_host());
+
+    return '<div style="padding:8px 12px; color:#fff; background:#333; font-family:Arial, sans-serif; font-size:14px;">Connected DBs: '
+        . implode(' | ', $parts)
+        . '</div>';
 }
 
 function teampage_user_has_change_auth(USER $user_home, int $uid): bool
@@ -456,6 +510,26 @@ function teampage_rd_changed_group(array $baseRow, array $rdRow): string
     }
 
     return count($changed) === 1 ? $changed[0] : '';
+}
+
+function teampage_user_has_rd_for_segment(PDO $dbo, int $uid, string $raceYear, string $segment): bool
+{
+    $sql = "SELECT pickID
+            FROM user_picks
+            WHERE userID = :uid
+              AND raceYear = :raceYear
+              AND segment = :segment
+              AND pick_type = 'RD'
+            LIMIT 1";
+
+    $stmt = $dbo->prepare($sql);
+    $stmt->execute([
+        ':uid' => $uid,
+        ':raceYear' => $raceYear,
+        ':segment' => $segment,
+    ]);
+
+    return ($stmt->fetch(PDO::FETCH_ASSOC) !== false);
 }
 
 function teampage_get_segment_base_pick_row(PDO $dbo, int $uid, string $raceYear, string $segment): ?array
@@ -638,6 +712,25 @@ function teampage_rd_should_show(?array $rdPending): bool
     return ($rdPending !== null);
 }
 
+function teampage_user_has_active_segment_pick(PDO $dbo, int $uid, string $raceYear, string $segment): bool
+{
+    $sql = "SELECT pickID
+            FROM user_picks
+            WHERE userID = :uid
+              AND raceYear = :raceYear
+              AND segment = :segment
+            LIMIT 1";
+
+    $stmt = $dbo->prepare($sql);
+    $stmt->execute([
+        ':uid' => $uid,
+        ':raceYear' => $raceYear,
+        ':segment' => $segment,
+    ]);
+
+    return ($stmt->fetch(PDO::FETCH_ASSOC) !== false);
+}
+
 function teampage_lp_effective_race_exists(string $raceYear, string $segment): bool
 {
     try {
@@ -775,6 +868,8 @@ function teampage_determine_form_mode(USER $user_home, PDO $dbo, int $uid, strin
 
     return 'NORMAL';
 }
+
+$dbNames = teampage_get_current_db_names($user_home, $dbo, $dbconnect);
 
 $stmt = $user_home->runQuery("SELECT * FROM users WHERE userID = :uid");
 $stmt->execute([':uid' => $_SESSION['userSession']]);
@@ -953,35 +1048,20 @@ if ($rdPendingInfo !== null) {
     }
 }
 
+$wpAdminUrl = teampage_absolute_url('/wp-login.php');
+$hostingerBackupsUrl = teampage_hostinger_site_url('/files/backups');
+$hostingerPanelUrl = teampage_hostinger_site_url();
+$phpMyAdminDb = $dbNames['myDbName'] !== '' ? $dbNames['myDbName'] : ($dbNames['pdoDbName'] !== '' ? $dbNames['pdoDbName'] : '');
+$phpMyAdminUrl = $phpMyAdminDb !== ''
+    ? 'https://auth-db1928.hstgr.io/index.php?db=' . rawurlencode($phpMyAdminDb)
+    : 'https://auth-db1928.hstgr.io/';
+
 /*
- * team.php presentation content.
+ * team_redesign.php presentation content.
  * The JSON file is deliberately separate from application logic so the page
  * can later be managed by an admin editor without editing this PHP file.
  */
 $teamPageContentDefaults = [
-    'admin_league_panel' => [
-        'title' => 'League & Team',
-        'items' => [
-            ['label' => 'Weekly Standings / scoring - Beta', 'url' => '/race_results/weekly_standings.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Setup Year / Pick Window', 'url' => '/admin_setup.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Paid Status by year', 'url' => '/Paid_Status_Year.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'View Team page as alternate user', 'url' => '/team_view_as.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Email addresses', 'url' => '/email.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Special user authorization', 'url' => '/change_user_auth.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Approve LP as regular segment pick', 'url' => '/admin_pick_adjustment.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Add drivers for a new year', 'url' => '/addDrivers.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Current segment chart by entry time', 'url' => '/current_segment_chart_by_entry_time.php', 'enabled' => true, 'new_tab' => true],
-        ],
-    ],
-    'admin_hosting_panel' => [
-        'title' => 'Hosting & Infrastructure',
-        'items' => [
-            ['label' => 'phpMyAdmin (Hostinger)', 'url' => 'https://hpanel.hostinger.com/', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'WP Admin', 'url' => '/wp-admin/', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Hostinger Backups', 'url' => 'https://hpanel.hostinger.com/', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Hostinger hPanel', 'url' => 'https://hpanel.hostinger.com/', 'enabled' => true, 'new_tab' => true],
-        ],
-    ],
     'league_panel' => [
         'title' => 'League Information',
         'items' => [
@@ -1003,26 +1083,15 @@ $teamPageContentDefaults = [
     ],
 ];
 
-$teamPageContentPanelKeys = [
-    'admin_league_panel',
-    'admin_hosting_panel',
-    'league_panel',
-    'team_panel',
-];
-
 $teamPageContent = $teamPageContentDefaults;
 $teamPageContentPath = __DIR__ . '/mrl_team/mrl_team_page_content.json';
-
 if (is_file($teamPageContentPath)) {
     $teamPageContentRaw = @file_get_contents($teamPageContentPath);
-
     if (is_string($teamPageContentRaw) && trim($teamPageContentRaw) !== '') {
         $teamPageContentDecoded = json_decode($teamPageContentRaw, true);
-
         if (is_array($teamPageContentDecoded)) {
-            foreach ($teamPageContentPanelKeys as $panelKey) {
-                if (isset($teamPageContentDecoded[$panelKey])
-                    && is_array($teamPageContentDecoded[$panelKey])) {
+            foreach (['league_panel', 'team_panel'] as $panelKey) {
+                if (isset($teamPageContentDecoded[$panelKey]) && is_array($teamPageContentDecoded[$panelKey])) {
                     $teamPageContent[$panelKey] = array_replace(
                         $teamPageContentDefaults[$panelKey],
                         $teamPageContentDecoded[$panelKey]
@@ -1074,104 +1143,180 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
     <link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet" media="screen">
     <link href="assets/styles.css" rel="stylesheet" media="screen">
     <style>
+        body {
+            background-color: #222222;
+            padding-top: 60px;
+        }
+
+        /*
+         * v030: keep the form/chart geometry untouched at the existing
+         * team-page content width.  The panel border is decorative only
+         * and is drawn outside the content box so it cannot narrow tables.
+         */
+        .mrl-pick-panel {
+            position: relative;
+            box-sizing: border-box;
+            width: 100%;
+            margin: 28px 0 34px 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+        }
+
+        .mrl-pick-panel::before {
+            content: "";
+            position: absolute;
+            top: -18px;
+            right: -22px;
+            bottom: -18px;
+            left: -22px;
+            border: 1px solid #666666;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.018);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .mrl-pick-panel > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /*
+         * v031: Previous Years uses the same geometry model as the v030
+         * pick/form panel.  The section stays full-page for layout purposes,
+         * while the decorative border is positioned around the established
+         * ~80% chart footprint.  The charts are NOT nested inside an 80%
+         * width parent, so their existing width is preserved.
+         */
+        .mrl-previous-years {
+            position: relative;
+            width: 100%;
+            margin: 26px 0 34px 0;
+            border: 0;
+            background: transparent;
+        }
+
+        .mrl-previous-years::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            right: calc(10% - 22px);
+            bottom: -10px;
+            left: calc(10% - 22px);
+            border: 1px solid #666666;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.018);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .mrl-previous-years > * {
+            position: relative;
+            z-index: 1;
+        }
+        .mrl-previous-years summary {
+            box-sizing: border-box;
+            width: 80%;
+            margin: 0 auto;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 20.0pt;
+            font-weight: bold;
+            color: #dfcca8;
+            outline: none;
+            border: 0;
+            background: transparent;
+        }
+        .mrl-previous-years-content {
+            width: 100%;
+            padding: 10px 0 18px 0;
+            color: #000000;
+        }
+        .mrl-previous-years-content table,
+        .mrl-previous-years-content th,
+        .mrl-previous-years-content td {
+            color: #000000 !important;
+        }
+
+        /* v033 presentation-only section framing */
+        .mrl-section-panel{position:relative;box-sizing:border-box;width:100%;margin:12px 0 18px;padding:0;border:0;background:transparent}
+        .mrl-section-panel::before{content:"";position:absolute;top:-10px;right:-22px;bottom:-10px;left:-22px;border:1px solid #666;border-radius:12px;background:rgba(255,255,255,.018);pointer-events:none;z-index:0}
+        .mrl-section-panel>*{position:relative;z-index:1}
+        .mrl-section-panel-title,.mrl-admin-menu-panel>summary{font-size:20pt;color:#dfcca8;line-height:120%}
+        .mrl-section-panel-title{margin-bottom:8px}.mrl-section-panel-content{padding:4px 0 2px}
+        .mrl-admin-menu-panel>summary{cursor:pointer;list-style:none;outline:none}
+        .mrl-admin-menu-panel>summary::-webkit-details-marker{display:none}
+        .mrl-admin-menu-panel>summary::before{content:"+ ";font-weight:normal}
+        .mrl-admin-menu-panel[open]>summary::before{content:"− "}
+        .mrl-admin-menu-panel[open]>summary{margin-bottom:8px}
+        .mrl-user-info-panel{position:relative;box-sizing:border-box;width:100%;margin:18px 0 28px;padding:0;border:0;background:transparent}
+        .mrl-user-info-panel::before{content:"";position:absolute;top:-10px;right:calc(10% - 22px);bottom:-10px;left:calc(10% - 22px);border:1px solid #666;border-radius:12px;background:rgba(255,255,255,.018);pointer-events:none;z-index:0}
+        .mrl-user-info-panel>*{position:relative;z-index:1}
+
+        /*
+         * v034 Previous Years toggle alignment:
+         * Match the Admin Menu summary typography and +/- behavior.
+         */
+        .mrl-previous-years summary {
+            list-style: none;
+            font-size: 20.0pt;
+            font-weight: normal;
+            line-height: 120%;
+        }
+
+        .mrl-previous-years summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .mrl-previous-years summary::before {
+            content: "+ ";
+            font-weight: normal;
+        }
+
+        .mrl-previous-years[open] summary::before {
+            content: "− ";
+        }
+    
         /* =====================================================================
-         * team.php v009 - consolidated current presentation
+         * team_redesign.php v001 - isolated presentation layer
          * =================================================================== */
         :root{
-            --mrl-page-width:85%;
-            --mrl-page-max:1600px;
-            --mrl-rd-panel:rgba(28,28,28,.48);
-            --mrl-rd-panel-header:rgba(34,34,34,.42);
-            --mrl-rd-border:rgba(195,195,195,.34);
-            --mrl-rd-gold:#f1c97f;
-            --mrl-rd-text:#f2f2f2;
-            --mrl-rd-muted:#d4d0c7;
-            --mrl-rd-blue:#43b7f0;
+            --mrl-rd-bg:rgba(18,18,18,.76);
+            --mrl-rd-panel:rgba(30,30,30,.72);
+            --mrl-rd-panel-strong:rgba(23,34,29,.88);
+            --mrl-rd-border:rgba(206,170,104,.34);
+            --mrl-rd-green:#5be08d;
+            --mrl-rd-gold:#efc982;
+            --mrl-rd-text:#f3f0e9;
+            --mrl-rd-muted:#c8c1b5;
+            --mrl-rd-blue:#38a9ef;
             --mrl-rd-shadow:0 10px 28px rgba(0,0,0,.30);
-        }
-
-        html{
-            min-height:100%;
-            background:#151515;
-        }
-
-        html.mrl-theme-cars{
-            --mrl-rd-panel:rgba(28,28,28,.48);
-            --mrl-rd-panel-header:rgba(34,34,34,.42);
-            --mrl-rd-border:rgba(195,195,195,.34);
-            --mrl-rd-gold:#f1c97f;
-            --mrl-rd-text:#f2f2f2;
-            --mrl-rd-muted:#d4d0c7;
-            --mrl-rd-blue:#43b7f0;
-            background:
-                linear-gradient(rgba(10,20,15,.70),rgba(10,20,15,.70)),
-                url("/images/cars.jpg") center/cover no-repeat fixed!important;
-        }
-
-        html.mrl-theme-starry-night{
-            --mrl-rd-panel:rgba(19,22,31,.56);
-            --mrl-rd-panel-header:rgba(24,27,39,.50);
-            --mrl-rd-border:rgba(190,198,221,.34);
-            --mrl-rd-gold:#e8cf9a;
-            --mrl-rd-text:#f2f3f7;
-            --mrl-rd-muted:#d4d7e2;
-            --mrl-rd-blue:#67bdf2;
-            background:
-                linear-gradient(rgba(5,8,18,.60),rgba(5,8,18,.60)),
-                url("/images/starry_night.jpg") center/cover no-repeat fixed!important;
-        }
-
-        html.mrl-theme-dark{
-            --mrl-rd-panel:rgba(28,28,28,.88);
-            --mrl-rd-panel-header:rgba(34,34,34,.92);
-            --mrl-rd-border:rgba(195,195,195,.34);
-            --mrl-rd-gold:#f1c97f;
-            --mrl-rd-text:#f2f2f2;
-            --mrl-rd-muted:#d4d0c7;
-            --mrl-rd-blue:#43b7f0;
-            background:#151515!important;
-        }
-
-        html.mrl-theme-light{
-            --mrl-rd-panel:rgba(255,255,255,.90);
-            --mrl-rd-panel-header:rgba(244,244,244,.96);
-            --mrl-rd-border:rgba(60,60,60,.28);
-            --mrl-rd-gold:#8b5b00;
-            --mrl-rd-text:#202020;
-            --mrl-rd-muted:#555;
-            --mrl-rd-blue:#006eaa;
-            background:#eceff1!important;
+            --mrl-rd-width:80%;
+            --mrl-rd-max:1500px;
         }
 
         body{
-            min-height:100%;
-            padding-top:0!important;
-            background:transparent!important;
-            color:var(--mrl-rd-text);
+            background-color:transparent !important;
+            padding-top:0 !important;
         }
 
-        .mrl-rd-shell,
-        .mrl-rd-top,
-        .mrl-rd-chart-shell{
-            width:var(--mrl-page-width)!important;
-            max-width:var(--mrl-page-max)!important;
-            box-sizing:border-box;
-            margin-left:auto!important;
-            margin-right:auto!important;
+        .mrl-rd-shell{
+            width:var(--mrl-rd-width);
+            max-width:var(--mrl-rd-max);
+            margin:0 auto;
         }
 
-        /* Sticky header */
         .mrl-rd-sticky{
             position:sticky;
             top:8px;
             z-index:1000;
-            margin-top:8px!important;
-            margin-bottom:14px!important;
-            border:1px solid rgba(67,142,94,.72);
+            margin:8px auto 14px;
+            border:1px solid rgba(58,125,83,.72);
             border-radius:14px;
-            background:linear-gradient(180deg,rgba(18,58,40,.78),rgba(20,35,29,.74));
-            backdrop-filter:blur(3px);
-            -webkit-backdrop-filter:blur(3px);
+            background:linear-gradient(180deg,rgba(20,49,35,.94),rgba(19,28,24,.91));
+            backdrop-filter:blur(10px);
+            -webkit-backdrop-filter:blur(10px);
             box-shadow:var(--mrl-rd-shadow);
         }
 
@@ -1184,7 +1329,10 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
             padding:8px 14px;
         }
 
-        .mrl-rd-user{position:relative;justify-self:start}
+        .mrl-rd-user{
+            position:relative;
+            justify-self:start;
+        }
 
         .mrl-rd-user-button{
             appearance:none;
@@ -1221,12 +1369,15 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
             display:block;
             padding:8px 10px;
             border-radius:7px;
-            color:#f2f2f2!important;
+            color:var(--mrl-rd-text) !important;
             font:14px/1.2 Tahoma,Verdana,Segoe UI,sans-serif;
             text-decoration:none;
         }
 
-        .mrl-rd-user-menu a:hover{background:#333;color:#fff!important}
+        .mrl-rd-user-menu a:hover{
+            background:rgba(255,255,255,.08);
+            color:#fff !important;
+        }
 
         .mrl-rd-title{
             min-width:0;
@@ -1261,11 +1412,183 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
             font-weight:600;
         }
 
-        /* Top navigation panels */
         .mrl-rd-top{
-            margin-bottom:18px!important;
+            width:var(--mrl-rd-width);
+            max-width:var(--mrl-rd-max);
+            margin:0 auto 18px;
             color:var(--mrl-rd-text);
             font-family:Tahoma,Verdana,Segoe UI,sans-serif;
+        }
+
+        .mrl-rd-greeting{
+            margin:4px 2px 10px;
+            color:var(--mrl-rd-gold);
+            font-size:16px;
+        }
+
+        .mrl-rd-grid{
+            display:grid;
+            grid-template-columns:repeat(3,minmax(0,1fr));
+            gap:12px;
+            align-items:start;
+        }
+
+        .mrl-rd-grid.no-admin{
+            grid-template-columns:repeat(2,minmax(0,1fr));
+        }
+
+        .mrl-rd-card{
+            border:1px solid var(--mrl-rd-border);
+            border-radius:14px;
+            background:var(--mrl-rd-panel);
+            backdrop-filter:blur(8px);
+            -webkit-backdrop-filter:blur(8px);
+            box-shadow:0 8px 22px rgba(0,0,0,.20);
+            overflow:hidden;
+        }
+
+        .mrl-rd-card.admin{
+            border-color:rgba(239,201,130,.42);
+        }
+
+        .mrl-rd-card-title,
+        .mrl-rd-card > summary{
+            list-style:none;
+            margin:0;
+            padding:11px 14px;
+            color:var(--mrl-rd-gold);
+            font-size:16px;
+            font-weight:800;
+            line-height:1.2;
+            cursor:default;
+            border-bottom:1px solid rgba(255,255,255,.07);
+        }
+
+        .mrl-rd-card > summary{
+            cursor:pointer;
+        }
+
+        .mrl-rd-card > summary::-webkit-details-marker{display:none}
+        .mrl-rd-card > summary::after{content:"+";float:right;font-weight:500}
+        .mrl-rd-card[open] > summary::after{content:"−"}
+
+        .mrl-rd-card-body{
+            padding:9px 12px 11px;
+        }
+
+        .mrl-rd-links{
+            display:flex;
+            flex-direction:column;
+            gap:4px;
+        }
+
+        .mrl-rd-link{
+            display:flex;
+            align-items:flex-start;
+            gap:7px;
+            padding:6px 7px;
+            border-radius:8px;
+            color:var(--mrl-rd-blue) !important;
+            font-size:14px;
+            line-height:1.25;
+            text-decoration:none !important;
+        }
+
+        .mrl-rd-link:hover{
+            background:rgba(255,255,255,.065);
+            color:#79cfff !important;
+        }
+
+        .mrl-rd-link-arrow{
+            flex:0 0 auto;
+            color:var(--mrl-rd-gold);
+            font-weight:900;
+        }
+
+        .mrl-rd-admin-group{
+            margin:2px 0 9px;
+            color:var(--mrl-rd-muted);
+            font-size:11px;
+            font-weight:800;
+            letter-spacing:.7px;
+            text-transform:uppercase;
+        }
+
+        .mrl-rd-admin-group:not(:first-child){margin-top:12px}
+
+        .mrl-rd-admin-link{
+            display:block;
+            padding:4px 5px;
+            border-radius:6px;
+            color:var(--mrl-rd-blue) !important;
+            font-size:13px;
+            line-height:1.2;
+            text-decoration:none !important;
+        }
+
+        .mrl-rd-admin-link:hover{background:rgba(255,255,255,.06)}
+
+        /* Keep inherited lower-page geometry but use the same visual language. */
+        .mrl-user-info-panel::before,
+        .mrl-pick-panel::before,
+        .mrl-previous-years::before,
+        .mrl-section-panel::before{
+            border-color:var(--mrl-rd-border) !important;
+            background:rgba(24,24,24,.58) !important;
+            backdrop-filter:blur(7px);
+            -webkit-backdrop-filter:blur(7px);
+        }
+
+        @media (max-width:1000px){
+            :root{--mrl-rd-width:94%}
+            .mrl-rd-header{grid-template-columns:1fr auto;gap:8px}
+            .mrl-rd-title{grid-column:1/-1;grid-row:1;text-align:left}
+            .mrl-rd-user{grid-column:1;grid-row:2}
+            .mrl-rd-clock{grid-column:2;grid-row:2}
+            .mrl-rd-grid,.mrl-rd-grid.no-admin{grid-template-columns:1fr}
+        }
+
+        @media (max-width:600px){
+            .mrl-rd-header{padding:8px 10px}
+            .mrl-rd-title{font-size:17px}
+            .mrl-rd-clock{font-size:12px}
+            .mrl-rd-user-button{font-size:13px}
+        }
+    
+        /* =====================================================================
+         * team_redesign.php v002 - presentation refinements
+         * =================================================================== */
+        html{
+            background:#151515;
+        }
+
+        :root{
+            --mrl-rd-width:85%;
+            --mrl-rd-max:1600px;
+            --mrl-rd-panel:rgba(28,28,28,.56);
+            --mrl-rd-panel-header:rgba(34,34,34,.48);
+            --mrl-rd-border:rgba(195,195,195,.34);
+            --mrl-rd-gold:#f1c97f;
+            --mrl-rd-text:#f2f2f2;
+            --mrl-rd-muted:#d4d0c7;
+            --mrl-rd-blue:#43b7f0;
+        }
+
+        body{
+            background-color:transparent !important;
+        }
+
+        .mrl-rd-shell,
+        .mrl-rd-top{
+            width:var(--mrl-rd-width) !important;
+            max-width:var(--mrl-rd-max) !important;
+        }
+
+        .mrl-rd-sticky{
+            background:linear-gradient(180deg,rgba(18,58,40,.78),rgba(20,35,29,.74)) !important;
+            border-color:rgba(67,142,94,.72) !important;
+            backdrop-filter:blur(3px);
+            -webkit-backdrop-filter:blur(3px);
         }
 
         .mrl-rd-greeting{
@@ -1275,6 +1598,228 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
             line-height:1.3;
         }
 
+        .mrl-rd-section-heading{
+            margin:12px 2px 8px;
+            color:var(--mrl-rd-gold);
+            font:800 15px/1.2 Tahoma,Verdana,Segoe UI,sans-serif;
+            letter-spacing:.4px;
+        }
+
+        .mrl-rd-admin-grid,
+        .mrl-rd-main-grid{
+            display:grid;
+            grid-template-columns:repeat(2,minmax(0,1fr));
+            gap:14px;
+            align-items:start;
+            margin-bottom:14px;
+        }
+
+        .mrl-rd-card{
+            border:1px solid var(--mrl-rd-border) !important;
+            border-radius:14px !important;
+            background:var(--mrl-rd-panel) !important;
+            backdrop-filter:blur(2px);
+            -webkit-backdrop-filter:blur(2px);
+            box-shadow:0 8px 22px rgba(0,0,0,.18) !important;
+        }
+
+        .mrl-rd-card-title{
+            padding:13px 18px 11px !important;
+            color:var(--mrl-rd-gold) !important;
+            background:var(--mrl-rd-panel-header);
+            border-bottom:1px solid rgba(255,255,255,.10) !important;
+            font:800 18px/1.25 Tahoma,Verdana,Segoe UI,sans-serif !important;
+        }
+
+        .mrl-rd-card-body{
+            padding:14px 20px 16px !important;
+            color:var(--mrl-rd-text);
+            font:16px/1.4 Tahoma,Verdana,Segoe UI,sans-serif;
+        }
+
+        .mrl-rd-list{
+            margin:0;
+            padding-left:24px;
+            color:var(--mrl-rd-text);
+        }
+
+        .mrl-rd-list li{
+            margin:0 0 8px;
+            padding-left:2px;
+            line-height:1.35;
+        }
+
+        .mrl-rd-list li:last-child{
+            margin-bottom:0;
+        }
+
+        .mrl-rd-list li::marker{
+            color:#eeeeee;
+        }
+
+        .mrl-rd-list a{
+            color:var(--mrl-rd-blue) !important;
+            text-decoration:none !important;
+        }
+
+        .mrl-rd-list a:hover{
+            color:#85d5ff !important;
+            text-decoration:underline !important;
+        }
+
+        /* Retire v001 arrow-row presentation if any stale markup remains. */
+        .mrl-rd-links{display:block}
+        .mrl-rd-link-arrow{display:none}
+
+        /*
+         * 85% geometry.
+         * current_user_team_chart.php emits its own inline 80% tables;
+         * !important here deliberately makes the redesign test 85%.
+         */
+        .mrl-user-info-panel table{
+            width:85% !important;
+            margin-left:auto !important;
+            margin-right:auto !important;
+        }
+
+        .mrl-user-info-panel::before,
+        .mrl-previous-years::before{
+            left:calc(7.5% - 22px) !important;
+            right:calc(7.5% - 22px) !important;
+        }
+
+        .mrl-previous-years summary{
+            width:85% !important;
+        }
+
+        /*
+         * The current-segment chart lives inside an inherited centered wrapper.
+         * That wrapper is converted to 85% by the v002 installer, while the
+         * included current_segment_chart.php remains width:100% within it.
+         */
+        .mrl-pick-panel{
+            color:#f1d49a !important;
+            font:18px/1.35 "Century Gothic",Tahoma,Verdana,sans-serif !important;
+            text-shadow:none !important;
+            filter:none !important;
+        }
+
+        .mrl-pick-panel::before{
+            background:rgba(28,28,28,.50) !important;
+            border-color:var(--mrl-rd-border) !important;
+            backdrop-filter:blur(2px) !important;
+            -webkit-backdrop-filter:blur(2px) !important;
+        }
+
+        .mrl-user-info-panel::before,
+        .mrl-previous-years::before,
+        .mrl-section-panel::before{
+            background:rgba(28,28,28,.50) !important;
+            border-color:var(--mrl-rd-border) !important;
+            backdrop-filter:blur(2px) !important;
+            -webkit-backdrop-filter:blur(2px) !important;
+        }
+
+        @media (max-width:1000px){
+            :root{--mrl-rd-width:94%}
+
+            .mrl-rd-admin-grid,
+            .mrl-rd-main-grid{
+                grid-template-columns:1fr;
+            }
+
+            .mrl-user-info-panel table,
+            .mrl-previous-years summary{
+                width:94% !important;
+            }
+
+            .mrl-user-info-panel::before,
+            .mrl-previous-years::before{
+                left:calc(3% - 10px) !important;
+                right:calc(3% - 10px) !important;
+            }
+        }
+    
+        /* =====================================================================
+         * team_redesign.php v003 - single width authority / chart shell
+         * =================================================================== */
+        :root{
+            --mrl-page-width:85%;
+            --mrl-page-max:1600px;
+        }
+
+        .mrl-rd-shell,
+        .mrl-rd-top,
+        .mrl-rd-chart-shell{
+            width:var(--mrl-page-width) !important;
+            max-width:var(--mrl-page-max) !important;
+            box-sizing:border-box;
+            margin-left:auto !important;
+            margin-right:auto !important;
+        }
+
+        /*
+         * Charts are the core of the page.
+         * Do not restyle their cells; only control their outer geometry.
+         */
+        .mrl-rd-chart-shell{
+            position:relative;
+            margin-top:18px !important;
+            margin-bottom:28px !important;
+            padding:0 !important;
+            border:0 !important;
+            background:transparent !important;
+        }
+
+        .mrl-user-info-panel::before,
+        .mrl-pick-panel::before,
+        .mrl-previous-years::before{
+            display:none !important;
+            content:none !important;
+        }
+
+        .mrl-user-info-panel{
+            width:var(--mrl-page-width) !important;
+            margin-top:18px !important;
+            margin-bottom:28px !important;
+        }
+
+        .mrl-user-info-panel table,
+        .mrl-previous-years-content table{
+            width:100% !important;
+            max-width:none !important;
+            margin-left:0 !important;
+            margin-right:0 !important;
+        }
+
+        .mrl-rd-pick-section .mrl-pick-panel{
+            width:100% !important;
+            margin:0 !important;
+            padding:0 !important;
+        }
+
+        .mrl-rd-pick-section .mrl-pick-panel > table{
+            width:100% !important;
+        }
+
+        .mrl-previous-years{
+            width:var(--mrl-page-width) !important;
+            margin-top:24px !important;
+            margin-bottom:28px !important;
+        }
+
+        .mrl-previous-years summary{
+            width:100% !important;
+            margin:0 !important;
+            padding:12px 0 14px !important;
+        }
+
+        .mrl-previous-years-content{
+            width:100% !important;
+            padding:6px 0 0 !important;
+        }
+
+        /* One +/- Admin bar controls both Admin modules. */
         .mrl-rd-admin-wrap{
             margin:12px 0 18px;
             padding:0;
@@ -1286,238 +1831,164 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
             -webkit-backdrop-filter:blur(2px);
         }
 
-        .mrl-rd-admin-wrap>summary{
+        .mrl-rd-admin-wrap > summary{
             list-style:none;
             cursor:pointer;
             padding:12px 18px;
             color:var(--mrl-rd-gold);
             font:800 18px/1.25 Tahoma,Verdana,Segoe UI,sans-serif;
+            border-bottom:0;
             outline:none;
         }
 
-        .mrl-rd-admin-wrap>summary::-webkit-details-marker{display:none}
-        .mrl-rd-admin-wrap>summary::before{content:"+ ";font-weight:500}
-        .mrl-rd-admin-wrap[open]>summary::before{content:"− "}
-        .mrl-rd-admin-wrap[open]>summary{border-bottom:1px solid rgba(255,255,255,.09)}
-
-        .mrl-rd-admin-fixed-control{
-            margin:12px 14px 0;
-            padding:10px 14px;
-            border:1px solid var(--mrl-rd-border);
-            border-radius:10px;
-            background:rgba(0,0,0,.16);
+        .mrl-rd-admin-wrap > summary::-webkit-details-marker{
+            display:none;
         }
 
-        .mrl-rd-admin-fixed-control a{
-            color:var(--mrl-rd-blue)!important;
-            text-decoration:none!important;
-            font-weight:800;
+        .mrl-rd-admin-wrap > summary::before{
+            content:"+ ";
+            font-weight:500;
         }
 
-        .mrl-rd-admin-grid,
-        .mrl-rd-main-grid{
-            display:grid;
-            grid-template-columns:repeat(2,minmax(0,1fr));
-            gap:14px;
-            align-items:start;
+        .mrl-rd-admin-wrap[open] > summary::before{
+            content:"− ";
         }
 
-        .mrl-rd-admin-wrap .mrl-rd-admin-grid{margin:0;padding:14px}
-        .mrl-rd-main-grid{margin-top:12px;margin-bottom:14px}
-
-        .mrl-rd-card{
-            border:1px solid var(--mrl-rd-border);
-            border-radius:14px;
-            background:var(--mrl-rd-panel);
-            backdrop-filter:blur(2px);
-            -webkit-backdrop-filter:blur(2px);
-            box-shadow:0 8px 22px rgba(0,0,0,.18);
-            overflow:hidden;
+        .mrl-rd-admin-wrap[open] > summary{
+            border-bottom:1px solid rgba(255,255,255,.09);
         }
 
-        .mrl-rd-admin-wrap .mrl-rd-card{background:rgba(28,28,28,.40)}
-
-        .mrl-rd-card-title{
-            padding:13px 18px 11px;
-            color:var(--mrl-rd-gold);
-            background:var(--mrl-rd-panel-header);
-            border-bottom:1px solid rgba(255,255,255,.10);
-            font:800 18px/1.25 Tahoma,Verdana,Segoe UI,sans-serif;
-        }
-
-        .mrl-rd-card-body{
-            padding:14px 20px 16px;
-            color:var(--mrl-rd-text);
-            font:16px/1.4 Tahoma,Verdana,Segoe UI,sans-serif;
-        }
-
-        .mrl-rd-list{
+        .mrl-rd-admin-wrap .mrl-rd-admin-grid{
             margin:0;
-            padding-left:24px;
-            color:var(--mrl-rd-text);
+            padding:14px;
+            gap:14px;
         }
 
-        .mrl-rd-list li{margin:0 0 8px;padding-left:2px;line-height:1.35}
-        .mrl-rd-list li:last-child{margin-bottom:0}
-        .mrl-rd-list li::marker{color:#eee}
-        .mrl-rd-list a{color:var(--mrl-rd-blue)!important;text-decoration:none!important}
-        .mrl-rd-list a:hover{color:#85d5ff!important;text-decoration:underline!important}
+        /*
+         * The two inner Admin cards stay separate modules, but their common
+         * outer <details> makes the entire Admin area open/close as one.
+         */
+        .mrl-rd-admin-wrap .mrl-rd-card{
+            background:rgba(28,28,28,.40) !important;
+        }
 
-        /* Chart/form shells: geometry only; chart cells remain untouched. */
+        .mrl-rd-main-grid{
+            margin-top:12px;
+        }
+
+        /*
+         * Mobile: preserve chart presentation rather than forcing every table
+         * to become a tiny stacked layout. If a chart needs room, scroll it.
+         */
         .mrl-rd-chart-shell{
-            position:relative;
-            margin-top:18px!important;
-            margin-bottom:28px!important;
-            padding:0!important;
-            border:0!important;
-            background:transparent!important;
             overflow-x:auto;
             -webkit-overflow-scrolling:touch;
         }
 
-        .mrl-user-info-panel,
-        .mrl-previous-years{width:var(--mrl-page-width)!important}
+        @media (max-width:1000px){
+            :root{
+                --mrl-page-width:94%;
+            }
 
-        .mrl-user-info-panel table,
-        .mrl-previous-years-content table{
-            width:100%!important;
-            max-width:none!important;
-            margin-left:0!important;
-            margin-right:0!important;
+            .mrl-rd-admin-grid,
+            .mrl-rd-main-grid{
+                grid-template-columns:1fr !important;
+            }
+
+            .mrl-rd-admin-wrap .mrl-rd-admin-grid{
+                padding:10px;
+            }
+        }
+    
+        /* =====================================================================
+         * team_redesign.php v004 - built-in default theme
+         * =================================================================== */
+        :root{
+            --mrl-theme-overlay:rgba(10,20,15,0.70);
+            --mrl-theme-image:url("https://manliusracingleague.com/images/cars.jpg");
+            --mrl-theme-fallback:#151515;
         }
 
-        .mrl-pick-panel{
-            position:relative;
-            box-sizing:border-box;
-            width:100%!important;
-            margin:0!important;
-            padding:0!important;
-            border:0!important;
-            background:transparent!important;
-            color:#f1d49a!important;
-            font:18px/1.35 "Century Gothic",Tahoma,Verdana,sans-serif!important;
-            text-shadow:none!important;
-            filter:none!important;
+        html{
+            min-height:100%;
+            background:
+                linear-gradient(var(--mrl-theme-overlay), var(--mrl-theme-overlay)),
+                var(--mrl-theme-image)
+                center / cover no-repeat fixed !important;
+            background-color:var(--mrl-theme-fallback) !important;
         }
 
-        .mrl-rd-pick-section .mrl-pick-panel>table{width:100%!important}
-
-        /* Included components own their table presentation.  The team-page shell
-         * controls geometry only and must not leak theme text colors into tables. */
-        .mrl-user-info-panel table,
-        .mrl-user-info-panel th,
-        .mrl-user-info-panel td,
-        .mrl-rd-pick-section .mrl-pick-panel table,
-        .mrl-rd-pick-section .mrl-pick-panel th,
-        .mrl-rd-pick-section .mrl-pick-panel td{
-            color:#000!important;
-            text-shadow:none!important;
-            filter:none!important;
+        body{
+            min-height:100%;
+            background:transparent !important;
         }
-
-        .mrl-rd-pick-section .mrl-pick-panel select,
-        .mrl-rd-pick-section .mrl-pick-panel input,
-        .mrl-rd-pick-section .mrl-pick-panel button{
-            color:#000!important;
-            text-shadow:none!important;
+    
+        /* team_redesign.php v005 - per-user themes and status panels */
+        html.mrl-theme-cars{
+            --mrl-rd-panel:rgba(28,28,28,.48);
+            --mrl-rd-panel-header:rgba(34,34,34,.42);
+            --mrl-rd-border:rgba(195,195,195,.34);
+            --mrl-rd-gold:#f1c97f;--mrl-rd-text:#f2f2f2;--mrl-rd-blue:#43b7f0;
+            background:linear-gradient(rgba(10,20,15,.70),rgba(10,20,15,.70)),
+                       url("/images/cars.jpg") center/cover no-repeat fixed!important;
         }
-
+        html.mrl-theme-starry-night{
+            --mrl-rd-panel:rgba(19,22,31,.56);
+            --mrl-rd-panel-header:rgba(24,27,39,.50);
+            --mrl-rd-border:rgba(190,198,221,.34);
+            --mrl-rd-gold:#e8cf9a;--mrl-rd-text:#f2f3f7;--mrl-rd-blue:#67bdf2;
+            background:linear-gradient(rgba(5,8,18,.60),rgba(5,8,18,.60)),
+                       url("/images/starry_night.jpg") center/cover no-repeat fixed!important;
+        }
+        html.mrl-theme-dark{
+            --mrl-rd-panel:rgba(28,28,28,.88);
+            --mrl-rd-panel-header:rgba(34,34,34,.92);
+            --mrl-rd-border:rgba(195,195,195,.34);
+            --mrl-rd-gold:#f1c97f;--mrl-rd-text:#f2f2f2;--mrl-rd-blue:#43b7f0;
+            background:#151515!important;
+        }
+        html.mrl-theme-light{
+            --mrl-rd-panel:rgba(255,255,255,.90);
+            --mrl-rd-panel-header:rgba(244,244,244,.96);
+            --mrl-rd-border:rgba(60,60,60,.28);
+            --mrl-rd-gold:#8b5b00;--mrl-rd-text:#202020;--mrl-rd-muted:#555;--mrl-rd-blue:#006eaa;
+            background:#eceff1!important;
+        }
+        html.mrl-theme-light .mrl-rd-card,
+        html.mrl-theme-light .mrl-rd-admin-wrap,
+        html.mrl-theme-light .mrl-rd-notice-panel{color:#202020!important}
         .mrl-rd-notice-panel{
-            box-sizing:border-box;
-            width:100%;
-            margin:14px 0 18px;
-            padding:13px 18px;
-            border:1px solid var(--mrl-rd-border);
-            border-radius:12px;
-            background:var(--mrl-rd-panel);
-            color:var(--mrl-rd-gold);
+            box-sizing:border-box;width:100%;margin:14px 0 18px;padding:13px 18px;
+            border:1px solid var(--mrl-rd-border);border-radius:12px;
+            background:var(--mrl-rd-panel);color:var(--mrl-rd-gold);
             font:18px/1.45 "Century Gothic",Tahoma,Verdana,sans-serif;
-            backdrop-filter:blur(2px);
-            -webkit-backdrop-filter:blur(2px);
+            backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
         }
-
         .mrl-rd-submission-panel{margin-top:18px;margin-bottom:18px}
         .mrl-rd-submission-panel a{color:var(--mrl-rd-blue)!important}
-
-        .mrl-previous-years{
-            position:relative;
-            margin-top:24px!important;
-            margin-bottom:28px!important;
-            border:0;
-            background:transparent;
-        }
-
-        .mrl-previous-years summary{
-            list-style:none;
-            box-sizing:border-box;
-            width:100%!important;
-            margin:0!important;
-            padding:12px 0 14px!important;
-            cursor:pointer;
-            color:#dfcca8;
-            font:400 20pt/1.2 "Century Gothic",Tahoma,Verdana,sans-serif;
-            outline:none;
-        }
-
-        .mrl-previous-years summary::-webkit-details-marker{display:none}
-        .mrl-previous-years summary::before{content:"+ ";font-weight:400}
-        .mrl-previous-years[open] summary::before{content:"− "}
-
-        .mrl-previous-years-content{
-            width:100%!important;
-            padding:6px 0 0!important;
-            color:#000;
-        }
-
-        .mrl-previous-years-content table,
-        .mrl-previous-years-content th,
-        .mrl-previous-years-content td{color:#000!important}
-
-        /* Light theme requires explicit contrast instead of dark-theme inheritance. */
+    
+        /* team_redesign.php v006 - Light polish / fixed admin control */
+        .mrl-rd-admin-fixed-control{margin:12px 14px 0;padding:10px 14px;border:1px solid var(--mrl-rd-border);border-radius:10px;background:rgba(0,0,0,.16)}
+        .mrl-rd-admin-fixed-control a{color:var(--mrl-rd-blue)!important;text-decoration:none!important;font-weight:800}
         html.mrl-theme-light body{color:#202020!important}
-        html.mrl-theme-light .mrl-rd-sticky,
-        html.mrl-theme-light .mrl-rd-sticky *{color:#fff7e6!important}
-        html.mrl-theme-light .mrl-rd-user,
-        html.mrl-theme-light .mrl-rd-user *{color:#fff!important}
-        html.mrl-theme-light .mrl-rd-user-menu{background:#242424!important;border-color:#555!important}
-        html.mrl-theme-light .mrl-rd-user-menu a{color:#f2f2f2!important}
-        html.mrl-theme-light .mrl-rd-user-menu a:hover{color:#fff!important;background:#333!important}
-        html.mrl-theme-light .mrl-rd-title small,
-        html.mrl-theme-light .mrl-rd-clock,
-        html.mrl-theme-light .mrl-rd-clock *{color:#fff3d5!important}
+        html.mrl-theme-light .mrl-rd-sticky,html.mrl-theme-light .mrl-rd-sticky *{color:#fff7e6!important}
+        html.mrl-theme-light .mrl-rd-user,html.mrl-theme-light .mrl-rd-user *{color:#fff!important}
+        html.mrl-theme-light .dropdown-menu{background:#242424!important;border-color:#555!important}
+        html.mrl-theme-light .dropdown-menu a{color:#f2f2f2!important}
+        html.mrl-theme-light .dropdown-menu a:hover{color:#fff!important;background:#333!important}
+        html.mrl-theme-light .mrl-rd-subtitle,html.mrl-theme-light .mrl-rd-clock,html.mrl-theme-light .mrl-rd-clock *{color:#fff3d5!important}
         html.mrl-theme-light .mrl-rd-greeting{color:#8b5b00!important}
         html.mrl-theme-light .mrl-rd-admin-wrap{background:rgba(255,255,255,.58)!important;color:#202020!important}
         html.mrl-theme-light .mrl-rd-admin-wrap>summary{color:#8b5b00!important}
         html.mrl-theme-light .mrl-rd-card{background:rgba(255,255,255,.90)!important;color:#202020!important}
         html.mrl-theme-light .mrl-rd-card-title{background:rgba(244,244,244,.98)!important;color:#8b5b00!important}
-        html.mrl-theme-light .mrl-rd-card-body{color:#202020!important}
-        html.mrl-theme-light .mrl-rd-list{color:#202020!important}
         html.mrl-theme-light .mrl-rd-list li::marker{color:#555!important}
         html.mrl-theme-light .mrl-rd-list a{color:#006eaa!important}
         html.mrl-theme-light .mrl-rd-admin-fixed-control{background:rgba(255,255,255,.78)!important}
         html.mrl-theme-light .mrl-rd-admin-fixed-control a{color:#006eaa!important}
-        html.mrl-theme-light .mrl-rd-notice-panel{background:rgba(255,255,255,.88)!important;color:#000!important}
-        html.mrl-theme-light .mrl-rd-notice-panel *{color:#000!important}
+        html.mrl-theme-light .mrl-rd-notice-panel{background:rgba(255,255,255,.88)!important;color:#6f4a00!important}
         html.mrl-theme-light .mrl-rd-notice-panel a{color:#006eaa!important}
         html.mrl-theme-light .mrl-previous-years summary{color:#8b5b00!important;opacity:1!important}
-
-        @media(max-width:1000px){
-            :root{--mrl-page-width:94%}
-            .mrl-rd-header{grid-template-columns:1fr auto;gap:8px}
-            .mrl-rd-title{grid-column:1/-1;grid-row:1;text-align:left}
-            .mrl-rd-user{grid-column:1;grid-row:2}
-            .mrl-rd-clock{grid-column:2;grid-row:2}
-            .mrl-rd-admin-grid,
-            .mrl-rd-main-grid{grid-template-columns:1fr!important}
-            .mrl-rd-admin-wrap .mrl-rd-admin-grid{padding:10px}
-        }
-
-        @media(max-width:600px){
-            .mrl-rd-header{padding:8px 10px}
-            .mrl-rd-title{font-size:17px}
-            .mrl-rd-clock{font-size:12px}
-            .mrl-rd-user-button{font-size:13px}
-        }
     </style>
 </head>
 
@@ -1532,14 +2003,14 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
             </button>
             <div class="mrl-rd-user-menu" id="mrl-rd-user-menu">
                 <a href="<?php echo teampage_h((string)$mrl); ?>">MRL Home</a>
-                <a href="<?php echo teampage_h((string)$mrl); ?>profile.php">Profile Page</a>
+                <a href="<?php echo teampage_h((string)$mrl); ?>profile_redesign.php">Profile Page</a>
                 <a href="<?php echo teampage_h((string)$mrl); ?>logout.php">Logout</a>
             </div>
         </div>
 
         <div class="mrl-rd-title">
             <?php echo teampage_h((string)$sitename); ?>
-            <small>My Team Page</small>
+            <small>My Team Page · redesign test</small>
         </div>
 
         <div class="mrl-rd-clock" id="mrl-rd-clock">
@@ -1606,6 +2077,7 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
         $normalPickWindowOpen = isset($pickWindowIsOpen)
             ? (bool)$pickWindowIsOpen
             : ($end_ts !== false && $end_ts > $user_ts);
+        $pickWindowOpenTs = isset($pickWindowOpenAt) ? strtotime((string)$pickWindowOpenAt) : false;
 
         if ($formLocked === 'no') {
             if ($normalPickWindowOpen) {

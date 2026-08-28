@@ -2,10 +2,10 @@
 declare(strict_types=1);
 
 /**
- * team.php
+ * team_redesign.php
  *
- * VERSION: v035
- * LAST MODIFIED: 8/27/2026 10:16:02 pm
+ * VERSION: v010
+ * LAST MODIFIED: 8/27/2026 8:21:46 pm
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,20 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v035 (8/27/2026 10:16:02 pm)
- * - PRODUCTION: Promotes the fully tested team redesign into team.php.
- * - UI: Uses the consolidated 85% themed layout with Cars, Starry Night, Dark and Light.
- * - ADMIN: Uses JSON-managed League & Team, Hosting & Infrastructure, League Information and Team Menu panels.
- * - PROFILE: Production links now target profile.php.
- * - CLEANUP: Retains the consolidated v009-v011 component-boundary and Light-theme fixes.
- * - PRESERVE: Normal picks, LP, RP/RD, scoring, charts, View-As and scheduler behavior.
- *
- * v011 (8/27/2026 8:47:32 pm)
- * - FIX: Light theme status-panel text is black for maximum readability.
- * - FIX: Links inside Light-theme status panels remain blue.
- * - PRESERVE: All non-Light themes, charts, forms, menus, themes, profile,
- *             pick/LP/RP-RD/scoring behavior, and production pages.
  *
  * v010 (8/27/2026 8:21:46 pm)
  * - FIX: Restores black table/form text inside included chart and pick components.
@@ -954,7 +940,7 @@ if ($rdPendingInfo !== null) {
 }
 
 /*
- * team.php presentation content.
+ * team_redesign.php presentation content.
  * The JSON file is deliberately separate from application logic so the page
  * can later be managed by an admin editor without editing this PHP file.
  */
@@ -998,7 +984,7 @@ $teamPageContentDefaults = [
             ['label' => 'Driver Chart(s) - view, print for any year', 'url' => '/showDrivers.php', 'enabled' => true, 'new_tab' => true],
             ['label' => 'Team Chart(s) - view, PDF, spreadsheet for any year/segment', 'url' => '/team_chart.php', 'enabled' => true, 'new_tab' => true],
             ['label' => 'Submitted Teams for Current Segment', 'url' => '/submitted_teams.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => 'Your Profile page', 'url' => '/profile.php', 'enabled' => true, 'new_tab' => true],
+            ['label' => 'Your Profile page', 'url' => '/profile_redesign.php', 'enabled' => true, 'new_tab' => true],
         ],
     ],
 ];
@@ -1075,7 +1061,7 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
     <link href="assets/styles.css" rel="stylesheet" media="screen">
     <style>
         /* =====================================================================
-         * team.php v009 - consolidated current presentation
+         * team_redesign.php v009 - consolidated current presentation
          * =================================================================== */
         :root{
             --mrl-page-width:85%;
@@ -1496,8 +1482,7 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
         html.mrl-theme-light .mrl-rd-list a{color:#006eaa!important}
         html.mrl-theme-light .mrl-rd-admin-fixed-control{background:rgba(255,255,255,.78)!important}
         html.mrl-theme-light .mrl-rd-admin-fixed-control a{color:#006eaa!important}
-        html.mrl-theme-light .mrl-rd-notice-panel{background:rgba(255,255,255,.88)!important;color:#000!important}
-        html.mrl-theme-light .mrl-rd-notice-panel *{color:#000!important}
+        html.mrl-theme-light .mrl-rd-notice-panel{background:rgba(255,255,255,.88)!important;color:#6f4a00!important}
         html.mrl-theme-light .mrl-rd-notice-panel a{color:#006eaa!important}
         html.mrl-theme-light .mrl-previous-years summary{color:#8b5b00!important;opacity:1!important}
 
@@ -1532,14 +1517,14 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
             </button>
             <div class="mrl-rd-user-menu" id="mrl-rd-user-menu">
                 <a href="<?php echo teampage_h((string)$mrl); ?>">MRL Home</a>
-                <a href="<?php echo teampage_h((string)$mrl); ?>profile.php">Profile Page</a>
+                <a href="<?php echo teampage_h((string)$mrl); ?>profile_redesign.php">Profile Page</a>
                 <a href="<?php echo teampage_h((string)$mrl); ?>logout.php">Logout</a>
             </div>
         </div>
 
         <div class="mrl-rd-title">
             <?php echo teampage_h((string)$sitename); ?>
-            <small>My Team Page</small>
+            <small>My Team Page · redesign test</small>
         </div>
 
         <div class="mrl-rd-clock" id="mrl-rd-clock">

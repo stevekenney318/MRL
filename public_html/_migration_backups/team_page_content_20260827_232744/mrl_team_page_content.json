@@ -1,0 +1,168 @@
+{
+    "schema_version": 2,
+    "updated_at": "2026-08-27 22:58:54",
+    "admin_league_panel": {
+        "title": "League & Team",
+        "items": [
+            {
+                "label": "Auto Scoring / Weekly Standings  - Beta",
+                "url": "/race_results/weekly_standings.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Segment Pick Window Utility",
+                "url": "/admin_setup.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "DB backup",
+                "url": "/admin_db_backup.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Show Paid Status by year",
+                "url": "/Paid_Status_Year.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "View Team page as alternate user",
+                "url": "/team_view_as.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Email addresses",
+                "url": "/email.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Approve LP as regular segment pick",
+                "url": "/admin_pick_adjustment.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Add drivers for a new year",
+                "url": "/addDrivers.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Current segment chart by entry time",
+                "url": "/current_segment_chart_by_entry_time.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "NASCAR Schedule on ESPN",
+                "url": "https://www.espn.com/racing/schedule",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    },
+    "admin_hosting_panel": {
+        "title": "Hosting & Infrastructure",
+        "items": [
+            {
+                "label": "Hostinger hPanel",
+                "url": "https://hpanel.hostinger.com/",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Hostinger Backups",
+                "url": "https://hpanel.hostinger.com/",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "phpMyAdmin (Hostinger)",
+                "url": "https://hpanel.hostinger.com/",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "WP Admin",
+                "url": "/wp-admin/",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    },
+    "league_panel": {
+        "title": "League Information",
+        "items": [
+            {
+                "label": "{year} Fees & Payment Info",
+                "url": "/{year}_Fees.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Rules",
+                "url": "/{year}_Rules.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Race Schedule - PDF",
+                "url": "/wp-content/uploads/{year}/01/{year}_Schedule_MRL.pdf",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Race Schedule - Spreadsheet",
+                "url": "/wp-content/uploads/{year}/01/{year}_Schedule_MRL.xlsx",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Race Schedule on NASCAR.com",
+                "url": "https://www.nascar.com/nascar-cup-series/{year}/schedule/",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    },
+    "team_panel": {
+        "title": "Team Menu",
+        "items": [
+            {
+                "label": "** Your Profile page (Change Theme)",
+                "url": "/profile.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "** Auto Scoring / Weekly Standings  - Beta",
+                "url": "/race_results/weekly_standings.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Team Chart(s) - view, PDF, spreadsheet for any year/segment",
+                "url": "/team_chart.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Driver Chart(s) - view, print for any year",
+                "url": "/showDrivers.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Submitted Teams for Current Segment",
+                "url": "/submitted_teams.php",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    }
+}

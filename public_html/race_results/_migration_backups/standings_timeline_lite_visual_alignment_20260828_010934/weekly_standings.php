@@ -28,15 +28,10 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v067
- * LAST MODIFIED: 8/28/2026 1:01:11 am
+ * VERSION: v066
+ * LAST MODIFIED: 8/28/2026 12:02:10 am
  *
  * CHANGELOG:
- *
- * v067 (8/28/2026 1:01:11 am)
- *   - UI: Increased the shared score-column width for standings tables 1-3 so two-digit Week labels such as Week 25 fit cleanly.
- *   - ALIGNMENT: The Week / Segment / Season score columns remain identical widths across the first three standings tables.
- *   - PRESERVE: No scoring, snapshot, validation, audit, release-history, navigation, print, spreadsheet, or standings logic changes.
  *
  * v066 (8/28/2026 12:02:10 am)
  *   - UI: Added a non-clickable pill-shaped AUTO-SCORING – UNOFFICIAL status badge beside Audit in the top control row.
@@ -3326,7 +3321,7 @@ if ($exportMode === 'xlsx') {
         }
 
         .col-score {
-            width: 64px;
+            width: 56px;
         }
 
         .weekly-click-row td {

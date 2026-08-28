@@ -28,20 +28,10 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v067
- * LAST MODIFIED: 8/28/2026 1:01:11 am
+ * VERSION: v065
+ * LAST MODIFIED: 7/22/2026 1:24:58 pm
  *
  * CHANGELOG:
- *
- * v067 (8/28/2026 1:01:11 am)
- *   - UI: Increased the shared score-column width for standings tables 1-3 so two-digit Week labels such as Week 25 fit cleanly.
- *   - ALIGNMENT: The Week / Segment / Season score columns remain identical widths across the first three standings tables.
- *   - PRESERVE: No scoring, snapshot, validation, audit, release-history, navigation, print, spreadsheet, or standings logic changes.
- *
- * v066 (8/28/2026 12:02:10 am)
- *   - UI: Added a non-clickable pill-shaped AUTO-SCORING – UNOFFICIAL status badge beside Audit in the top control row.
- *   - PRINT: Added a separate print-only AUTO-SCORING – UNOFFICIAL marker above the standings report so clean Print/PDF output is still clearly identified.
- *   - PRESERVE: No scoring, snapshot, validation, audit, release-history, navigation, spreadsheet, or standings logic changes.
  *
  * v065 (7/22/2026 1:24:58 pm)
  *   - POLISH: Full-print Validation debug-table columns now use targeted landscape widths that more closely match the onscreen layout.
@@ -3061,28 +3051,6 @@ if ($exportMode === 'xlsx') {
             filter: none;
         }
 
-        .unofficial-status-pill {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 34px;
-            padding: 2px 14px;
-            border: 3px solid #c00000;
-            border-radius: 999px;
-            background: #fff;
-            color: #c00000;
-            font-size: 16px;
-            font-weight: 600;
-            line-height: 1.1;
-            letter-spacing: 0.3px;
-            white-space: nowrap;
-            box-sizing: border-box;
-        }
-
-        .unofficial-print-marker {
-            display: none;
-        }
-
         .audit-panel {
             display: none;
             margin: 6px 0 8px 0;
@@ -3326,7 +3294,7 @@ if ($exportMode === 'xlsx') {
         }
 
         .col-score {
-            width: 64px;
+            width: 56px;
         }
 
         .weekly-click-row td {
@@ -3482,25 +3450,6 @@ if ($exportMode === 'xlsx') {
                 max-width: none;
                 width: 100%;
                 margin: 0;
-            }
-
-            .unofficial-print-marker {
-                display: block !important;
-                width: fit-content;
-                margin: 0 auto 8px auto;
-                padding: 3px 14px;
-                border: 2px solid #c00000;
-                border-radius: 999px;
-                background: #fff;
-                color: #c00000;
-                font-size: 13px;
-                font-weight: bold;
-                line-height: 1.15;
-                letter-spacing: 0.3px;
-                text-align: center;
-                white-space: nowrap;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
 
             .top-controls,
@@ -3756,12 +3705,6 @@ if ($exportMode === 'xlsx') {
                 min-width: 132px;
             }
 
-            .unofficial-status-pill {
-                min-height: 30px;
-                padding: 2px 10px;
-                font-size: 13px;
-            }
-
             .pending-review-panel {
                 font-size: 12px;
                 padding: 8px 9px;
@@ -3883,8 +3826,6 @@ if ($exportMode === 'xlsx') {
                     <?php echo ($selectedRace === null ? 'disabled' : ''); ?>>
                 Audit
             </button>
-
-            <span class="unofficial-status-pill" aria-label="Auto-scoring unofficial status">AUTO-SCORING – UNOFFICIAL</span>
 
             <?php if ($underReview): ?>
                 <button type="button"
@@ -4024,8 +3965,6 @@ if ($exportMode === 'xlsx') {
     </div>
 
     <div id="resultsArea" <?php echo ($selectedRace === null ? 'style="display:none;"' : ''); ?>>
-        <div class="unofficial-print-marker">AUTO-SCORING – UNOFFICIAL</div>
-
         <div class="details-content validation-report-panel" id="detailsContent">
             <div class="details-meta">
                 <span class="chunk"><strong>Scoring:</strong> <?php echo rrsg_h($scoreYear . ' / ' . $scoreSegment . ' / ' . $selectedRaceDisplay); ?></span>
