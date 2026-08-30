@@ -28,47 +28,10 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v068
- * LAST MODIFIED: 8/29/2026 10:30:38 am
+ * VERSION: v062
+ * LAST MODIFIED: 7/5/2026 12:47:15 am
  *
  * CHANGELOG:
- *
- * v068 (8/29/2026 10:30:38 am)
- *   - FIX: Removed v055 yearly-roster filler from live standings calculations so user_teams records with no actual participation are not manufactured as 0-point standings rows.
- *   - FIX: MRL test team is now explicitly non-competitive and excluded from official scoring rows, including normal SEG picks and LP/RD overlays.
- *   - PRESERVE: Legitimate participating teams may still score 0; no score>0 filter was added.
- *   - PRESERVE: Existing LP/RD effective-race logic, snapshots, validation, audit, release history, navigation, print, spreadsheet, and UI behavior are unchanged.
- *
- * v067 (8/28/2026 1:01:11 am)
- *   - UI: Increased the shared score-column width for standings tables 1-3 so two-digit Week labels such as Week 25 fit cleanly.
- *   - ALIGNMENT: The Week / Segment / Season score columns remain identical widths across the first three standings tables.
- *   - PRESERVE: No scoring, snapshot, validation, audit, release-history, navigation, print, spreadsheet, or standings logic changes.
- *
- * v066 (8/28/2026 12:02:10 am)
- *   - UI: Added a non-clickable pill-shaped AUTO-SCORING – UNOFFICIAL status badge beside Audit in the top control row.
- *   - PRINT: Added a separate print-only AUTO-SCORING – UNOFFICIAL marker above the standings report so clean Print/PDF output is still clearly identified.
- *   - PRESERVE: No scoring, snapshot, validation, audit, release-history, navigation, spreadsheet, or standings logic changes.
- *
- * v065 (7/22/2026 1:24:58 pm)
- *   - POLISH: Full-print Validation debug-table columns now use targeted landscape widths that more closely match the onscreen layout.
- *   - POLISH: Snapshot Used entries remain centered and on one line in Print Full while narrow numeric columns use only the space they need.
- *
- * v065 (7/22/2026 12:56:21 pm)
- *   - CHANGE: Print Full now includes the top race controls and release/version identification row while keeping Print, Print Full, and Spreadsheet action buttons out of the PDF.
- *   - FIX: Validation and audit panels now use the full available page width, and long snapshot names wrap instead of forcing the panel beyond the page.
- *   - FIX: Full-print validation/debug tables use tighter print sizing and wrapping so long snapshot and winner values remain inside the landscape page.
- *   - FIX: Full-print report panels are allowed to fragment together across pages so all four main standings columns begin and continue side-by-side instead of Weekly Winners advancing a page ahead.
- *
- * v064 (7/22/2026 12:27:54 pm)
- *   - NEW: Added a Print Full button for a complete archival report with Validation, Audit Trail, Pending Review, and all standings detail rows expanded automatically.
- *   - CHANGE: Full-report PDF filenames include _full_ before the selected snapshot timestamp so they remain separate from clean report PDFs.
- *   - CHANGE: Full-report printing restores every panel and detail row to its prior on-screen state after the print dialog closes.
- *   - POLISH: Added full-report print page-break protection to reduce awkward row/detail splitting across pages.
- *
- * v063 (7/22/2026 12:05:24 pm)
- *   - FIX: Clean PDF printing now excludes the release/version control row in addition to the existing page controls and detail panels.
- *   - CHANGE: Spreadsheet filenames now include the selected snapshot timestamp through milliseconds.
- *   - CHANGE: Print/PDF filenames now use the same race-based, snapshot-timestamped naming pattern as spreadsheet exports.
  *
  * v062 (7/5/2026 12:47:15 am)
  *   - CHANGE: Pending Review now uses release-level metadata instead of automatic race-folder under_review.flag state.
@@ -1200,27 +1163,11 @@ function rrsg_build_public_audit_meta(array $selectedRaceMeta, ?array $selectedR
     ];
 }
 
-function rrsg_is_noncompetitive_test_team(array $team): bool
-{
-    $userId = (int)($team['userID'] ?? 0);
-    $teamName = strtolower(trim((string)($team['teamName'] ?? '')));
-
-    // userID 0 is the current legacy test account; 999 is its planned positive-ID replacement.
-    if ($userId === 0 || $userId === 999) {
-        return true;
-    }
-
-    return $teamName === 'mrl test team';
-}
-
 function rrsg_build_weekly_rows(array $teamRows, array $driverPoints): array
 {
     $weeklyRows = [];
 
     foreach ($teamRows as $team) {
-        if (!is_array($team) || rrsg_is_noncompetitive_test_team($team)) {
-            continue;
-        }
         $driverA = (string)($team['driverA'] ?? '');
         $driverB = (string)($team['driverB'] ?? '');
         $driverC = (string)($team['driverC'] ?? '');
@@ -1630,6 +1577,7 @@ function rrsg_segment_breakdown_rows(
     $dbconnect
 ): array {
     $rows = [];
+    $yearRoster = rrsg_get_year_team_roster($selectedYear, $dbo ?? null);
     $racesAscending = $pointRaces;
 
     usort($racesAscending, function ($a, $b) {
@@ -1657,6 +1605,7 @@ function rrsg_segment_breakdown_rows(
 
         $driverPoints = rrs_load_snapshot_driver_points($snapshotFile);
         $weeklyRows = rrsg_build_weekly_rows($raceTeamRows, $driverPoints);
+        $weeklyRows = rrsg_append_missing_roster_rows($weeklyRows, $yearRoster);
 
         $rows[] = [
             'raceCode' => (string)$race['raceCode'],
@@ -1736,7 +1685,7 @@ function rrsg_overlay_special_rows_for_race(array $baseTeamRows, array $specialR
     $rowsByTeam = [];
 
     foreach ($baseTeamRows as $row) {
-        if (!is_array($row) || rrsg_is_noncompetitive_test_team($row)) {
+        if (!is_array($row)) {
             continue;
         }
 
@@ -1756,7 +1705,7 @@ function rrsg_overlay_special_rows_for_race(array $baseTeamRows, array $specialR
 
     $specialByTeam = [];
     foreach ($specialRows as $row) {
-        if (!is_array($row) || rrsg_is_noncompetitive_test_team($row)) {
+        if (!is_array($row)) {
             continue;
         }
 
@@ -2265,6 +2214,7 @@ if ($selectedRace !== null) {
 $teamRowsBase = rr_get_segment_team_picks($dbo ?? null, $dbconnect ?? null, $scoreYear, $scoreSegment);
 $teamRowsSpecial = rrsg_special_pick_rows($scoreYear, $scoreSegment, $dbo ?? null);
 $teamRows = rrsg_overlay_special_rows_for_race($teamRowsBase, $teamRowsSpecial, $selectedRaceNumber, $scoreSegment);
+$yearRoster = rrsg_get_year_team_roster($scoreYear, $dbo ?? null);
 
 $segmentTotals = [];
 $seasonTotals = [];
@@ -2287,6 +2237,11 @@ $validation = [
     'warn' => [],
     'fail' => [],
 ];
+
+foreach ($yearRoster as $teamName => $rosterRow) {
+    $segmentTotals[(string)$teamName] = 0;
+    $seasonTotals[(string)$teamName] = 0;
+}
 
 if ($selectedRace !== null) {
     $racesAscending = $pointRaces;
@@ -2327,6 +2282,7 @@ if ($selectedRace !== null) {
         if ($snapshotFile !== '') {
             $driverPoints = rrs_load_snapshot_driver_points($snapshotFile);
             $weeklyRows = rrsg_build_weekly_rows($raceTeamRows, $driverPoints);
+            $weeklyRows = rrsg_append_missing_roster_rows($weeklyRows, $yearRoster);
             $winner = rrsg_get_weekly_winner($weeklyRows);
 
             foreach ($weeklyRows as $row) {
@@ -2623,34 +2579,6 @@ $segmentSummaryRows = rrsg_ranked_summary_rows($segmentStandings, 'total', $segm
 $seasonSummaryRows = rrsg_ranked_summary_rows($seasonStandings, 'total', $seasonTieMap);
 $weeklyWinnerSummaryRows = rrsg_weekly_winner_summary_rows($pointRaces, $weeklyWinners, $selectedRaceNumber);
 
-$weeklyExportFilenameBase = 'weekly_standings_' . $selectedYear . '_' . $selectedRaceCode;
-if ($selectedRaceMeta['raceLabel'] !== '') {
-    $weeklyExportFilenameBase .= '_' . $selectedRaceMeta['raceLabel'];
-}
-
-$selectedSnapshotId = rrsg_snapshot_id_from_file((string)$selectedRaceMeta['snapshotFile']);
-if ($selectedSnapshotId !== '') {
-    $weeklyExportFilenameBase .= '_' . $selectedSnapshotId;
-}
-
-$weeklyExportFilenameBase = preg_replace('/[^A-Za-z0-9_\-]/', '_', $weeklyExportFilenameBase);
-if (!is_string($weeklyExportFilenameBase) || $weeklyExportFilenameBase === '') {
-    $weeklyExportFilenameBase = 'weekly_standings';
-}
-
-$weeklyFullExportFilenameBase = 'weekly_standings_' . $selectedYear . '_' . $selectedRaceCode;
-if ($selectedRaceMeta['raceLabel'] !== '') {
-    $weeklyFullExportFilenameBase .= '_' . $selectedRaceMeta['raceLabel'];
-}
-$weeklyFullExportFilenameBase .= '_full';
-if ($selectedSnapshotId !== '') {
-    $weeklyFullExportFilenameBase .= '_' . $selectedSnapshotId;
-}
-$weeklyFullExportFilenameBase = preg_replace('/[^A-Za-z0-9_\-]/', '_', $weeklyFullExportFilenameBase);
-if (!is_string($weeklyFullExportFilenameBase) || $weeklyFullExportFilenameBase === '') {
-    $weeklyFullExportFilenameBase = 'weekly_standings_full';
-}
-
 $exportMode = isset($_GET['export']) ? trim((string)$_GET['export']) : '';
 if ($exportMode === 'xlsx') {
     $weeklyExcelRows = [];
@@ -2717,8 +2645,13 @@ if ($exportMode === 'xlsx') {
         ],
     ];
 
+    $filenameBase = 'weekly_standings_' . $selectedYear . '_' . $selectedRaceCode;
+    if ($selectedRaceMeta['raceLabel'] !== '') {
+        $filenameBase .= '_' . $selectedRaceMeta['raceLabel'];
+    }
+
     rrsg_send_weekly_standings_xlsx(
-        $weeklyExportFilenameBase,
+        $filenameBase,
         $tables,
         'Copyright © 2017-' . $selectedYear . ' Manlius Racing League — All rights reserved.'
     );
@@ -2980,10 +2913,8 @@ if ($exportMode === 'xlsx') {
             background: rgba(46, 139, 87, 0.18);
             border: 2px solid rgba(46, 139, 87, 0.85);
             border-radius: 8px;
-            width: 100%;
-            max-width: none;
+            max-width: 970px;
             box-sizing: border-box;
-            overflow: hidden;
         }
 
         .validation-btn {
@@ -3074,28 +3005,6 @@ if ($exportMode === 'xlsx') {
             filter: none;
         }
 
-        .unofficial-status-pill {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 34px;
-            padding: 2px 14px;
-            border: 3px solid #c00000;
-            border-radius: 999px;
-            background: #fff;
-            color: #c00000;
-            font-size: 16px;
-            font-weight: 600;
-            line-height: 1.1;
-            letter-spacing: 0.3px;
-            white-space: nowrap;
-            box-sizing: border-box;
-        }
-
-        .unofficial-print-marker {
-            display: none;
-        }
-
         .audit-panel {
             display: none;
             margin: 6px 0 8px 0;
@@ -3106,8 +3015,7 @@ if ($exportMode === 'xlsx') {
             border: 2px solid #9ec5fe;
             color: #25364a;
             border-radius: 8px;
-            width: 100%;
-            max-width: none;
+            max-width: 980px;
             box-sizing: border-box;
             overflow-x: auto;
         }
@@ -3202,9 +3110,7 @@ if ($exportMode === 'xlsx') {
         }
 
         .details-meta .chunk {
-            min-width: 0;
-            white-space: normal;
-            overflow-wrap: anywhere;
+            white-space: nowrap;
         }
 
         .details-meta strong {
@@ -3339,7 +3245,7 @@ if ($exportMode === 'xlsx') {
         }
 
         .col-score {
-            width: 64px;
+            width: 56px;
         }
 
         .weekly-click-row td {
@@ -3497,83 +3403,13 @@ if ($exportMode === 'xlsx') {
                 margin: 0;
             }
 
-            .unofficial-print-marker {
-                display: block !important;
-                width: fit-content;
-                margin: 0 auto 8px auto;
-                padding: 3px 14px;
-                border: 2px solid #c00000;
-                border-radius: 999px;
-                background: #fff;
-                color: #c00000;
-                font-size: 13px;
-                font-weight: bold;
-                line-height: 1.15;
-                letter-spacing: 0.3px;
-                text-align: center;
-                white-space: nowrap;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-
             .top-controls,
-            .release-version-row,
             .pending-review-panel,
             .audit-panel,
             .race-placeholder,
             .details-content,
             .team-detail-row {
                 display: none !important;
-            }
-
-            body.full-print-mode .top-controls {
-                display: grid !important;
-                grid-template-columns: minmax(0, auto) minmax(0, 1fr) !important;
-                grid-template-areas: "primary status" !important;
-                gap: 6px 10px;
-                margin-bottom: 3px;
-            }
-
-            body.full-print-mode .top-controls-actions {
-                display: none !important;
-            }
-
-            body.full-print-mode .release-version-row {
-                display: block !important;
-                margin-bottom: 5px;
-            }
-
-            body.full-print-mode .pending-review-panel,
-            body.full-print-mode .audit-panel,
-            body.full-print-mode .details-content {
-                display: block !important;
-            }
-
-            body.full-print-mode .team-detail-row {
-                display: table-row !important;
-            }
-
-            body.full-print-mode .details-content,
-            body.full-print-mode .pending-review-panel,
-            body.full-print-mode .audit-panel,
-            body.full-print-mode .team-detail-row {
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-
-            body.full-print-mode .report-grid,
-            body.full-print-mode .report-panel,
-            body.full-print-mode .table-wrap,
-            body.full-print-mode table,
-            body.full-print-mode tbody,
-            body.full-print-mode tr {
-                break-inside: auto;
-                page-break-inside: auto;
-            }
-
-            body.full-print-mode .team-detail-row {
-                break-inside: avoid;
-                page-break-inside: avoid;
             }
 
             #resultsArea {
@@ -3620,95 +3456,6 @@ if ($exportMode === 'xlsx') {
             .winner-footnote,
             .table-footnote {
                 font-size: 9px;
-            }
-
-            body.full-print-mode .details-content.validation-report-panel,
-            body.full-print-mode .audit-panel,
-            body.full-print-mode .pending-review-panel {
-                width: 100%;
-                max-width: none;
-                box-sizing: border-box;
-            }
-
-            body.full-print-mode .details-meta {
-                gap: 3px 10px;
-                font-size: 9px;
-                line-height: 1.15;
-            }
-
-            body.full-print-mode .details-meta .chunk {
-                white-space: normal;
-                overflow-wrap: anywhere;
-            }
-
-            body.full-print-mode .validation-columns {
-                gap: 7px;
-                margin-bottom: 6px;
-            }
-
-            body.full-print-mode .validation-column {
-                min-width: 0;
-                flex: 1 1 0;
-                font-size: 8px;
-                overflow-wrap: anywhere;
-            }
-
-            body.full-print-mode .validation-column h3,
-            body.full-print-mode .debug-title {
-                font-size: 10px;
-            }
-
-            body.full-print-mode .details-content table {
-                font-size: 7px;
-                table-layout: fixed;
-            }
-
-            body.full-print-mode .details-content th,
-            body.full-print-mode .details-content td {
-                padding: 1px 2px;
-                white-space: normal;
-                overflow-wrap: anywhere;
-                word-break: break-word;
-            }
-
-            /* Full-print debug table: match the roomy onscreen proportions. */
-            body.full-print-mode .details-content table th:nth-child(1),
-            body.full-print-mode .details-content table td:nth-child(1) { width: 18%; }
-
-            body.full-print-mode .details-content table th:nth-child(2),
-            body.full-print-mode .details-content table td:nth-child(2) { width: 4%; }
-
-            body.full-print-mode .details-content table th:nth-child(3),
-            body.full-print-mode .details-content table td:nth-child(3) { width: 8%; }
-
-            body.full-print-mode .details-content table th:nth-child(4),
-            body.full-print-mode .details-content table td:nth-child(4) { width: 7%; }
-
-            body.full-print-mode .details-content table th:nth-child(5),
-            body.full-print-mode .details-content table td:nth-child(5) {
-                width: 38%;
-                white-space: nowrap;
-                overflow-wrap: normal;
-                word-break: normal;
-                text-align: center;
-            }
-
-            body.full-print-mode .details-content table th:nth-child(6),
-            body.full-print-mode .details-content table td:nth-child(6) { width: 20%; }
-
-            body.full-print-mode .details-content table th:nth-child(7),
-            body.full-print-mode .details-content table td:nth-child(7) { width: 5%; }
-
-            body.full-print-mode .report-grid {
-                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-                page-break-inside: auto;
-                break-inside: auto;
-            }
-
-            body.full-print-mode .report-panel {
-                min-width: 0;
-                page-break-inside: auto;
-                break-inside: auto;
             }
         }
 
@@ -3767,12 +3514,6 @@ if ($exportMode === 'xlsx') {
 
             .pending-review-btn {
                 min-width: 132px;
-            }
-
-            .unofficial-status-pill {
-                min-height: 30px;
-                padding: 2px 10px;
-                font-size: 13px;
             }
 
             .pending-review-panel {
@@ -3897,8 +3638,6 @@ if ($exportMode === 'xlsx') {
                 Audit
             </button>
 
-            <span class="unofficial-status-pill" aria-label="Auto-scoring unofficial status">AUTO-SCORING – UNOFFICIAL</span>
-
             <?php if ($underReview): ?>
                 <button type="button"
                         class="details-toggle pending-review-btn"
@@ -3916,11 +3655,6 @@ if ($exportMode === 'xlsx') {
                     id="weeklyPrintBtn"
                     onclick="printWeeklyReport()"
                     <?php echo ($selectedRace === null ? 'disabled' : ''); ?>>Print</button>
-            <button type="button"
-                    class="report-action-btn"
-                    id="weeklyFullPrintBtn"
-                    onclick="printFullWeeklyReport()"
-                    <?php echo ($selectedRace === null ? 'disabled' : ''); ?>>Print Full</button>
             <button type="button"
                     class="report-action-btn"
                     id="weeklySpreadsheetBtn"
@@ -4037,8 +3771,6 @@ if ($exportMode === 'xlsx') {
     </div>
 
     <div id="resultsArea" <?php echo ($selectedRace === null ? 'style="display:none;"' : ''); ?>>
-        <div class="unofficial-print-marker">AUTO-SCORING – UNOFFICIAL</div>
-
         <div class="details-content validation-report-panel" id="detailsContent">
             <div class="details-meta">
                 <span class="chunk"><strong>Scoring:</strong> <?php echo rrsg_h($scoreYear . ' / ' . $scoreSegment . ' / ' . $selectedRaceDisplay); ?></span>
@@ -4624,104 +4356,8 @@ function rrsgRaceNumberFromCode(code) {
 }
 
 
-var rrsgOriginalDocumentTitle = document.title;
-var rrsgWeeklyExportFilenameBase = <?php echo json_encode($weeklyExportFilenameBase, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
-var rrsgWeeklyFullExportFilenameBase = <?php echo json_encode($weeklyFullExportFilenameBase, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
-var rrsgActivePrintFilenameBase = rrsgWeeklyExportFilenameBase;
-var rrsgFullPrintState = null;
-
-function rrsgPreparePrintTitle() {
-    if (rrsgActivePrintFilenameBase) {
-        document.title = rrsgActivePrintFilenameBase;
-    }
-}
-
-function rrsgRestorePrintTitle() {
-    document.title = rrsgOriginalDocumentTitle;
-}
-
-function rrsgRememberElementDisplay(element) {
-    return element ? element.style.display : null;
-}
-
-function rrsgRestoreElementDisplay(element, displayValue) {
-    if (element && displayValue !== null) {
-        element.style.display = displayValue;
-    }
-}
-
-function rrsgRestoreFullPrintState() {
-    var i;
-
-    if (!rrsgFullPrintState) {
-        return;
-    }
-
-    document.body.classList.remove('full-print-mode');
-    rrsgRestoreElementDisplay(rrsgFullPrintState.details, rrsgFullPrintState.detailsDisplay);
-    rrsgRestoreElementDisplay(rrsgFullPrintState.audit, rrsgFullPrintState.auditDisplay);
-    rrsgRestoreElementDisplay(rrsgFullPrintState.review, rrsgFullPrintState.reviewDisplay);
-
-    for (i = 0; i < rrsgFullPrintState.rows.length; i++) {
-        rrsgFullPrintState.rows[i].element.style.display = rrsgFullPrintState.rows[i].display;
-    }
-
-    rrsgFullPrintState = null;
-    rrsgActivePrintFilenameBase = rrsgWeeklyExportFilenameBase;
-}
-
-function rrsgAfterPrintCleanup() {
-    rrsgRestorePrintTitle();
-    rrsgRestoreFullPrintState();
-}
-
 function printWeeklyReport() {
-    rrsgActivePrintFilenameBase = rrsgWeeklyExportFilenameBase;
-    rrsgPreparePrintTitle();
     window.print();
-}
-
-function printFullWeeklyReport() {
-    var details = document.getElementById('detailsContent');
-    var audit = document.getElementById('auditPanel');
-    var review = document.getElementById('reviewPanel');
-    var rows = document.getElementsByClassName('team-detail-row');
-    var rowStates = [];
-    var i;
-
-    if (rrsgFullPrintState) {
-        return;
-    }
-
-    for (i = 0; i < rows.length; i++) {
-        rowStates.push({
-            element: rows[i],
-            display: rows[i].style.display
-        });
-        rows[i].style.display = 'table-row';
-    }
-
-    rrsgFullPrintState = {
-        details: details,
-        detailsDisplay: rrsgRememberElementDisplay(details),
-        audit: audit,
-        auditDisplay: rrsgRememberElementDisplay(audit),
-        review: review,
-        reviewDisplay: rrsgRememberElementDisplay(review),
-        rows: rowStates
-    };
-
-    if (details) details.style.display = 'block';
-    if (audit) audit.style.display = 'block';
-    if (review) review.style.display = 'block';
-
-    document.body.classList.add('full-print-mode');
-    rrsgActivePrintFilenameBase = rrsgWeeklyFullExportFilenameBase;
-    rrsgPreparePrintTitle();
-
-    window.requestAnimationFrame(function () {
-        window.print();
-    });
 }
 
 function exportWeeklyStandingsXlsx() {
@@ -5026,8 +4662,6 @@ document.addEventListener('DOMContentLoaded', function () {
     updateNavButtons();
 });
 window.addEventListener('resize', rrsgAlignReleaseVersionRowSoon);
-window.addEventListener('beforeprint', rrsgPreparePrintTitle);
-window.addEventListener('afterprint', rrsgAfterPrintCleanup);
 </script>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/footer-light.php'; ?>
 </body>

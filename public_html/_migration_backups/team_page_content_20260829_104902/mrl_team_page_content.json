@@ -1,6 +1,6 @@
 {
     "schema_version": 3,
-    "updated_at": "2026-08-29 10:55:07",
+    "updated_at": "2026-08-28 22:29:21",
     "announcement_panel": {
         "enabled": true,
         "title": "",
@@ -10,32 +10,14 @@
         "title": "League & Team",
         "items": [
             {
-                "label": "Check Status - At a Glance \ud83d\udc40",
-                "url": "https://manliusracingleague.com/aag.html",
+                "label": "Auto Scoring / Weekly Standings  - Beta",
+                "url": "/race_results/weekly_standings.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
                 "label": "Segment Pick Window Utility",
                 "url": "/admin_setup.php",
-                "enabled": true,
-                "new_tab": true
-            },
-            {
-                "label": "Race Results Dashboard (Race & Revision Monitors)",
-                "url": "https://manliusracingleague.com/race_results/race_results_dashboard.php",
-                "enabled": true,
-                "new_tab": true
-            },
-            {
-                "label": "Race Results Menu",
-                "url": "https://manliusracingleague.com/race_results/race_results_menu.php",
-                "enabled": true,
-                "new_tab": true
-            },
-            {
-                "label": "Auto Scoring / Weekly Standings  - Beta",
-                "url": "/race_results/weekly_standings.php",
                 "enabled": true,
                 "new_tab": true
             },

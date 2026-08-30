@@ -4,19 +4,12 @@ declare(strict_types=1);
 /**
  * admin_team_page_content.php
  *
- * VERSION: v005
- * LAST MODIFIED: 8/28/2026 3:09:01 pm
+ * VERSION: v004
+ * LAST MODIFIED: 8/28/2026 2:36:58 pm
  *
  * Admin-only editor for JSON-driven Team Page content.
  *
  * CHANGELOG:
- *
- * v005 (8/28/2026 3:09:01 pm)
- * - NEW: Adds an optional Team Page announcement/news panel editor.
- * - NEW: Announcement panel supports Enabled/Disabled, an optional title, and freeform multi-line text.
- * - NEW: Plain http:// and https:// URLs entered in announcement text are automatically clickable on team.php.
- * - CHANGE: Content schema advances to v3 while preserving all four existing link panels.
- * - PRESERVE: Existing link ordering, enabled/new-tab/remove controls, authentication, CSRF, backup, and JSON behavior.
  *
  * v004 (8/28/2026 2:36:58 pm)
  * - FIX: Productionized the return link from the Team Page Content manager.
@@ -103,15 +96,6 @@ function atpc_build_panel(array $post, string $key, string $fallback): array
     return ['title' => $title, 'items' => $items];
 }
 
-function atpc_build_announcement(array $post): array
-{
-    return [
-        'enabled' => !empty($post['announcement_enabled']),
-        'title' => trim((string)($post['announcement_title'] ?? '')),
-        'content' => trim((string)($post['announcement_content'] ?? '')),
-    ];
-}
-
 if (!isset($_SESSION['atpc_csrf'])) {
     $_SESSION['atpc_csrf'] = bin2hex(random_bytes(24));
 }
@@ -124,9 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Save blocked: security token mismatch.';
     } else {
         $new = [
-            'schema_version' => 3,
+            'schema_version' => 2,
             'updated_at' => date('Y-m-d H:i:s'),
-            'announcement_panel' => atpc_build_announcement($_POST),
             'admin_league_panel' => atpc_build_panel($_POST, 'admin_league', 'League & Team'),
             'admin_hosting_panel' => atpc_build_panel($_POST, 'admin_hosting', 'Hosting & Infrastructure'),
             'league_panel' => atpc_build_panel($_POST, 'league', 'League Information'),
@@ -180,22 +163,13 @@ $panels = [
 h1,h2{color:#efc982}a{color:#76cfff}.note{padding:11px;border:1px solid #555;border-radius:9px;background:#171717}
 table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border-bottom:1px solid #444;padding:7px;text-align:left}
 td input:not([type=checkbox]){width:100%}input{padding:7px;background:#111;color:#eee;border:1px solid #666;border-radius:5px}
-.panel-title{width:100%;max-width:560px}.announcement-title{width:100%;max-width:760px}.announcement-text{width:100%;min-height:150px;resize:vertical;padding:9px;background:#111;color:#eee;border:1px solid #666;border-radius:5px;font:16px/1.4 Tahoma,Verdana,Segoe UI,sans-serif}
-.inline-check{display:inline-flex;align-items:center;gap:8px;margin:4px 0 12px}.hint{color:#bbb;font-size:13px;line-height:1.35;margin-top:7px}
-button{padding:10px 17px;border:1px solid #5a7fb5;border-radius:8px;background:#1466c9;color:#fff;font-weight:800;cursor:pointer}
+.panel-title{width:100%;max-width:560px}button{padding:10px 17px;border:1px solid #5a7fb5;border-radius:8px;background:#1466c9;color:#fff;font-weight:800;cursor:pointer}
 .mini{padding:3px 8px;margin:1px;background:#2b2b2b;border-color:#777}.order{width:82px;white-space:nowrap}.message{margin-top:12px;padding:10px;border:1px solid #777;border-radius:8px;color:#efc982}.save{position:sticky;bottom:8px}
 </style></head><body><div class="wrap">
 <div class="card"><h1>Manage Team Page Content</h1><p><a href="/team.php">← Team</a></p>
 <div class="note"><strong>Manage Team Page Content</strong> is a fixed Admin control and cannot be edited here.</div>
 <?php if($message!==''):?><div class="message"><?php echo atpc_h($message);?></div><?php endif;?></div>
 <form method="post"><input type="hidden" name="csrf" value="<?php echo atpc_h((string)$_SESSION['atpc_csrf']);?>">
-<div class="card">
-<h2>Team Page Announcement / News</h2>
-<label class="inline-check"><input name="announcement_enabled" value="1" type="checkbox" <?php echo !empty($data['announcement_panel']['enabled']) ? 'checked' : ''; ?>> Enabled</label>
-<label>Panel title (optional)<br><input class="announcement-title" name="announcement_title" value="<?php echo atpc_h($data['announcement_panel']['title'] ?? 'League News'); ?>"></label>
-<p><label>Announcement / notes<br><textarea class="announcement-text" name="announcement_content" placeholder="Write a sentence, paragraph, reminder, league news, etc."><?php echo atpc_h($data['announcement_panel']['content'] ?? ''); ?></textarea></label></p>
-<div class="hint">Plain http:// or https:// URLs become clickable links automatically on the Team page. No HTML is required.</div>
-</div>
 <?php foreach($panels as $key=>$meta):$dk=$meta['data'];?><div class="card">
 <h2><?php echo atpc_h($meta['heading']);?></h2>
 <label>Panel title<br><input class="panel-title" name="<?php echo atpc_h($key);?>_title" value="<?php echo atpc_h($data[$dk]['title']??'');?>"></label>

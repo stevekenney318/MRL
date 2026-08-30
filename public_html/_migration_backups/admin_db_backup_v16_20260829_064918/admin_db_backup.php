@@ -55,20 +55,6 @@ declare(strict_types=1);
                        - 30-day delete quarantine; manual final delete only
                        - Restore directly from Active or Archive
                        - Permanent delete only from To Be Deleted after 30 days
-
-    v1.6  (8/29/2026 6:20:08 am)  Rename + selection convenience cleanup.
-                       - FIX: Rename uses same selected radio as Restore
-                       - UI: Radio selection auto-fills rename field without .sql
-                       - UI: Select All / Clear for each checkbox section
-                       - PRESERVE: v1.5 archive/quarantine/restore/delete safeguards
-
-    v1.7  (8/29/2026 7:00:54 am)  Simplified delete quarantine behavior.
-                       - CHANGE: To Be Deleted is now a simple manual holding area
-                       - CHANGE: Removed 30-day eligibility requirement
-                       - CHANGE: Moving files no longer changes file modified timestamps
-                       - CHANGE: Permanent delete uses explicit confirmation only
-                       - PRESERVE: Active / Archive / To Be Deleted organization, restore, rename,
-                                   Select All / Clear, overwrite protection, and DB backup engine
     ============================================================
 */
 
@@ -110,6 +96,7 @@ if (!$isAdmin) {
 $backupDir = __DIR__ . DIRECTORY_SEPARATOR . 'db_backups';
 $archiveDir = $backupDir . DIRECTORY_SEPARATOR . 'Archive';
 $deleteDir = $backupDir . DIRECTORY_SEPARATOR . 'To_Be_Deleted';
+$deleteRetentionDays = 30;
 
 // Protect against huge dumps accidentally killing PHP
 $defaultMaxRuntimeSeconds = 90;
@@ -233,7 +220,7 @@ function destinationNameExists(string $dir, string $filename): bool {
     return false;
 }
 
-function moveManagedSqlFile(string $srcDir, string $dstDir, string $filename): array {
+function moveManagedSqlFile(string $srcDir, string $dstDir, string $filename, bool $markMoveTime = false): array {
     if (!isValidSqlBackupName($filename)) return [false, "Invalid SQL backup filename: $filename"];
 
     $src = $srcDir . DIRECTORY_SEPARATOR . $filename;
@@ -254,6 +241,10 @@ function moveManagedSqlFile(string $srcDir, string $dstDir, string $filename): a
     }
 
     if (!$ok) return [false, "Could not move: $filename"];
+
+    if ($markMoveTime) {
+        @touch($dst);
+    }
 
     return [true, ''];
 }
@@ -279,6 +270,21 @@ function renameManagedSqlFile(string $dir, string $oldName, string $newRequested
     return [true, "Renamed $oldName to $newName"];
 }
 
+function quarantineEligibleInfo(string $path, int $retentionDays): array {
+    $mtime = @filemtime($path);
+    if (!$mtime) $mtime = time();
+
+    $eligibleTs = $mtime + ($retentionDays * 86400);
+    $remainingSeconds = max(0, $eligibleTs - time());
+    $remainingDays = (int)ceil($remainingSeconds / 86400);
+
+    return [
+        'moved_ts' => $mtime,
+        'eligible_ts' => $eligibleTs,
+        'eligible' => time() >= $eligibleTs,
+        'remaining_days' => $remainingDays,
+    ];
+}
 function setTimeLimitIfAllowed(int $seconds): void {
     if ($seconds <= 0) return;
     if (function_exists('set_time_limit')) {
@@ -690,6 +696,7 @@ $restoreDisableFK    = isset($_POST['restore_disable_fk']) ? 1 : 1;
 $restoreFile         = safeFileBase((string)($_POST['restore_file'] ?? ''));
 $restoreArea         = (string)($_POST['restore_area'] ?? 'active');
 if (!in_array($restoreArea, ['active', 'archive'], true)) $restoreArea = 'active';
+$singleFile          = trim((string)($_POST['single_file'] ?? ''));
 $renameTo           = trim((string)($_POST['rename_to'] ?? ''));
 
 $createdFile = '';$didPostAction = false;
@@ -714,7 +721,8 @@ if (in_array($action, $managementActions, true) && count($errors) === 0) {
         } else {
             foreach ($selected as $name) {
                 $destination = $action === 'archive_selected' ? $archiveDir : $deleteDir;
-                [$ok, $msg] = moveManagedSqlFile($backupDir, $destination, $name);
+                $markMoveTime = $action === 'trash_selected';
+                [$ok, $msg] = moveManagedSqlFile($backupDir, $destination, $name, $markMoveTime);
                 if ($ok) {
                     $messages[] = ($action === 'archive_selected' ? 'Archived: ' : 'Moved to To Be Deleted: ') . $name;
                 } else {
@@ -731,7 +739,8 @@ if (in_array($action, $managementActions, true) && count($errors) === 0) {
         } else {
             foreach ($selected as $name) {
                 $destination = $action === 'unarchive_selected' ? $backupDir : $deleteDir;
-                [$ok, $msg] = moveManagedSqlFile($archiveDir, $destination, $name);
+                $markMoveTime = $action === 'archive_to_trash_selected';
+                [$ok, $msg] = moveManagedSqlFile($archiveDir, $destination, $name, $markMoveTime);
                 if ($ok) {
                     $messages[] = ($action === 'unarchive_selected' ? 'Moved back to Active: ' : 'Moved Archive file to To Be Deleted: ') . $name;
                 } else {
@@ -747,7 +756,7 @@ if (in_array($action, $managementActions, true) && count($errors) === 0) {
             $errors[] = 'No To Be Deleted files selected.';
         } else {
             foreach ($selected as $name) {
-                [$ok, $msg] = moveManagedSqlFile($deleteDir, $backupDir, $name);
+                [$ok, $msg] = moveManagedSqlFile($deleteDir, $backupDir, $name, false);
                 if ($ok) {
                     $messages[] = 'Restored to Active: ' . $name;
                 } else {
@@ -769,6 +778,12 @@ if (in_array($action, $managementActions, true) && count($errors) === 0) {
                     continue;
                 }
 
+                $info = quarantineEligibleInfo($path, $deleteRetentionDays);
+                if (!$info['eligible']) {
+                    $errors[] = $name . ' is not yet eligible for permanent deletion (' . $info['remaining_days'] . ' day(s) remaining).';
+                    continue;
+                }
+
                 if (@unlink($path)) {
                     $messages[] = 'Permanently deleted: ' . $name;
                 } else {
@@ -782,7 +797,7 @@ if (in_array($action, $managementActions, true) && count($errors) === 0) {
         $area = (string)($_POST['rename_area'] ?? 'active');
         if (!in_array($area, ['active', 'archive'], true)) $area = 'active';
 
-        $oldName = trim((string)($_POST['restore_file'] ?? ''));
+        $oldName = trim((string)($_POST['single_file'] ?? ''));
         $dir = $area === 'archive' ? $archiveDir : $backupDir;
 
         if (!isValidSqlBackupName($oldName)) {
@@ -1059,8 +1074,9 @@ $deleteFiles = listBackupFiles($deleteDir);
     .btn-secondary{ background:#555f6d !important; color:#fff !important; }
     .btn-warning{ background:#9b6a12 !important; color:#fff !important; }
     .btn-safe{ background:#237a45 !important; color:#fff !important; }
-    .btn-mini{ background:#3f4650 !important; color:#fff !important; padding:7px 11px !important; font-size:13px !important; }
     .manager-note{ color:#c9bfa9 !important; font-size:13px !important; line-height:1.45 !important; }
+    .eligible{ color:#ff8f8f !important; font-weight:bold !important; }
+    .waiting{ color:#ffd88a !important; }
     input[type=text]{ background:#121212 !important; color:#fff !important; border:1px solid #444 !important; border-radius:6px !important; padding:9px 10px !important; min-width:330px !important; }
 
     label.chk{
@@ -1156,7 +1172,7 @@ $deleteFiles = listBackupFiles($deleteDir);
         <?php if (count($files) === 0): ?>
             <div class="muted" style="margin-top:10px;">No active backup files found.</div>
         <?php else: ?>
-            <form method="post" action="" id="active-backup-form">
+            <form method="post" action="">
                 <input type="hidden" name="restore_area" value="active">
                 <input type="hidden" name="rename_area" value="active">
 
@@ -1178,8 +1194,8 @@ $deleteFiles = listBackupFiles($deleteDir);
                             $size = @filesize($fPath);
                         ?>
                         <tr>
-                            <td><input type="radio" name="restore_file" value="<?php echo h($base); ?>" data-rename-source="<?php echo h(preg_replace('/\.sql$/i', '', $base)); ?>"></td>
-                            <td><input type="checkbox" name="selected_files[]" value="<?php echo h($base); ?>" data-select-group="active"></td>
+                            <td><input type="radio" name="restore_file" value="<?php echo h($base); ?>"></td>
+                            <td><input type="checkbox" name="selected_files[]" value="<?php echo h($base); ?>"></td>
                             <td class="mono"><?php echo h($base); ?></td>
                             <td><?php echo h($mtime ? date('Y-m-d H:i:s', $mtime) : ''); ?></td>
                             <td><?php echo h($size !== false ? number_format((int)$size) : ''); ?></td>
@@ -1187,11 +1203,6 @@ $deleteFiles = listBackupFiles($deleteDir);
                     <?php endforeach; ?>
                     </tbody>
                 </table>
-
-                <div class="row">
-                    <button class="btn btn-mini" type="button" onclick="setBackupChecks('active', true)">Select All</button>
-                    <button class="btn btn-mini" type="button" onclick="setBackupChecks('active', false)">Clear</button>
-                </div>
 
                 <div class="row">
                     <label class="chk"><input type="checkbox" name="restore_dryrun"> Dry-run (do not execute SQL)</label>
@@ -1205,7 +1216,7 @@ $deleteFiles = listBackupFiles($deleteDir);
                 </div>
 
                 <div class="row" style="margin-top:18px !important;">
-                    <input type="text" id="active-rename-to" name="rename_to" placeholder="Select a radio file to populate this name">
+                    <input type="text" name="rename_to" placeholder="New filename (the .sql extension is automatic)">
                     <button class="btn btn-secondary" type="submit" name="action" value="rename_file">Rename Selected Radio</button>
                 </div>
 
@@ -1213,7 +1224,7 @@ $deleteFiles = listBackupFiles($deleteDir);
                     <button class="btn btn-safe" type="submit" name="action" value="archive_selected"
                             onclick="return confirm('Archive all checked backup files?');">Archive Checked</button>
                     <button class="btn btn-warning" type="submit" name="action" value="trash_selected"
-                            onclick="return confirm('Move all checked files to To Be Deleted?');">Move Checked to To Be Deleted</button>
+                            onclick="return confirm('Move all checked files to To Be Deleted? They will be held at least 30 days before permanent deletion is allowed.');">Move Checked to To Be Deleted</button>
                 </div>
             </form>
         <?php endif; ?>
@@ -1240,7 +1251,7 @@ $deleteFiles = listBackupFiles($deleteDir);
         <?php if (count($archiveFiles) === 0): ?>
             <div class="muted" style="margin-top:10px;">Archive is empty.</div>
         <?php else: ?>
-            <form method="post" action="" id="archive-backup-form">
+            <form method="post" action="">
                 <input type="hidden" name="restore_area" value="archive">
                 <input type="hidden" name="rename_area" value="archive">
 
@@ -1262,8 +1273,8 @@ $deleteFiles = listBackupFiles($deleteDir);
                             $size = @filesize($fPath);
                         ?>
                         <tr>
-                            <td><input type="radio" name="restore_file" value="<?php echo h($base); ?>" data-rename-source="<?php echo h(preg_replace('/\.sql$/i', '', $base)); ?>"></td>
-                            <td><input type="checkbox" name="selected_files[]" value="<?php echo h($base); ?>" data-select-group="archive"></td>
+                            <td><input type="radio" name="restore_file" value="<?php echo h($base); ?>"></td>
+                            <td><input type="checkbox" name="selected_files[]" value="<?php echo h($base); ?>"></td>
                             <td class="mono"><?php echo h($base); ?></td>
                             <td><?php echo h($mtime ? date('Y-m-d H:i:s', $mtime) : ''); ?></td>
                             <td><?php echo h($size !== false ? number_format((int)$size) : ''); ?></td>
@@ -1271,11 +1282,6 @@ $deleteFiles = listBackupFiles($deleteDir);
                     <?php endforeach; ?>
                     </tbody>
                 </table>
-
-                <div class="row">
-                    <button class="btn btn-mini" type="button" onclick="setBackupChecks('archive', true)">Select All</button>
-                    <button class="btn btn-mini" type="button" onclick="setBackupChecks('archive', false)">Clear</button>
-                </div>
 
                 <div class="row">
                     <label class="chk"><input type="checkbox" name="restore_dryrun"> Dry-run (do not execute SQL)</label>
@@ -1289,7 +1295,7 @@ $deleteFiles = listBackupFiles($deleteDir);
                 </div>
 
                 <div class="row" style="margin-top:18px !important;">
-                    <input type="text" id="archive-rename-to" name="rename_to" placeholder="Select a radio file to populate this name">
+                    <input type="text" name="rename_to" placeholder="New filename (the .sql extension is automatic)">
                     <button class="btn btn-secondary" type="submit" name="action" value="rename_file">Rename Selected Radio</button>
                 </div>
 
@@ -1305,20 +1311,22 @@ $deleteFiles = listBackupFiles($deleteDir);
     <div class="card">
         <div style="font-size:18px; font-weight:bold; color:#d8c08a;">To Be Deleted</div>
         <div class="manager-note" style="margin-top:6px;">
-            Manual safety holding area. Nothing is deleted automatically.
-            Move files back to Active if you change your mind, or permanently delete them when you are sure.
+            Safety quarantine. Moving a file here starts a new 30-day hold. Nothing is deleted automatically.
+            Permanent deletion is refused until the hold expires.
         </div>
 
         <?php if (count($deleteFiles) === 0): ?>
             <div class="muted" style="margin-top:10px;">Nothing is waiting to be deleted.</div>
         <?php else: ?>
-            <form method="post" action="" id="delete-backup-form">
+            <form method="post" action="">
                 <table>
                     <thead>
                         <tr>
                             <th style="width:68px;">Select</th>
                             <th>File</th>
-                            <th style="width:160px;">Modified</th>
+                            <th style="width:150px;">Moved Here</th>
+                            <th style="width:150px;">Delete Eligible</th>
+                            <th style="width:120px;">Status</th>
                             <th style="width:110px;">Size</th>
                         </tr>
                     </thead>
@@ -1326,13 +1334,17 @@ $deleteFiles = listBackupFiles($deleteDir);
                     <?php foreach ($deleteFiles as $fPath): ?>
                         <?php
                             $base = basename($fPath);
-                            $mtime = @filemtime($fPath);
                             $size = @filesize($fPath);
+                            $info = quarantineEligibleInfo($fPath, $deleteRetentionDays);
                         ?>
                         <tr>
-                            <td><input type="checkbox" name="selected_files[]" value="<?php echo h($base); ?>" data-select-group="delete"></td>
+                            <td><input type="checkbox" name="selected_files[]" value="<?php echo h($base); ?>"></td>
                             <td class="mono"><?php echo h($base); ?></td>
-                            <td><?php echo h($mtime ? date('Y-m-d H:i:s', $mtime) : ''); ?></td>
+                            <td><?php echo h(date('Y-m-d H:i:s', $info['moved_ts'])); ?></td>
+                            <td><?php echo h(date('Y-m-d H:i:s', $info['eligible_ts'])); ?></td>
+                            <td class="<?php echo $info['eligible'] ? 'eligible' : 'waiting'; ?>">
+                                <?php echo $info['eligible'] ? 'Eligible now' : h((string)$info['remaining_days']) . ' day(s)'; ?>
+                            </td>
                             <td><?php echo h($size !== false ? number_format((int)$size) : ''); ?></td>
                         </tr>
                     <?php endforeach; ?>
@@ -1340,14 +1352,9 @@ $deleteFiles = listBackupFiles($deleteDir);
                 </table>
 
                 <div class="row">
-                    <button class="btn btn-mini" type="button" onclick="setBackupChecks('delete', true)">Select All</button>
-                    <button class="btn btn-mini" type="button" onclick="setBackupChecks('delete', false)">Clear</button>
-                </div>
-
-                <div class="row">
                     <button class="btn btn-primary" type="submit" name="action" value="trash_restore_active_selected">Restore Checked to Active</button>
                     <button class="btn btn-danger" type="submit" name="action" value="permanent_delete_selected"
-                            onclick="return confirm('PERMANENTLY DELETE the checked file(s)? This cannot be undone.');">Permanently Delete Checked</button>
+                            onclick="return confirm('PERMANENTLY DELETE the checked eligible files? This cannot be undone. Files younger than 30 days will be refused.');">Permanently Delete Checked Eligible Files</button>
                 </div>
             </form>
         <?php endif; ?>
@@ -1357,35 +1364,5 @@ $deleteFiles = listBackupFiles($deleteDir);
     </div>
 
 </div>
-
-<script>
-function setBackupChecks(group, checked) {
-    document.querySelectorAll('input[type="checkbox"][data-select-group="' + group + '"]').forEach(function (box) {
-        box.checked = checked;
-    });
-}
-
-function wireRenameAutoFill(formId, inputId) {
-    var form = document.getElementById(formId);
-    var input = document.getElementById(inputId);
-    if (!form || !input) return;
-
-    form.querySelectorAll('input[type="radio"][name="restore_file"]').forEach(function (radio) {
-        radio.addEventListener('change', function () {
-            if (radio.checked) {
-                input.value = radio.getAttribute('data-rename-source') || '';
-                input.focus();
-                input.select();
-            }
-        });
-        if (radio.checked) {
-            input.value = radio.getAttribute('data-rename-source') || '';
-        }
-    });
-}
-
-wireRenameAutoFill('active-backup-form', 'active-rename-to');
-wireRenameAutoFill('archive-backup-form', 'archive-rename-to');
-</script>
 </body>
 </html>

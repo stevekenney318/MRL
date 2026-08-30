@@ -28,16 +28,10 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v068
- * LAST MODIFIED: 8/29/2026 10:30:38 am
+ * VERSION: v067
+ * LAST MODIFIED: 8/28/2026 1:01:11 am
  *
  * CHANGELOG:
- *
- * v068 (8/29/2026 10:30:38 am)
- *   - FIX: Removed v055 yearly-roster filler from live standings calculations so user_teams records with no actual participation are not manufactured as 0-point standings rows.
- *   - FIX: MRL test team is now explicitly non-competitive and excluded from official scoring rows, including normal SEG picks and LP/RD overlays.
- *   - PRESERVE: Legitimate participating teams may still score 0; no score>0 filter was added.
- *   - PRESERVE: Existing LP/RD effective-race logic, snapshots, validation, audit, release history, navigation, print, spreadsheet, and UI behavior are unchanged.
  *
  * v067 (8/28/2026 1:01:11 am)
  *   - UI: Increased the shared score-column width for standings tables 1-3 so two-digit Week labels such as Week 25 fit cleanly.
@@ -1200,27 +1194,11 @@ function rrsg_build_public_audit_meta(array $selectedRaceMeta, ?array $selectedR
     ];
 }
 
-function rrsg_is_noncompetitive_test_team(array $team): bool
-{
-    $userId = (int)($team['userID'] ?? 0);
-    $teamName = strtolower(trim((string)($team['teamName'] ?? '')));
-
-    // userID 0 is the current legacy test account; 999 is its planned positive-ID replacement.
-    if ($userId === 0 || $userId === 999) {
-        return true;
-    }
-
-    return $teamName === 'mrl test team';
-}
-
 function rrsg_build_weekly_rows(array $teamRows, array $driverPoints): array
 {
     $weeklyRows = [];
 
     foreach ($teamRows as $team) {
-        if (!is_array($team) || rrsg_is_noncompetitive_test_team($team)) {
-            continue;
-        }
         $driverA = (string)($team['driverA'] ?? '');
         $driverB = (string)($team['driverB'] ?? '');
         $driverC = (string)($team['driverC'] ?? '');
@@ -1630,6 +1608,7 @@ function rrsg_segment_breakdown_rows(
     $dbconnect
 ): array {
     $rows = [];
+    $yearRoster = rrsg_get_year_team_roster($selectedYear, $dbo ?? null);
     $racesAscending = $pointRaces;
 
     usort($racesAscending, function ($a, $b) {
@@ -1657,6 +1636,7 @@ function rrsg_segment_breakdown_rows(
 
         $driverPoints = rrs_load_snapshot_driver_points($snapshotFile);
         $weeklyRows = rrsg_build_weekly_rows($raceTeamRows, $driverPoints);
+        $weeklyRows = rrsg_append_missing_roster_rows($weeklyRows, $yearRoster);
 
         $rows[] = [
             'raceCode' => (string)$race['raceCode'],
@@ -1736,7 +1716,7 @@ function rrsg_overlay_special_rows_for_race(array $baseTeamRows, array $specialR
     $rowsByTeam = [];
 
     foreach ($baseTeamRows as $row) {
-        if (!is_array($row) || rrsg_is_noncompetitive_test_team($row)) {
+        if (!is_array($row)) {
             continue;
         }
 
@@ -1756,7 +1736,7 @@ function rrsg_overlay_special_rows_for_race(array $baseTeamRows, array $specialR
 
     $specialByTeam = [];
     foreach ($specialRows as $row) {
-        if (!is_array($row) || rrsg_is_noncompetitive_test_team($row)) {
+        if (!is_array($row)) {
             continue;
         }
 
@@ -2265,6 +2245,7 @@ if ($selectedRace !== null) {
 $teamRowsBase = rr_get_segment_team_picks($dbo ?? null, $dbconnect ?? null, $scoreYear, $scoreSegment);
 $teamRowsSpecial = rrsg_special_pick_rows($scoreYear, $scoreSegment, $dbo ?? null);
 $teamRows = rrsg_overlay_special_rows_for_race($teamRowsBase, $teamRowsSpecial, $selectedRaceNumber, $scoreSegment);
+$yearRoster = rrsg_get_year_team_roster($scoreYear, $dbo ?? null);
 
 $segmentTotals = [];
 $seasonTotals = [];
@@ -2287,6 +2268,11 @@ $validation = [
     'warn' => [],
     'fail' => [],
 ];
+
+foreach ($yearRoster as $teamName => $rosterRow) {
+    $segmentTotals[(string)$teamName] = 0;
+    $seasonTotals[(string)$teamName] = 0;
+}
 
 if ($selectedRace !== null) {
     $racesAscending = $pointRaces;
@@ -2327,6 +2313,7 @@ if ($selectedRace !== null) {
         if ($snapshotFile !== '') {
             $driverPoints = rrs_load_snapshot_driver_points($snapshotFile);
             $weeklyRows = rrsg_build_weekly_rows($raceTeamRows, $driverPoints);
+            $weeklyRows = rrsg_append_missing_roster_rows($weeklyRows, $yearRoster);
             $winner = rrsg_get_weekly_winner($weeklyRows);
 
             foreach ($weeklyRows as $row) {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v037
- * LAST MODIFIED: 8/28/2026 3:45:40 pm
+ * VERSION: v035
+ * LAST MODIFIED: 8/27/2026 10:16:02 pm
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,22 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v037 (8/28/2026 3:45:40 pm)
- * - UI: Replaces the user/person icon with a checkered flag.
- * - UI: Returns the sticky masthead to approximately its original compact height.
- * - UI: Uses Georgia / Times-style serif typography across the masthead.
- * - UI: Uses normal font weight across user, title, subtitle, clock and date text.
- * - PRESERVE: v036 panel-state memory, announcement/news panel, themes, menus, charts,
- *             normal picks, LP, RP/RD, scoring, View-As, profile, scheduler and DB behavior.
- *
- * v036 (8/28/2026 3:09:01 pm)
- * - UI: Admin Menu and Previous Years Picks remember their open/closed state per browser using localStorage.
- * - UI: Indents the greeting to align visually with the content below.
- * - UI: Enlarges sticky-header text and vertical spacing while preserving left / center / right alignment.
- * - NEW: Optional JSON-managed announcement/news panel directly below the greeting.
- * - NEW: Plain http:// and https:// URLs in announcement text are automatically rendered as safe clickable links.
- * - PRESERVE: Existing themes, menus, charts, normal picks, LP, RP/RD, scoring, View-As, profile, scheduler and DB behavior.
  *
  * v035 (8/27/2026 10:16:02 pm)
  * - PRODUCTION: Promotes the fully tested team redesign into team.php.
@@ -975,11 +959,6 @@ if ($rdPendingInfo !== null) {
  * can later be managed by an admin editor without editing this PHP file.
  */
 $teamPageContentDefaults = [
-    'announcement_panel' => [
-        'enabled' => false,
-        'title' => 'League News',
-        'content' => '',
-    ],
     'admin_league_panel' => [
         'title' => 'League & Team',
         'items' => [
@@ -1025,7 +1004,6 @@ $teamPageContentDefaults = [
 ];
 
 $teamPageContentPanelKeys = [
-    'announcement_panel',
     'admin_league_panel',
     'admin_hosting_panel',
     'league_panel',
@@ -1085,33 +1063,6 @@ function teampage_redesign_render_links(array $panel, string $raceYear): void
     }
 
     echo '</ul>';
-}
-
-function teampage_render_announcement_text(string $text): void
-{
-    $parts = preg_split('~(https?://[^\\s<]+)~i', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
-    if (!is_array($parts)) {
-        echo nl2br(teampage_h($text));
-        return;
-    }
-
-    foreach ($parts as $part) {
-        if ($part === '') continue;
-        if (preg_match('~^https?://~i', $part) === 1) {
-            $url = $part;
-            $trail = '';
-            while ($url !== '' && preg_match('/[.,;:!?)]$/', $url) === 1) {
-                $trail = substr($url, -1) . $trail;
-                $url = substr($url, 0, -1);
-            }
-            if ($url !== '') {
-                echo '<a href="' . teampage_h($url) . '" target="_blank" rel="noopener noreferrer">' . teampage_h($url) . '</a>';
-            }
-            if ($trail !== '') echo teampage_h($trail);
-        } else {
-            echo nl2br(teampage_h($part));
-        }
-    }
 }
 
 ?>
@@ -1242,7 +1193,7 @@ function teampage_render_announcement_text(string $text): void
             background:rgba(255,255,255,.045);
             color:var(--mrl-rd-text);
             padding:7px 12px;
-            font:400 18px/1.15 Georgia,"Times New Roman",serif;
+            font:600 15px/1.1 Tahoma,Verdana,Segoe UI,sans-serif;
             cursor:pointer;
         }
 
@@ -1281,7 +1232,7 @@ function teampage_render_announcement_text(string $text): void
             min-width:0;
             text-align:center;
             color:#fff5e2;
-            font:400 24px/1.15 Georgia,"Times New Roman",serif;
+            font:800 20px/1.1 Tahoma,Verdana,Segoe UI,sans-serif;
             letter-spacing:.5px;
         }
 
@@ -1289,9 +1240,8 @@ function teampage_render_announcement_text(string $text): void
             display:block;
             margin-top:2px;
             color:var(--mrl-rd-gold);
-            font-size:14px;
-            font-weight:400;
-            font-family:Georgia,"Times New Roman",serif;
+            font-size:12px;
+            font-weight:700;
             letter-spacing:.2px;
         }
 
@@ -1299,7 +1249,7 @@ function teampage_render_announcement_text(string $text): void
             justify-self:end;
             text-align:right;
             color:var(--mrl-rd-text);
-            font:400 17px/1.2 Georgia,"Times New Roman",serif;
+            font:700 14px/1.15 Tahoma,Verdana,Segoe UI,sans-serif;
             white-space:nowrap;
         }
 
@@ -1307,9 +1257,8 @@ function teampage_render_announcement_text(string $text): void
             display:block;
             margin-top:2px;
             color:var(--mrl-rd-muted);
-            font-size:13px;
-            font-weight:400;
-            font-family:Georgia,"Times New Roman",serif;
+            font-size:11px;
+            font-weight:600;
         }
 
         /* Top navigation panels */
@@ -1320,38 +1269,11 @@ function teampage_render_announcement_text(string $text): void
         }
 
         .mrl-rd-greeting{
-            margin:8px 20px 12px;
+            margin:6px 2px 10px;
             color:var(--mrl-rd-gold);
             font-size:18px;
             line-height:1.3;
         }
-
-        .mrl-rd-announcement{
-            margin:0 0 16px;
-            border:1px solid var(--mrl-rd-border);
-            border-radius:14px;
-            background:var(--mrl-rd-panel);
-            backdrop-filter:blur(2px);
-            -webkit-backdrop-filter:blur(2px);
-            box-shadow:0 8px 22px rgba(0,0,0,.18);
-            overflow:hidden;
-        }
-
-        .mrl-rd-announcement-title{
-            padding:12px 18px 10px;
-            color:var(--mrl-rd-gold);
-            background:var(--mrl-rd-panel-header);
-            border-bottom:1px solid rgba(255,255,255,.10);
-            font:800 18px/1.25 Tahoma,Verdana,Segoe UI,sans-serif;
-        }
-
-        .mrl-rd-announcement-body{
-            padding:14px 20px 16px;
-            color:var(--mrl-rd-text);
-            font:16px/1.5 Tahoma,Verdana,Segoe UI,sans-serif;
-            white-space:normal;
-        }
-        .mrl-rd-announcement-body a{color:var(--mrl-rd-blue)!important;text-decoration:underline!important}
 
         .mrl-rd-admin-wrap{
             margin:12px 0 18px;
@@ -1564,10 +1486,6 @@ function teampage_render_announcement_text(string $text): void
         html.mrl-theme-light .mrl-rd-clock,
         html.mrl-theme-light .mrl-rd-clock *{color:#fff3d5!important}
         html.mrl-theme-light .mrl-rd-greeting{color:#8b5b00!important}
-        html.mrl-theme-light .mrl-rd-announcement{background:rgba(255,255,255,.90)!important;color:#202020!important}
-        html.mrl-theme-light .mrl-rd-announcement-title{background:rgba(244,244,244,.98)!important;color:#8b5b00!important}
-        html.mrl-theme-light .mrl-rd-announcement-body{color:#202020!important}
-        html.mrl-theme-light .mrl-rd-announcement-body a{color:#006eaa!important}
         html.mrl-theme-light .mrl-rd-admin-wrap{background:rgba(255,255,255,.58)!important;color:#202020!important}
         html.mrl-theme-light .mrl-rd-admin-wrap>summary{color:#8b5b00!important}
         html.mrl-theme-light .mrl-rd-card{background:rgba(255,255,255,.90)!important;color:#202020!important}
@@ -1610,7 +1528,7 @@ function teampage_render_announcement_text(string $text): void
         <div class="mrl-rd-user" id="mrl-rd-user">
             <button type="button" class="mrl-rd-user-button" id="mrl-rd-user-button"
                     aria-expanded="false" aria-controls="mrl-rd-user-menu">
-                🏁 <?php echo teampage_h($first_name); ?> ▾
+                👤 <?php echo teampage_h($first_name); ?> ▾
             </button>
             <div class="mrl-rd-user-menu" id="mrl-rd-user-menu">
                 <a href="<?php echo teampage_h((string)$mrl); ?>">MRL Home</a>
@@ -1634,23 +1552,8 @@ function teampage_render_announcement_text(string $text): void
 <div class="mrl-rd-top">
     <div class="mrl-rd-greeting">Hi <?php echo teampage_h($first_name); ?> ...</div>
 
-    <?php
-    $announcementPanel = isset($teamPageContent['announcement_panel']) && is_array($teamPageContent['announcement_panel'])
-        ? $teamPageContent['announcement_panel']
-        : [];
-    $announcementEnabled = !empty($announcementPanel['enabled']);
-    $announcementTitle = trim((string)($announcementPanel['title'] ?? ''));
-    $announcementContent = trim((string)($announcementPanel['content'] ?? ''));
-    ?>
-    <?php if ($announcementEnabled && $announcementContent !== ''): ?>
-        <section class="mrl-rd-announcement">
-            <?php if ($announcementTitle !== ''): ?><div class="mrl-rd-announcement-title"><?php echo teampage_h($announcementTitle); ?></div><?php endif; ?>
-            <div class="mrl-rd-announcement-body"><?php teampage_render_announcement_text($announcementContent); ?></div>
-        </section>
-    <?php endif; ?>
-
     <?php if ($isAdmin): ?>
-        <details class="mrl-rd-admin-wrap" id="mrl-rd-admin-details">
+        <details class="mrl-rd-admin-wrap">
             <summary>Admin Menu</summary>
             <div class="mrl-rd-admin-fixed-control">
                 <a href="/mrl_team/admin_team_page_content.php" target="_blank" rel="noopener noreferrer">Manage Team Page Content</a>
@@ -1784,7 +1687,7 @@ function teampage_render_announcement_text(string $text): void
     </div>
 </section>
 
-<details class="mrl-previous-years mrl-rd-chart-shell" id="mrl-rd-previous-years-details">
+<details class="mrl-previous-years mrl-rd-chart-shell">
     <summary>Previous Years Picks</summary>
     <div class="mrl-previous-years-content">
         <?php
@@ -1832,26 +1735,6 @@ function teampage_render_announcement_text(string $text): void
             button.setAttribute('aria-expanded', 'false');
         });
     }
-
-    function rememberDetails(id, storageKey) {
-        var details = document.getElementById(id);
-        if (!details || !window.localStorage) return;
-
-        try {
-            var saved = window.localStorage.getItem(storageKey);
-            if (saved === 'open') details.open = true;
-            if (saved === 'closed') details.open = false;
-
-            details.addEventListener('toggle', function () {
-                window.localStorage.setItem(storageKey, details.open ? 'open' : 'closed');
-            });
-        } catch (e) {
-            /* localStorage is convenience-only; normal details behavior remains if unavailable. */
-        }
-    }
-
-    rememberDetails('mrl-rd-admin-details', 'mrl.team.adminMenu');
-    rememberDetails('mrl-rd-previous-years-details', 'mrl.team.previousYears');
 
     var timeNode = document.getElementById('mrl-rd-clock-time');
     var dateNode = document.getElementById('mrl-rd-clock-date');

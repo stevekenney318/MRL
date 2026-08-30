@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v037
- * LAST MODIFIED: 8/28/2026 3:45:40 pm
+ * VERSION: v036
+ * LAST MODIFIED: 8/28/2026 3:09:01 pm
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,14 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v037 (8/28/2026 3:45:40 pm)
- * - UI: Replaces the user/person icon with a checkered flag.
- * - UI: Returns the sticky masthead to approximately its original compact height.
- * - UI: Uses Georgia / Times-style serif typography across the masthead.
- * - UI: Uses normal font weight across user, title, subtitle, clock and date text.
- * - PRESERVE: v036 panel-state memory, announcement/news panel, themes, menus, charts,
- *             normal picks, LP, RP/RD, scoring, View-As, profile, scheduler and DB behavior.
  *
  * v036 (8/28/2026 3:09:01 pm)
  * - UI: Admin Menu and Previous Years Picks remember their open/closed state per browser using localStorage.
@@ -1225,12 +1217,12 @@ function teampage_render_announcement_text(string $text): void
         }
 
         .mrl-rd-header{
-            min-height:58px;
+            min-height:70px;
             display:grid;
             grid-template-columns:minmax(170px,1fr) minmax(260px,2fr) minmax(190px,1fr);
             align-items:center;
             gap:12px;
-            padding:8px 14px;
+            padding:10px 16px;
         }
 
         .mrl-rd-user{position:relative;justify-self:start}
@@ -1242,7 +1234,7 @@ function teampage_render_announcement_text(string $text): void
             background:rgba(255,255,255,.045);
             color:var(--mrl-rd-text);
             padding:7px 12px;
-            font:400 18px/1.15 Georgia,"Times New Roman",serif;
+            font:600 18px/1.15 Tahoma,Verdana,Segoe UI,sans-serif;
             cursor:pointer;
         }
 
@@ -1281,7 +1273,7 @@ function teampage_render_announcement_text(string $text): void
             min-width:0;
             text-align:center;
             color:#fff5e2;
-            font:400 24px/1.15 Georgia,"Times New Roman",serif;
+            font:800 24px/1.15 Tahoma,Verdana,Segoe UI,sans-serif;
             letter-spacing:.5px;
         }
 
@@ -1290,8 +1282,7 @@ function teampage_render_announcement_text(string $text): void
             margin-top:2px;
             color:var(--mrl-rd-gold);
             font-size:14px;
-            font-weight:400;
-            font-family:Georgia,"Times New Roman",serif;
+            font-weight:700;
             letter-spacing:.2px;
         }
 
@@ -1299,7 +1290,7 @@ function teampage_render_announcement_text(string $text): void
             justify-self:end;
             text-align:right;
             color:var(--mrl-rd-text);
-            font:400 17px/1.2 Georgia,"Times New Roman",serif;
+            font:700 17px/1.2 Tahoma,Verdana,Segoe UI,sans-serif;
             white-space:nowrap;
         }
 
@@ -1308,8 +1299,7 @@ function teampage_render_announcement_text(string $text): void
             margin-top:2px;
             color:var(--mrl-rd-muted);
             font-size:13px;
-            font-weight:400;
-            font-family:Georgia,"Times New Roman",serif;
+            font-weight:600;
         }
 
         /* Top navigation panels */
@@ -1610,7 +1600,7 @@ function teampage_render_announcement_text(string $text): void
         <div class="mrl-rd-user" id="mrl-rd-user">
             <button type="button" class="mrl-rd-user-button" id="mrl-rd-user-button"
                     aria-expanded="false" aria-controls="mrl-rd-user-menu">
-                🏁 <?php echo teampage_h($first_name); ?> ▾
+                👤 <?php echo teampage_h($first_name); ?> ▾
             </button>
             <div class="mrl-rd-user-menu" id="mrl-rd-user-menu">
                 <a href="<?php echo teampage_h((string)$mrl); ?>">MRL Home</a>

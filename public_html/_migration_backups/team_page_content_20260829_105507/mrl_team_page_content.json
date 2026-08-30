@@ -1,6 +1,6 @@
 {
     "schema_version": 3,
-    "updated_at": "2026-08-29 10:55:07",
+    "updated_at": "2026-08-29 10:50:40",
     "announcement_panel": {
         "enabled": true,
         "title": "",
@@ -9,12 +9,6 @@
     "admin_league_panel": {
         "title": "League & Team",
         "items": [
-            {
-                "label": "Check Status - At a Glance \ud83d\udc40",
-                "url": "https://manliusracingleague.com/aag.html",
-                "enabled": true,
-                "new_tab": true
-            },
             {
                 "label": "Segment Pick Window Utility",
                 "url": "/admin_setup.php",
