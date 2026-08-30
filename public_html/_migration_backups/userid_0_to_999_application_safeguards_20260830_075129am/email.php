@@ -127,7 +127,6 @@ function fetchUsersByActive(PDO $dbo, string $activeFlag): array
         SELECT userEmail, userEmail2
         FROM users
         WHERE userID > 0
-          AND userID <> 999
           AND userActive = :active
         ORDER BY userEmail ASC
     ";

@@ -1,6 +1,6 @@
 {
     "schema_version": 3,
-    "updated_at": "2026-08-30 09:56:33",
+    "updated_at": "2026-08-29 10:55:07",
     "announcement_panel": {
         "enabled": true,
         "title": "",
@@ -171,7 +171,7 @@
             {
                 "label": "** Auto Scoring / Weekly Standings  - Beta",
                 "url": "/race_results/weekly_standings.php",
-                "enabled": false,
+                "enabled": true,
                 "new_tab": true
             },
             {

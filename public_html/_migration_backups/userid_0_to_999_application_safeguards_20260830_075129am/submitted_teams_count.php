@@ -17,7 +17,7 @@ $currentTimeIs = date("n/j/Y g:i a"); //get date in format '8/25/2020 12:20 am'
 // list of Teams submitted for current year & current segment
 // AND `userID` != '0' 
 
-$sql_submitted = "SELECT `teamName` FROM `user_picks` WHERE `raceYear` = '$raceYear' AND `userID` NOT IN (0, 999) AND `segment` = '$segment' ORDER BY `userID` ASC";
+$sql_submitted = "SELECT `teamName` FROM `user_picks` WHERE `raceYear` = '$raceYear' AND `userID` != '0' AND `segment` = '$segment' ORDER BY `userID` ASC";
 
 //$dbconnect = mysqli_connect($host_name,$username,$password,$database); 
 $sqlsearch = mysqli_query($dbconnect, $sql_submitted);

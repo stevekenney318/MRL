@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * current_user_team_chart.php
  *
- * VERSION: v006
- * LAST MODIFIED: 8/30/2026 9:37:58 am
+ * VERSION: v005
+ * LAST MODIFIED: 8/20/2026 1:59:00 am
  *
  * DESCRIPTION:
  * Current user team chart shown on team.php.
@@ -13,10 +13,6 @@ declare(strict_types=1);
  * LP/RD display logic to the current-year segment rows.
  *
  * CHANGELOG:
- *
- * v006 (8/30/2026 9:37:58 am)
- * - FIX: Made the "No picks found for this year." row readable in dark/non-light Team themes.
- * - CHANGE: Presentation-only; no pick, LP/RD, scoring, or database logic changed.
  *
  * v004 (8/19/2026 7:12:00 pm)
  * - NEW: SEG rows with ADJ history show * Admin-approved regular pick.
@@ -143,7 +139,7 @@ foreach ($chartSegments as $chartSegment) {
 $chartContext = cuytc_build_chart_context($allRows);
 
 if (empty($chartContext['displayRows'])) {
-    echo "<tr><td colspan='6' style='text-align:center;background-color:#f2dcdb;color:#000000;font-weight:600;'>No picks found for this year.</td></tr>";
+    echo "<tr><td colspan='6' style='text-align:center;'>No picks found for this year.</td></tr>";
 } else {
     foreach ($chartContext['displayRows'] as $entry) {
         if ($entry['render_type'] === 'single') {

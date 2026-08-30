@@ -147,7 +147,7 @@ try {
 
     $sql = "SELECT userID, userName
             FROM users
-            WHERE userActive = 'Y' OR userID = 999
+            WHERE userActive = 'Y'
             ORDER BY userName ASC";
     $stmt = $dbo->prepare($sql);
     $stmt->execute();

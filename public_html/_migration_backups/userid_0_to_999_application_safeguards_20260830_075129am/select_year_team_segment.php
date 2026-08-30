@@ -69,8 +69,8 @@ mysqli_stmt_bind_result($stmtTeams, $userID, $teamName, $raceYear, $userName);
 // Fetch teams and store unique team names in an associative array by year
 $uniqueTeamsByYear = array();
 while (mysqli_stmt_fetch($stmtTeams)) {
-    // Exclude the noncompetitive MRL test account before and after 0 -> 999 migration.
-    if ((int)$userID !== 0 && (int)$userID !== 999) {
+    // Exclude teams with userID of 0
+    if ($userID != 0) {
         $uniqueTeamsByYear[$raceYear][$userID] = array('teamName' => $teamName, 'userName' => $userName);
     }
 }

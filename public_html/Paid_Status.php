@@ -100,7 +100,7 @@ $sql = "SELECT *
         FROM `Financial`
         WHERE `raceYear` = '$raceYear'
           AND `userActive` = 'Y'
-          AND `userID` != 0
+          AND `userID` NOT IN (0, 999)
         ORDER BY `raceYear` DESC";
 
 echo "<style type='text/css'>

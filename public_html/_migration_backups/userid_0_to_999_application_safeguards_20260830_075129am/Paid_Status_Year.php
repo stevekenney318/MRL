@@ -91,7 +91,7 @@ $selectedYear = isset($_GET['year']) ? $_GET['year'] : $raceYear;
 
 // Paid Status
 // $sql = "SELECT * FROM `Financial` WHERE `raceYear` = '$select...D `userActive` = 'Y' AND `userID`!= 0 ORDER BY `raceYear` DESC";
-$sql = "SELECT * FROM `Financial` WHERE `raceYear` = '$selectedYear' AND `userID` NOT IN (0, 999) ORDER BY `raceYear` DESC";
+$sql = "SELECT * FROM `Financial` WHERE `raceYear` = '$selectedYear' AND `userID`!= 0 ORDER BY `raceYear` DESC";
 
 echo "<style type='text/css'>table, th, td {border: 1px solid black;border-collapse: collapse;padding: 3px;}</style>";
 
