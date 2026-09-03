@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v046
- * LAST MODIFIED: 8/31/2026 4:39:31 pm
+ * VERSION: v044
+ * LAST MODIFIED: 8/31/2026 3:35:00 pm
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,17 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v046 (8/31/2026 4:39:31 pm)
- * - FIX: Smart Pick Review baseline now refreshes immediately after a confirmed quiet submission.
- * - FIX: A second Submit without page refresh correctly reports no changes when picks were just saved.
- * - PRESERVE: Existing Smart Pick Review layout, quiet-submit flow, SEG / LP / RD logic, and DB behavior.
- *
- * v045 (8/31/2026 3:43:00 pm)
- * - FIX: Smart Pick Review is now compact and right-aligned instead of full width.
- * - FIX: Confirm / Go Back / Close text colors now override the Team page's generic black button rule.
- * - RESPONSIVE: Review returns to full width on narrower screens.
- * - PRESERVE: All v044 review logic and all other Team-page behavior.
  *
  * v044 (8/31/2026 3:35:00 pm)
  * - CHANGE: Smart Pick Review panel now matches the submitted-team status banner width/alignment footprint.
@@ -2157,7 +2146,6 @@ function teampage_render_announcement_text(string $text): void
                 refreshQuietSection(parsed, '.mrl-user-info-panel');
                 refreshQuietSection(parsed, '.mrl-rd-submission-panel');
                 showPickSuccess(form);
-                form.dispatchEvent(new CustomEvent('mrl:picks-saved'));
             })
             .catch(function (error) {
                 console.error('MRL quiet pick submission:', error);
@@ -2189,8 +2177,7 @@ function teampage_render_announcement_text(string $text): void
 
 
 <script>
-/* MRL SMART PICK REVIEW POST-SUBMIT BASELINE v001 */
-/* MRL SMART PICK REVIEW LAYOUT v002 */
+/* MRL SMART PICK REVIEW LAYOUT v001 */
 /* ========================================================================
  * MRL SMART PICK REVIEW v002
  *
@@ -2234,19 +2221,7 @@ function teampage_render_announcement_text(string $text): void
                 'background:#2b2b2b!important;color:#fff!important;border:1px solid #777!important;' +
             '}' +
             '.mrl-rd-pick-section .mrl-pick-review-panel{' +
-                'width:38%;max-width:620px;min-width:430px;margin-left:auto;margin-right:0;' +
-            '}' +
-            '.mrl-rd-pick-section .mrl-pick-panel .mrl-pick-review-confirm{' +
-                'background:#16894b!important;color:#fff!important;border:1px solid #4be388!important;' +
-            '}' +
-            '.mrl-rd-pick-section .mrl-pick-panel .mrl-pick-review-back,' +
-            '.mrl-rd-pick-section .mrl-pick-panel .mrl-pick-review-close{' +
-                'background:#2b2b2b!important;color:#fff!important;border:1px solid #777!important;' +
-            '}' +
-            '@media(max-width:1000px){' +
-                '.mrl-rd-pick-section .mrl-pick-review-panel{' +
-                    'width:100%;max-width:none;min-width:0;margin-left:0;margin-right:0;' +
-                '}' +
+                'width:100%;max-width:none;margin-left:0;margin-right:0;' +
             '}' +
             'html.mrl-theme-light .mrl-pick-review-panel{' +
                 'background:rgba(237,250,241,.96);color:#202020;border-color:#4f9464;' +
@@ -2466,17 +2441,6 @@ function teampage_render_announcement_text(string $text): void
          * On RD forms, the existing inline rdPrepareSubmit() remains intact
          * and prepares the canonical group fields used below.
          */
-        form.addEventListener('mrl:picks-saved', function () {
-            /*
-             * The quiet-submit layer emits this only after the server returns
-             * the normal successful-submission marker. Refresh the in-memory
-             * baseline so another immediate Submit compares against what was
-             * just saved, not what existed when the page first loaded.
-             */
-            reviewBaselines.set(form, driverMap(form));
-            removeReview(form);
-        });
-
         form.addEventListener('submit', function (event) {
             if (form.dataset.mrlPickReviewBypass === '1') {
                 form.dataset.mrlPickReviewBypass = '0';

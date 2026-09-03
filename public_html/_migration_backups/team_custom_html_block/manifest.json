@@ -1,0 +1,18 @@
+{
+    "created_at": "2026-08-31 13:59:20",
+    "task": "team_custom_html_block",
+    "files": {
+        "admin": {
+            "exists": true,
+            "sha256": "3025ce70dc9745115004b4ef3252d4e02b9ca69c1c97b7b83fede998ce1fc7d2"
+        },
+        "team": {
+            "exists": true,
+            "sha256": "4b9ddd06cc7f617e067ccdbd342491275930818d22c1c50b06b0c7a1b7a186fa"
+        },
+        "json": {
+            "exists": true,
+            "sha256": "dc71b75ec3433e2e0aa0d45f26086ead87fd5e40b1cb1eb6f778070131ba6052"
+        }
+    }
+}

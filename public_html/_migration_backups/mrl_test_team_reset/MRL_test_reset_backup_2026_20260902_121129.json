@@ -1,0 +1,64 @@
+{
+    "tool_version": "v002",
+    "created_at": "2026-09-02 12:11:29",
+    "userID": 999,
+    "raceYear": "2026",
+    "user_picks": [
+        {
+            "pickID": 2445,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Josh Berry",
+            "driverB": "Joey Logano",
+            "driverC": "Michael McDowell",
+            "driverD": "Shane van Gisbergen",
+            "entryDate": "2026-09-01 07:34:24",
+            "submission_id": "sub_20260901_073355_79699b52",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        }
+    ],
+    "user_picks_history": [
+        {
+            "pickID": 1118,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Josh Berry",
+            "driverB": "Joey Logano",
+            "driverC": "Ryan Blaney",
+            "driverD": "Shane van Gisbergen",
+            "entryDate": "2026-09-01 01:53:14",
+            "submission_id": "sub_20260901_015223_891d09be",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        },
+        {
+            "pickID": 1119,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Josh Berry",
+            "driverB": "Joey Logano",
+            "driverC": "Michael McDowell",
+            "driverD": "Shane van Gisbergen",
+            "entryDate": "2026-09-01 07:34:24",
+            "submission_id": "sub_20260901_073355_79699b52",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        }
+    ]
+}

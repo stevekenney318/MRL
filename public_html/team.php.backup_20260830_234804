@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v046
- * LAST MODIFIED: 8/31/2026 4:39:31 pm
+ * VERSION: v038
+ * LAST MODIFIED: 8/30/2026
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,55 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v046 (8/31/2026 4:39:31 pm)
- * - FIX: Smart Pick Review baseline now refreshes immediately after a confirmed quiet submission.
- * - FIX: A second Submit without page refresh correctly reports no changes when picks were just saved.
- * - PRESERVE: Existing Smart Pick Review layout, quiet-submit flow, SEG / LP / RD logic, and DB behavior.
- *
- * v045 (8/31/2026 3:43:00 pm)
- * - FIX: Smart Pick Review is now compact and right-aligned instead of full width.
- * - FIX: Confirm / Go Back / Close text colors now override the Team page's generic black button rule.
- * - RESPONSIVE: Review returns to full width on narrower screens.
- * - PRESERVE: All v044 review logic and all other Team-page behavior.
- *
- * v044 (8/31/2026 3:35:00 pm)
- * - CHANGE: Smart Pick Review panel now matches the submitted-team status banner width/alignment footprint.
- * - CHANGE: Review content remains left-aligned while the panel itself aligns with the status banner.
- * - FIX: Confirm Submission, Go Back, and Close button text now has explicit high-contrast colors.
- * - PRESERVE: All v043 Smart Pick Review logic and all existing Team-page behavior.
- *
- * v043 (8/31/2026 3:24:34 pm)
- * - NEW: Adds a quiet inline Review Your Submission step before SEG / LP / RD pick writes.
- * - NEW: Shows exact new picks, old -> new changes, and unchanged picks by driver group.
- * - NEW: Identical selections are detected and not submitted.
- * - PRESERVE: Existing v040 quiet-submit engine remains authoritative after Confirm Submission.
- * - PRESERVE: v042 Custom HTML handshake height behavior, themes, announcements, charts, scoring, and DB logic.
- *
- * v042 (8/31/2026 3:03:01 pm)
- * - FIX: Custom HTML iframe height now uses an explicit resize handshake instead of continuous observers.
- * - NEW: Dynamic snippets can request a resize after they finish building their layout.
- * - PRESERVE: Custom HTML remains transparent by default; snippet controls its own background.
- * - PRESERVE: v041 Custom HTML management, v040 quiet submit, themes, announcement, charts, picks, LP, RD, scoring, and DB behavior.
- *
- * v041 (8/31/2026 1:30:45 pm)
- * - NEW: Adds one JSON-managed Custom HTML block to the Team page.
- * - NEW: Supports Enabled/Disabled plus Above/Below Announcement placement.
- * - SAFETY: Custom HTML is isolated inside a sandboxed iframe rather than injected into the Team page DOM.
- * - PRESERVE: v040 quiet pick submission, announcements, menus, themes, charts, picks, LP, RD, scoring, and database behavior.
- *
- * v040 (8/31/2026 2:14:40 am)
- * - UI: Successful SEG / LP / RD submissions now run quietly in the background with fetch(), eliminating the full-page reload flash.
- * - UI: After confirmed success, the current team chart and submitted-team count refresh quietly from the returned Team page.
- * - UI: Preserves the existing green "✓ Your picks have been submitted." confirmation near the form for about eight seconds.
- * - SAFETY: Success is shown only when the normal server submission flow returns the existing success marker.
- * - FALLBACK: If browser fetch support is unavailable, normal full-page form submission remains unchanged.
- * - PRESERVE: submit-team-picks.php remains the authoritative database handler; no pick, LP, RP/RD, audit-history, scoring, deadline, or database behavior changes.
- *
- * v039 (8/30/2026)
- * - UI: Moves the successful-pick confirmation directly beneath the active pick form, aligned to the right near Submit Picks.
- * - UI: Extends confirmation display time from about four seconds to about eight seconds before fading.
- * - PRESERVE: Successful-submission-only behavior and all existing pick/database logic.
  *
  * v038 (8/30/2026)
  * - UI: Adds a one-time successful-pick submission confirmation above the current team chart.
@@ -372,17 +323,6 @@ $currentTimeIs = date('n/j/Y g:i a');
 function teampage_h(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-}
-
-function teampage_render_pick_success(bool $show): void
-{
-    if (!$show) {
-        return;
-    }
-
-    echo '<div class="mrl-pick-success" id="mrl-pick-success" role="status" aria-live="polite">'
-        . '✓ Your picks have been submitted.'
-        . '</div>';
 }
 
 function teampage_user_has_change_auth(USER $user_home, int $uid): bool
@@ -1044,11 +984,6 @@ if ($rdPendingInfo !== null) {
  * can later be managed by an admin editor without editing this PHP file.
  */
 $teamPageContentDefaults = [
-    'custom_html_block' => [
-        'enabled' => false,
-        'position' => 'above',
-        'html' => '',
-    ],
     'announcement_panel' => [
         'enabled' => false,
         'title' => 'League News',
@@ -1099,7 +1034,6 @@ $teamPageContentDefaults = [
 ];
 
 $teamPageContentPanelKeys = [
-    'custom_html_block',
     'announcement_panel',
     'admin_league_panel',
     'admin_hosting_panel',
@@ -1428,22 +1362,6 @@ function teampage_render_announcement_text(string $text): void
         }
         .mrl-rd-announcement-body a{color:var(--mrl-rd-blue)!important;text-decoration:underline!important}
 
-        .mrl-rd-custom-html{
-            margin:0 0 16px;
-            border:0;
-            border-radius:14px;
-            overflow:hidden;
-            background:transparent;
-        }
-        .mrl-rd-custom-html iframe{
-            display:block;
-            width:100%;
-            min-height:120px;
-            border:0;
-            background:transparent;
-            overflow:hidden;
-        }
-
         .mrl-rd-admin-wrap{
             margin:12px 0 18px;
             padding:0;
@@ -1675,11 +1593,10 @@ function teampage_render_announcement_text(string $text): void
         html.mrl-theme-light .mrl-previous-years summary{color:#8b5b00!important;opacity:1!important}
 
         .mrl-pick-success{
-            width:32%;
-            min-width:360px;
+            width:100%;
             box-sizing:border-box;
-            margin:10px 0 12px auto;
-            padding:10px 14px;
+            margin:0 0 12px;
+            padding:12px 16px;
             border:1px solid rgba(83,190,112,.85);
             border-radius:8px;
             background:rgba(14,72,38,.82);
@@ -1723,7 +1640,6 @@ function teampage_render_announcement_text(string $text): void
         }
 
         @media(max-width:600px){
-            .mrl-pick-success{width:100%;min-width:0}
             .mrl-rd-header{padding:8px 10px}
             .mrl-rd-title{font-size:17px}
             .mrl-rd-clock{font-size:12px}
@@ -1764,43 +1680,18 @@ function teampage_render_announcement_text(string $text): void
     <div class="mrl-rd-greeting">Hi <?php echo teampage_h($first_name); ?> ...</div>
 
     <?php
-    $customHtmlBlock = isset($teamPageContent['custom_html_block']) && is_array($teamPageContent['custom_html_block'])
-        ? $teamPageContent['custom_html_block']
-        : [];
-    $customHtmlEnabled = !empty($customHtmlBlock['enabled']);
-    $customHtmlPosition = ((string)($customHtmlBlock['position'] ?? 'above') === 'below') ? 'below' : 'above';
-    $customHtmlContent = (string)($customHtmlBlock['html'] ?? '');
-
     $announcementPanel = isset($teamPageContent['announcement_panel']) && is_array($teamPageContent['announcement_panel'])
         ? $teamPageContent['announcement_panel']
         : [];
     $announcementEnabled = !empty($announcementPanel['enabled']);
     $announcementTitle = trim((string)($announcementPanel['title'] ?? ''));
     $announcementContent = trim((string)($announcementPanel['content'] ?? ''));
-
-    function teampage_render_custom_html_iframe(string $html): void
-    {
-        if (trim($html) === '') return;
-        $srcdoc = htmlspecialchars($html, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
-        echo '<section class="mrl-rd-custom-html">';
-        echo '<iframe class="mrl-rd-custom-html-frame" scrolling="no" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" srcdoc="' . $srcdoc . '" onload="teampageResizeCustomHtmlFrame(this)"></iframe>';
-        echo '</section>';
-    }
     ?>
-
-    <?php if ($customHtmlEnabled && $customHtmlPosition === 'above' && trim($customHtmlContent) !== ''): ?>
-        <?php teampage_render_custom_html_iframe($customHtmlContent); ?>
-    <?php endif; ?>
-
     <?php if ($announcementEnabled && $announcementContent !== ''): ?>
         <section class="mrl-rd-announcement">
             <?php if ($announcementTitle !== ''): ?><div class="mrl-rd-announcement-title"><?php echo teampage_h($announcementTitle); ?></div><?php endif; ?>
             <div class="mrl-rd-announcement-body"><?php teampage_render_announcement_text($announcementContent); ?></div>
         </section>
-    <?php endif; ?>
-
-    <?php if ($customHtmlEnabled && $customHtmlPosition === 'below' && trim($customHtmlContent) !== ''): ?>
-        <?php teampage_render_custom_html_iframe($customHtmlContent); ?>
     <?php endif; ?>
 
     <?php if ($isAdmin): ?>
@@ -1844,6 +1735,14 @@ function teampage_render_announcement_text(string $text): void
 </div>
 
 <a name="current_user_team_chart"></a>
+
+<?php if ($pickSubmissionSuccess): ?>
+<div class="mrl-rd-chart-shell">
+    <div class="mrl-pick-success" id="mrl-pick-success" role="status" aria-live="polite">
+        ✓ Your picks have been submitted.
+    </div>
+</div>
+<?php endif; ?>
 
 <section class="mrl-rd-chart-shell mrl-user-info-panel">
     <?php include 'current_user_team_chart.php'; ?>
@@ -1890,7 +1789,6 @@ function teampage_render_announcement_text(string $text): void
                 } else {
 
                     include $currentForm;
-                    teampage_render_pick_success($pickSubmissionSuccess);
                     echo "<div class='mrl-rd-notice-panel mrl-rd-submission-panel'>";
                     include 'submitted_teams_count.php';
                     echo "</div>";
@@ -1909,10 +1807,8 @@ function teampage_render_announcement_text(string $text): void
                 } else {
                     if ($showRdWrapper) {
                         include 'team_replacement_driver.php';
-                        teampage_render_pick_success($pickSubmissionSuccess);
                     } elseif ($teamFormMode === 'LP' || $teamFormMode === 'SPECIAL_AUTH') {
                         include 'team-late-pick.php';
-                        teampage_render_pick_success($pickSubmissionSuccess);
                     } else {
                         $closedSegmentLabel = isset($scoringSegmentName) && trim((string)$scoringSegmentName) !== ''
                             ? (string)$scoringSegmentName
@@ -2037,521 +1933,20 @@ function teampage_render_announcement_text(string $text): void
     updateClock();
     window.setInterval(updateClock, 1000);
 
-    var pickSuccessTimer = null;
-    var pickSuccessRemoveTimer = null;
+    var pickSuccess = document.getElementById('mrl-pick-success');
+    if (pickSuccess) {
+        window.setTimeout(function () {
+            pickSuccess.classList.add('mrl-pick-success-hide');
 
-    function fadePickSuccess(node) {
-        if (!node) return;
-
-        if (pickSuccessTimer) {
-            window.clearTimeout(pickSuccessTimer);
-        }
-        if (pickSuccessRemoveTimer) {
-            window.clearTimeout(pickSuccessRemoveTimer);
-        }
-
-        node.classList.remove('mrl-pick-success-hide');
-
-        pickSuccessTimer = window.setTimeout(function () {
-            node.classList.add('mrl-pick-success-hide');
-
-            pickSuccessRemoveTimer = window.setTimeout(function () {
-                if (node.parentNode) {
-                    node.parentNode.removeChild(node);
+            window.setTimeout(function () {
+                if (pickSuccess.parentNode) {
+                    pickSuccess.parentNode.removeChild(pickSuccess);
                 }
             }, 850);
-        }, 8000);
-    }
-
-    function showPickSuccess(form) {
-        var oldNode = document.getElementById('mrl-pick-success');
-        if (oldNode && oldNode.parentNode) {
-            oldNode.parentNode.removeChild(oldNode);
-        }
-
-        var node = document.createElement('div');
-        node.className = 'mrl-pick-success';
-        node.id = 'mrl-pick-success';
-        node.setAttribute('role', 'status');
-        node.setAttribute('aria-live', 'polite');
-        node.textContent = '✓ Your picks have been submitted.';
-
-        form.insertAdjacentElement('afterend', node);
-        fadePickSuccess(node);
-    }
-
-    function refreshQuietSection(parsedDocument, selector) {
-        var currentNode = document.querySelector(selector);
-        var returnedNode = parsedDocument.querySelector(selector);
-
-        if (!currentNode || !returnedNode) {
-            return;
-        }
-
-        currentNode.innerHTML = returnedNode.innerHTML;
-    }
-
-    var initialPickSuccess = document.getElementById('mrl-pick-success');
-    if (initialPickSuccess) {
-        fadePickSuccess(initialPickSuccess);
-    }
-
-    if (window.fetch && window.FormData && window.DOMParser) {
-        document.addEventListener('submit', function (event) {
-            var form = event.target;
-
-            if (!form || String(form.tagName).toLowerCase() !== 'form') {
-                return;
-            }
-
-            var actionValue = form.getAttribute('action') || '';
-            var actionUrl;
-
-            try {
-                actionUrl = new URL(actionValue, window.location.href);
-            } catch (e) {
-                return;
-            }
-
-            if (!/\/submit-team-picks\.php$/i.test(actionUrl.pathname)) {
-                return;
-            }
-
-            event.preventDefault();
-
-            if (form.dataset.mrlSubmitting === '1') {
-                return;
-            }
-
-            form.dataset.mrlSubmitting = '1';
-
-            var submitControls = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-            Array.prototype.forEach.call(submitControls, function (control) {
-                control.disabled = true;
-            });
-
-            window.fetch(actionUrl.href, {
-                method: (form.getAttribute('method') || 'post').toUpperCase(),
-                body: new FormData(form),
-                credentials: 'same-origin',
-                redirect: 'follow',
-                headers: {
-                    'X-MRL-Quiet-Submit': '1'
-                }
-            })
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('Submission request failed with HTTP ' + response.status + '.');
-                }
-
-                return response.text();
-            })
-            .then(function (html) {
-                var parsed = new DOMParser().parseFromString(html, 'text/html');
-                var confirmed = parsed.getElementById('mrl-pick-success');
-
-                if (!confirmed) {
-                    throw new Error('The server did not return the successful-submission marker.');
-                }
-
-                refreshQuietSection(parsed, '.mrl-user-info-panel');
-                refreshQuietSection(parsed, '.mrl-rd-submission-panel');
-                showPickSuccess(form);
-                form.dispatchEvent(new CustomEvent('mrl:picks-saved'));
-            })
-            .catch(function (error) {
-                console.error('MRL quiet pick submission:', error);
-
-                var oldError = document.getElementById('mrl-pick-submit-error');
-                if (oldError && oldError.parentNode) {
-                    oldError.parentNode.removeChild(oldError);
-                }
-
-                var errorNode = document.createElement('div');
-                errorNode.className = 'mrl-rd-notice-panel';
-                errorNode.id = 'mrl-pick-submit-error';
-                errorNode.setAttribute('role', 'alert');
-                errorNode.textContent = 'Pick submission could not be confirmed. Please refresh the page before trying again.';
-                form.insertAdjacentElement('afterend', errorNode);
-            })
-            .then(function () {
-                form.dataset.mrlSubmitting = '0';
-
-                Array.prototype.forEach.call(submitControls, function (control) {
-                    control.disabled = false;
-                });
-            });
-        });
+        }, 4000);
     }
 }());
 </script>
 
-
-
-<script>
-/* MRL SMART PICK REVIEW POST-SUBMIT BASELINE v001 */
-/* MRL SMART PICK REVIEW LAYOUT v002 */
-/* ========================================================================
- * MRL SMART PICK REVIEW v002
- *
- * This layer only pauses a pick form before the existing quiet-submit layer.
- * It never writes picks itself and never calls submit-team-picks.php directly.
- * ====================================================================== */
-(function () {
-    'use strict';
-
-    var reviewBaselines = new WeakMap();
-
-    function addReviewStyles() {
-        if (document.getElementById('mrl-pick-review-style')) return;
-
-        var style = document.createElement('style');
-        style.id = 'mrl-pick-review-style';
-        style.textContent =
-            '.mrl-pick-review-panel{' +
-                'box-sizing:border-box;width:100%;max-width:100%;margin:12px 0 16px auto;padding:14px 18px;' +
-                'border:1px solid rgba(93,185,111,.72);border-radius:12px;' +
-                'background:rgba(16,55,32,.82);color:#f3f3f3;text-align:left;' +
-                'font:16px/1.45 Tahoma,Verdana,Segoe UI,sans-serif;' +
-                'box-shadow:0 7px 18px rgba(0,0,0,.18);' +
-            '}' +
-            '.mrl-pick-review-panel h3{' +
-                'margin:0 0 10px;color:#ffe2a0;font:800 19px/1.25 Tahoma,Verdana,Segoe UI,sans-serif;' +
-            '}' +
-            '.mrl-pick-review-label{' +
-                'margin-top:8px;color:#ffe2a0;font-weight:800;' +
-            '}' +
-            '.mrl-pick-review-panel ul{margin:5px 0 10px;padding-left:24px;}' +
-            '.mrl-pick-review-panel li{margin:3px 0;}' +
-            '.mrl-pick-review-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}' +
-            '.mrl-pick-review-actions button{' +
-                'min-height:38px;padding:8px 14px;border-radius:7px;font-weight:800;cursor:pointer;' +
-            '}' +
-            '.mrl-pick-review-confirm{' +
-                'background:#16894b!important;color:#fff!important;border:1px solid #4be388!important;' +
-            '}' +
-            '.mrl-pick-review-back,.mrl-pick-review-close{' +
-                'background:#2b2b2b!important;color:#fff!important;border:1px solid #777!important;' +
-            '}' +
-            '.mrl-rd-pick-section .mrl-pick-review-panel{' +
-                'width:38%;max-width:620px;min-width:430px;margin-left:auto;margin-right:0;' +
-            '}' +
-            '.mrl-rd-pick-section .mrl-pick-panel .mrl-pick-review-confirm{' +
-                'background:#16894b!important;color:#fff!important;border:1px solid #4be388!important;' +
-            '}' +
-            '.mrl-rd-pick-section .mrl-pick-panel .mrl-pick-review-back,' +
-            '.mrl-rd-pick-section .mrl-pick-panel .mrl-pick-review-close{' +
-                'background:#2b2b2b!important;color:#fff!important;border:1px solid #777!important;' +
-            '}' +
-            '@media(max-width:1000px){' +
-                '.mrl-rd-pick-section .mrl-pick-review-panel{' +
-                    'width:100%;max-width:none;min-width:0;margin-left:0;margin-right:0;' +
-                '}' +
-            '}' +
-            'html.mrl-theme-light .mrl-pick-review-panel{' +
-                'background:rgba(237,250,241,.96);color:#202020;border-color:#4f9464;' +
-            '}' +
-            'html.mrl-theme-light .mrl-pick-review-panel h3,' +
-            'html.mrl-theme-light .mrl-pick-review-label{color:#5f4300;}';
-
-        document.head.appendChild(style);
-    }
-
-    function isPickSubmitForm(form) {
-        if (!form || String(form.tagName).toLowerCase() !== 'form') return false;
-
-        try {
-            var url = new URL(form.getAttribute('action') || '', window.location.href);
-            return /\/submit-team-picks\.php$/i.test(url.pathname);
-        } catch (e) {
-            return false;
-        }
-    }
-
-    function driverMap(form) {
-        var map = {};
-
-        ['A', 'B', 'C', 'D'].forEach(function (group) {
-            var field = form.querySelector(
-                '[name="group-' + group.toLowerCase() + '-driver"]'
-            );
-
-            map[group] = field ? String(field.value || '').trim() : '';
-        });
-
-        return map;
-    }
-
-    function rememberBaseline(form) {
-        if (!reviewBaselines.has(form)) {
-            reviewBaselines.set(form, driverMap(form));
-        }
-    }
-
-    function removeReview(form) {
-        if (!form || !form.parentNode) return;
-
-        var next = form.nextElementSibling;
-        if (next && next.classList && next.classList.contains('mrl-pick-review-panel')) {
-            next.parentNode.removeChild(next);
-        }
-    }
-
-    function makeList(panel, label, rows, formatter) {
-        if (!rows.length) return;
-
-        var heading = document.createElement('div');
-        heading.className = 'mrl-pick-review-label';
-        heading.textContent = label;
-        panel.appendChild(heading);
-
-        var list = document.createElement('ul');
-
-        rows.forEach(function (row) {
-            var item = document.createElement('li');
-            item.textContent = formatter(row);
-            list.appendChild(item);
-        });
-
-        panel.appendChild(list);
-    }
-
-    function showReview(form, baseline, current) {
-        removeReview(form);
-
-        var newPicks = [];
-        var changes = [];
-        var unchanged = [];
-
-        ['A', 'B', 'C', 'D'].forEach(function (group) {
-            var before = String(baseline[group] || '').trim();
-            var after = String(current[group] || '').trim();
-
-            if (before === after) {
-                if (after !== '') {
-                    unchanged.push({
-                        group: group,
-                        driver: after
-                    });
-                }
-                return;
-            }
-
-            if (before === '' && after !== '') {
-                newPicks.push({
-                    group: group,
-                    driver: after
-                });
-                return;
-            }
-
-            changes.push({
-                group: group,
-                before: before || '(none)',
-                after: after || '(none)'
-            });
-        });
-
-        var panel = document.createElement('div');
-        panel.className = 'mrl-pick-review-panel';
-        panel.setAttribute('role', 'region');
-        panel.setAttribute('aria-live', 'polite');
-
-        var title = document.createElement('h3');
-        title.textContent = 'Review your submission';
-        panel.appendChild(title);
-
-        if (newPicks.length === 0 && changes.length === 0) {
-            var noChange = document.createElement('div');
-            noChange.textContent =
-                'No changes detected. Your current picks are already saved.';
-            panel.appendChild(noChange);
-
-            var closeActions = document.createElement('div');
-            closeActions.className = 'mrl-pick-review-actions';
-
-            var close = document.createElement('button');
-            close.type = 'button';
-            close.className = 'mrl-pick-review-close';
-            close.textContent = 'Close';
-            close.addEventListener('click', function () {
-                removeReview(form);
-            });
-
-            closeActions.appendChild(close);
-            panel.appendChild(closeActions);
-
-            form.insertAdjacentElement('afterend', panel);
-            panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
-
-            return;
-        }
-
-        makeList(panel, 'New picks', newPicks, function (row) {
-            return 'Group ' + row.group + ': ' + row.driver;
-        });
-
-        makeList(panel, 'Changes', changes, function (row) {
-            return 'Group ' + row.group + ': ' + row.before + ' → ' + row.after;
-        });
-
-        makeList(panel, 'Unchanged', unchanged, function (row) {
-            return 'Group ' + row.group + ': ' + row.driver;
-        });
-
-        var actions = document.createElement('div');
-        actions.className = 'mrl-pick-review-actions';
-
-        var confirm = document.createElement('button');
-        confirm.type = 'button';
-        confirm.className = 'mrl-pick-review-confirm';
-        confirm.textContent = 'Confirm Submission';
-
-        var back = document.createElement('button');
-        back.type = 'button';
-        back.className = 'mrl-pick-review-back';
-        back.textContent = 'Go Back';
-
-        confirm.addEventListener('click', function () {
-            /*
-             * Allow exactly one subsequent submit event through THIS review
-             * layer. The already-existing document quiet-submit listener then
-             * handles the real background submission and success detection.
-             */
-            form.dataset.mrlPickReviewBypass = '1';
-            removeReview(form);
-
-            if (typeof form.requestSubmit === 'function') {
-                form.requestSubmit();
-            } else {
-                /*
-                 * Fallback for an unusually old browser. submit() bypasses
-                 * submit-event listeners, so use the native submit button click
-                 * when possible to preserve the existing quiet-submit path.
-                 */
-                var submitButton = form.querySelector(
-                    'button[type="submit"], input[type="submit"]'
-                );
-                if (submitButton) {
-                    submitButton.click();
-                } else {
-                    form.dataset.mrlPickReviewBypass = '0';
-                }
-            }
-        });
-
-        back.addEventListener('click', function () {
-            removeReview(form);
-        });
-
-        actions.appendChild(confirm);
-        actions.appendChild(back);
-        panel.appendChild(actions);
-
-        form.insertAdjacentElement('afterend', panel);
-        panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
-    }
-
-    function attachReview(form) {
-        if (!isPickSubmitForm(form)) return;
-        if (form.dataset.mrlPickReviewAttached === '1') return;
-
-        form.dataset.mrlPickReviewAttached = '1';
-        rememberBaseline(form);
-
-        /*
-         * A listener directly on the form runs before the existing document
-         * bubble listener used by quiet-submit.
-         *
-         * On RD forms, the existing inline rdPrepareSubmit() remains intact
-         * and prepares the canonical group fields used below.
-         */
-        form.addEventListener('mrl:picks-saved', function () {
-            /*
-             * The quiet-submit layer emits this only after the server returns
-             * the normal successful-submission marker. Refresh the in-memory
-             * baseline so another immediate Submit compares against what was
-             * just saved, not what existed when the page first loaded.
-             */
-            reviewBaselines.set(form, driverMap(form));
-            removeReview(form);
-        });
-
-        form.addEventListener('submit', function (event) {
-            if (form.dataset.mrlPickReviewBypass === '1') {
-                form.dataset.mrlPickReviewBypass = '0';
-                return;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
-
-            var baseline = reviewBaselines.get(form) || {
-                A: '', B: '', C: '', D: ''
-            };
-
-            var current = driverMap(form);
-            showReview(form, baseline, current);
-        });
-    }
-
-    function attachAll() {
-        addReviewStyles();
-
-        Array.prototype.forEach.call(
-            document.querySelectorAll('form'),
-            attachReview
-        );
-    }
-
-    attachAll();
-}());
-</script>
-
-<script>
-function teampageResizeCustomHtmlFrame(frame) {
-    if (!frame) return;
-
-    function measure() {
-        try {
-            var doc = frame.contentDocument || (frame.contentWindow && frame.contentWindow.document);
-            if (!doc) return;
-
-            var body = doc.body;
-            var root = doc.documentElement;
-
-            if (body) body.style.overflow = 'hidden';
-            if (root) root.style.overflow = 'hidden';
-
-            var height = 0;
-
-            if (body) {
-                height = Math.max(
-                    height,
-                    body.scrollHeight || 0,
-                    body.offsetHeight || 0
-                );
-            }
-
-            if (root) {
-                height = Math.max(
-                    height,
-                    root.scrollHeight || 0,
-                    root.offsetHeight || 0
-                );
-            }
-
-            frame.style.height = Math.max(120, height + 4) + 'px';
-        } catch (e) {
-            // Leave current size alone if the frame cannot be measured.
-        }
-    }
-
-    measure();
-
-    // One small delayed pass handles fonts/layout settling after initial load.
-    window.setTimeout(measure, 80);
-}
-</script>
 </body>
 </html>

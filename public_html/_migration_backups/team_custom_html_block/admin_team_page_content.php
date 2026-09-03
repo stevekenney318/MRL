@@ -4,23 +4,12 @@ declare(strict_types=1);
 /**
  * admin_team_page_content.php
  *
- * VERSION: v008
- * LAST MODIFIED: 8/31/2026 2:02:13 pm
+ * VERSION: v006
+ * LAST MODIFIED: 8/30/2026 3:22:21 pm
  *
  * Admin-only editor for JSON-driven Team Page content.
  *
  * CHANGELOG:
- *
- * v008 (8/31/2026 2:02:13 pm)
- * - FIX: Custom HTML is base64-encoded in the browser before Save, avoiding host/WAF rejection of raw HTML POST bodies.
- * - FIX: Manager decodes the Custom HTML server-side before writing the existing JSON field.
- * - PRESERVE: Preview, Enabled/Disabled, position, announcement, links, drag/drop, backups, CSRF, and schema v4.
- *
- * v007 (8/31/2026 1:30:45 pm)
- * - NEW: Adds one optional Custom HTML block with Enabled/Disabled and Above/Below Announcement position.
- * - NEW: Adds an isolated HTML Preview iframe in the manager.
- * - CHANGE: Content schema advances to v4 on the next save while preserving all existing content.
- * - PRESERVE: Drag/drop ordering, announcements, links, authentication, CSRF, backups, and JSON behavior.
  *
  * v006 (8/30/2026 3:22:21 pm)
  * - NEW: Link rows can now be reordered by dragging the ⋮⋮ handle.
@@ -128,31 +117,6 @@ function atpc_build_announcement(array $post): array
     ];
 }
 
-function atpc_build_custom_html(array $post): array
-{
-    $position = ((string)($post['custom_html_position'] ?? 'above') === 'below') ? 'below' : 'above';
-
-    $html = '';
-    $encoded = (string)($post['custom_html_content_b64'] ?? '');
-
-    if ($encoded !== '') {
-        $decoded = base64_decode($encoded, true);
-        if ($decoded === false) {
-            throw new RuntimeException('Custom HTML could not be decoded. Save was blocked.');
-        }
-        $html = $decoded;
-    } else {
-        // Backward-compatible fallback for a direct/manual POST.
-        $html = (string)($post['custom_html_content'] ?? '');
-    }
-
-    return [
-        'enabled' => !empty($post['custom_html_enabled']),
-        'position' => $position,
-        'html' => $html,
-    ];
-}
-
 if (!isset($_SESSION['atpc_csrf'])) {
     $_SESSION['atpc_csrf'] = bin2hex(random_bytes(24));
 }
@@ -165,9 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Save blocked: security token mismatch.';
     } else {
         $new = [
-            'schema_version' => 4,
+            'schema_version' => 3,
             'updated_at' => date('Y-m-d H:i:s'),
-            'custom_html_block' => atpc_build_custom_html($_POST),
             'announcement_panel' => atpc_build_announcement($_POST),
             'admin_league_panel' => atpc_build_panel($_POST, 'admin_league', 'League & Team'),
             'admin_hosting_panel' => atpc_build_panel($_POST, 'admin_hosting', 'Hosting & Infrastructure'),
@@ -222,7 +185,7 @@ $panels = [
 h1,h2{color:#efc982}a{color:#76cfff}.note{padding:11px;border:1px solid #555;border-radius:9px;background:#171717}
 table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border-bottom:1px solid #444;padding:7px;text-align:left}
 td input:not([type=checkbox]){width:100%}input{padding:7px;background:#111;color:#eee;border:1px solid #666;border-radius:5px}
-.panel-title{width:100%;max-width:560px}.announcement-title{width:100%;max-width:760px}.announcement-text{width:100%;min-height:150px;resize:vertical;padding:9px;background:#111;color:#eee;border:1px solid #666;border-radius:5px;font:16px/1.4 Tahoma,Verdana,Segoe UI,sans-serif}.custom-html-text{width:100%;min-height:260px;resize:vertical;padding:9px;background:#111;color:#eee;border:1px solid #666;border-radius:5px;font:14px/1.4 Consolas,"Courier New",monospace}.html-preview{width:100%;min-height:220px;background:#fff;border:1px solid #666;border-radius:8px}
+.panel-title{width:100%;max-width:560px}.announcement-title{width:100%;max-width:760px}.announcement-text{width:100%;min-height:150px;resize:vertical;padding:9px;background:#111;color:#eee;border:1px solid #666;border-radius:5px;font:16px/1.4 Tahoma,Verdana,Segoe UI,sans-serif}
 .inline-check{display:inline-flex;align-items:center;gap:8px;margin:4px 0 12px}.hint{color:#bbb;font-size:13px;line-height:1.35;margin-top:7px}
 button{padding:10px 17px;border:1px solid #5a7fb5;border-radius:8px;background:#1466c9;color:#fff;font-weight:800;cursor:pointer}
 .drag-handle{padding:4px 10px;margin:0;background:#2b2b2b;border-color:#777;color:#ddd;font-size:20px;line-height:1;letter-spacing:-3px;cursor:grab;touch-action:none}.drag-handle:active{cursor:grabbing}.order{width:58px;white-space:nowrap;text-align:center}.dragging{opacity:.45}.drag-over td{box-shadow:inset 0 2px 0 #76cfff}.message{margin-top:12px;padding:10px;border:1px solid #777;border-radius:8px;color:#efc982}.save{position:sticky;bottom:8px}
@@ -230,22 +193,7 @@ button{padding:10px 17px;border:1px solid #5a7fb5;border-radius:8px;background:#
 <div class="card"><h1>Manage Team Page Content</h1><p><a href="/team.php">← Team</a></p>
 <div class="note"><strong>Manage Team Page Content</strong> is a fixed Admin control and cannot be edited here.</div>
 <?php if($message!==''):?><div class="message"><?php echo atpc_h($message);?></div><?php endif;?></div>
-<form method="post" id="mrl-team-content-form"><input type="hidden" name="csrf" value="<?php echo atpc_h((string)$_SESSION['atpc_csrf']);?>">
-<div class="card">
-<h2>Team Page Custom HTML</h2>
-<label class="inline-check"><input name="custom_html_enabled" value="1" type="checkbox" <?php echo !empty($data['custom_html_block']['enabled']) ? 'checked' : ''; ?>> Enabled</label>
-<label style="margin-left:18px;">Position
-<select name="custom_html_position" style="margin-left:6px;padding:7px;background:#111;color:#eee;border:1px solid #666;border-radius:5px;">
-<option value="above" <?php echo (($data['custom_html_block']['position'] ?? 'above') === 'above') ? 'selected' : ''; ?>>Above Announcement / News</option>
-<option value="below" <?php echo (($data['custom_html_block']['position'] ?? 'above') === 'below') ? 'selected' : ''; ?>>Below Announcement / News</option>
-</select>
-</label>
-<p><label>HTML snippet<br><textarea id="custom-html-content" class="custom-html-text" placeholder="Paste HTML, CSS and/or JavaScript here..."><?php echo atpc_h($data['custom_html_block']['html'] ?? ''); ?></textarea></label></p>
-<input type="hidden" name="custom_html_content_b64" id="custom-html-content-b64" value="">
-<div class="hint">Saved HTML remains available when Disabled. It is rendered inside an isolated iframe on the Team page. PHP/server-side code is not executed.</div>
-<p><strong>Preview</strong></p>
-<iframe id="custom-html-preview" class="html-preview" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-</div>
+<form method="post"><input type="hidden" name="csrf" value="<?php echo atpc_h((string)$_SESSION['atpc_csrf']);?>">
 <div class="card">
 <h2>Team Page Announcement / News</h2>
 <label class="inline-check"><input name="announcement_enabled" value="1" type="checkbox" <?php echo !empty($data['announcement_panel']['enabled']) ? 'checked' : ''; ?>> Enabled</label>
@@ -292,37 +240,6 @@ document.addEventListener('dragend',()=>{
  }
  draggedRow=null;
 });
-
-const htmlEditor=document.getElementById('custom-html-content');
-const htmlPreview=document.getElementById('custom-html-preview');
-function refreshHtmlPreview(){
- if(!htmlEditor||!htmlPreview)return;
- htmlPreview.srcdoc=htmlEditor.value||'<div style="font-family:sans-serif;color:#777;padding:16px;">Preview is empty.</div>';
-}
-if(htmlEditor){htmlEditor.addEventListener('input',refreshHtmlPreview);refreshHtmlPreview();}
-
-function thsfBase64Utf8(value){
- const bytes=new TextEncoder().encode(value);
- let binary='';
- const chunk=0x8000;
- for(let i=0;i<bytes.length;i+=chunk){
-   binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));
- }
- return btoa(binary);
-}
-
-const teamContentForm=document.getElementById('mrl-team-content-form');
-if(teamContentForm){
- teamContentForm.addEventListener('submit',function(event){
-   const hidden=document.getElementById('custom-html-content-b64');
-   if(!htmlEditor||!hidden||typeof TextEncoder==='undefined'||typeof btoa!=='function'){
-     event.preventDefault();
-     alert('Custom HTML could not be safely prepared for saving. No changes were submitted.');
-     return;
-   }
-   hidden.value=thsfBase64Utf8(htmlEditor.value||'');
- });
-}
 
 document.querySelectorAll('tbody[data-key]').forEach(tb=>{
  renumber(tb);

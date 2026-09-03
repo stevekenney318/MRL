@@ -1,0 +1,208 @@
+{
+    "schema_version": 4,
+    "updated_at": "2026-08-31 14:32:06",
+    "custom_html_block": {
+        "enabled": true,
+        "position": "above",
+        "html": "<!--\n  S4 deadline v001.html\n\n  VERSION: v001\n  CREATED: 8/31/2026\n\n  Purpose:\n  - WordPress-ready \"Segment 4 Picks Due\" countdown.\n  - Dynamically reads /race_results/_race_results_schedule.json.\n  - Uses Race 27 (first race of Segment 4) as the pick deadline.\n  - Avoids hard-coding the race name/date/time.\n-->\n\n<div class=\"mrl-s4-picks-due-root\"\n     data-schedule-url=\"/race_results/_race_results_schedule.json\"\n     data-target-race=\"27\">\n\n  <div class=\"mrl-s4-header\">Segment 4 Picks Due</div>\n  <div class=\"mrl-s4-status\">Loading deadline...</div>\n</div>\n\n<script>\n(function () {\n  'use strict';\n\n  const roots = document.querySelectorAll('.mrl-s4-picks-due-root');\n  if (!roots.length) return;\n\n  function pad(n) {\n    n = Math.floor(Math.abs(Number(n) || 0));\n    return n < 10 ? '0' + n : String(n);\n  }\n\n  function htmlEscape(value) {\n    return String(value == null ? '' : value)\n      .replace(/&/g, '&amp;')\n      .replace(/</g, '&lt;')\n      .replace(/>/g, '&gt;')\n      .replace(/\"/g, '&quot;')\n      .replace(/'/g, '&#039;');\n  }\n\n  function raceNumber(race) {\n    return Number(\n      race.mrl_race_number ||\n      race.race_number ||\n      race.schedule_sequence ||\n      0\n    );\n  }\n\n  function raceTitle(race) {\n    return race.mrl_race_name ||\n           race.race_name ||\n           race.short_name ||\n           race.track_name ||\n           'Race';\n  }\n\n  function parseStartDate(race) {\n    if (!race || !race.start_at) return null;\n\n    // MRL schedule start_at is New York local time:\n    // YYYY-MM-DD HH:MM:SS\n    const m = String(race.start_at).match(\n      /^(\\d{4})-(\\d{2})-(\\d{2})[ T](\\d{2}):(\\d{2})(?::(\\d{2}))?/\n    );\n\n    if (!m) return null;\n\n    return new Date(\n      Number(m[1]),\n      Number(m[2]) - 1,\n      Number(m[3]),\n      Number(m[4]),\n      Number(m[5]),\n      Number(m[6] || 0)\n    );\n  }\n\n  function deadlineLabel(date) {\n    return date.toLocaleString('en-US', {\n      timeZone: 'America/New_York',\n      weekday: 'short',\n      month: 'numeric',\n      day: 'numeric',\n      year: 'numeric',\n      hour: 'numeric',\n      minute: '2-digit',\n      hour12: true\n    }).replace(',', '') + ' ET';\n  }\n\n  function normalizeRaces(schedule) {\n    const source = Array.isArray(schedule && schedule.mrl_points_races)\n      ? schedule.mrl_points_races\n      : (Array.isArray(schedule && schedule.races) ? schedule.races : []);\n\n    return source.filter(function (race) {\n      return race &&\n             race.mrl_points_eligible !== false &&\n             race.is_exhibition !== true;\n    });\n  }\n\n  function tick(root) {\n    const targetTs = Number(root.dataset.targetTs || 0);\n    const title = root.dataset.raceTitle || 'Race 27';\n\n    if (!targetTs) return;\n\n    let diff = targetTs - Date.now();\n    const content = root.querySelector('.mrl-s4-content');\n    if (!content) return;\n\n    if (diff <= 0) {\n      content.innerHTML =\n        '<div class=\"mrl-s4-closed\">Segment 4 Picks Are Closed</div>' +\n        '<div class=\"mrl-s4-race-title\">' + htmlEscape(title) + '</div>';\n      return;\n    }\n\n    const d = Math.floor(diff / 86400000);\n    const h = Math.floor((diff % 86400000) / 3600000);\n    const m = Math.floor((diff % 3600000) / 60000);\n\n    content.innerHTML = `\n      <div class=\"mrl-s4-race-title\">${htmlEscape(title)}</div>\n\n      <div class=\"mrl-s4-row\">\n        <div class=\"mrl-s4-unit\">\n          <span class=\"mrl-s4-num\">${d}</span>\n          <span class=\"mrl-s4-lab\">DAYS</span>\n        </div>\n\n        <span class=\"mrl-s4-sep\">:</span>\n\n        <div class=\"mrl-s4-unit\">\n          <span class=\"mrl-s4-num\">${pad(h)}</span>\n          <span class=\"mrl-s4-lab\">HOURS</span>\n        </div>\n\n        <span class=\"mrl-s4-sep\">:</span>\n\n        <div class=\"mrl-s4-unit\">\n          <span class=\"mrl-s4-num mrl-s4-red\">${pad(m)}</span>\n          <span class=\"mrl-s4-lab\">MINUTES</span>\n        </div>\n      </div>\n\n      <div class=\"mrl-s4-deadline\">\n        Deadline: ${htmlEscape(deadlineLabel(new Date(targetTs)))}\n      </div>\n    `;\n  }\n\n  function init(root) {\n    if (root.dataset.mrlS4Init === '1') return;\n    root.dataset.mrlS4Init = '1';\n\n    const scheduleUrl =\n      root.dataset.scheduleUrl ||\n      '/race_results/_race_results_schedule.json';\n\n    const targetRace = Number(root.dataset.targetRace || 27);\n    const cacheBust = scheduleUrl.indexOf('?') === -1 ? '?' : '&';\n\n    fetch(scheduleUrl + cacheBust + 'v=' + Date.now(), {\n      cache: 'no-store'\n    })\n      .then(function (response) {\n        if (!response.ok) {\n          throw new Error('Could not load schedule JSON');\n        }\n        return response.json();\n      })\n      .then(function (schedule) {\n        const races = normalizeRaces(schedule);\n        const race = races.find(function (item) {\n          return raceNumber(item) === targetRace;\n        });\n\n        if (!race) {\n          throw new Error('Race 27 was not found in the schedule');\n        }\n\n        const targetDate = parseStartDate(race);\n        if (!targetDate) {\n          throw new Error('Race 27 has no valid start time');\n        }\n\n        root.dataset.targetTs = String(targetDate.getTime());\n        root.dataset.raceTitle = raceTitle(race);\n\n        const status = root.querySelector('.mrl-s4-status');\n        if (status) status.remove();\n\n        const content = document.createElement('div');\n        content.className = 'mrl-s4-content';\n        root.appendChild(content);\n\n        tick(root);\n        window.setInterval(function () {\n          tick(root);\n        }, 1000);\n      })\n      .catch(function (error) {\n        const status = root.querySelector('.mrl-s4-status');\n        if (status) {\n          status.innerHTML =\n            '<div class=\"mrl-s4-error\">Segment 4 deadline could not be loaded.</div>';\n        }\n        console.error(error);\n      });\n  }\n\n  roots.forEach(init);\n}());\n</script>\n\n<style>\n.mrl-s4-picks-due-root{\n  width:100%;\n  box-sizing:border-box;\n  text-align:center;\n  font-family:inherit;\n  background:transparent;\n}\n\n.mrl-s4-header{\n  font-size:32px;\n  font-weight:bold;\n  color:#ff0000;\n  text-shadow:1px 1px 3px #555;\n  text-align:center;\n  margin:0 0 16px 0;\n  padding:4px 0;\n  border-top:thick double #32a1ce;\n  border-bottom:thick double #32a1ce;\n}\n\n.mrl-s4-status,\n.mrl-s4-error{\n  text-align:center;\n  font-size:18px;\n  color:#555;\n  margin:20px 0;\n}\n\n.mrl-s4-content{\n  max-width:720px;\n  margin:0 auto;\n  padding:0;\n  text-align:center;\n}\n\n.mrl-s4-race-title{\n  color:#2a4f8e;\n  font-weight:600;\n  margin:0 0 8px 0;\n  font-size:24px;\n  line-height:1.15;\n}\n\n.mrl-s4-row{\n  display:flex;\n  justify-content:center;\n  align-items:flex-start;\n  gap:4px;\n  white-space:nowrap;\n  margin:0;\n  padding:0;\n}\n\n.mrl-s4-unit{\n  display:flex;\n  flex-direction:column;\n  align-items:center;\n  min-width:64px;\n}\n\n.mrl-s4-num{\n  font-size:48px;\n  font-weight:500;\n  line-height:1;\n}\n\n.mrl-s4-red{\n  color:#ff0000;\n}\n\n.mrl-s4-lab{\n  font-size:10px;\n  color:#333;\n  letter-spacing:.05em;\n  margin:0;\n  transform:translateY(-5px);\n}\n\n.mrl-s4-sep{\n  font-size:32px;\n  line-height:1;\n  position:relative;\n  top:2px;\n  margin:0 2px;\n  opacity:.9;\n}\n\n.mrl-s4-deadline{\n  font-size:20px;\n  color:#555;\n  margin:4px 0 0 0;\n  letter-spacing:.02em;\n}\n\n.mrl-s4-closed{\n  color:#ff0000;\n  font-size:30px;\n  font-weight:bold;\n  margin:12px 0 8px;\n}\n\n@media (max-width:520px){\n  .mrl-s4-header{ font-size:26px; }\n  .mrl-s4-race-title{ font-size:18px; }\n  .mrl-s4-num{ font-size:30px; }\n  .mrl-s4-lab{ font-size:9px; transform:translateY(-4px); }\n  .mrl-s4-sep{ font-size:26px; top:1px; }\n  .mrl-s4-deadline{ font-size:16px; }\n  .mrl-s4-closed{ font-size:24px; }\n}\n</style>"
+    },
+    "announcement_panel": {
+        "enabled": true,
+        "title": "",
+        "content": "8/28/2026 3:53:43 pm - Welcome to your 'new and improved' Team Page ! More details to follow !"
+    },
+    "admin_league_panel": {
+        "title": "League & Team",
+        "items": [
+            {
+                "label": "Check Status - At a Glance \ud83d\udc40",
+                "url": "https://manliusracingleague.com/aag.html",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Segment Pick Window Utility",
+                "url": "/admin_setup.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Race Results Dashboard (Race & Revision Monitors)",
+                "url": "https://manliusracingleague.com/race_results/race_results_dashboard.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Race Results Menu",
+                "url": "https://manliusracingleague.com/race_results/race_results_menu.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Auto Scoring / Weekly Standings  - Beta",
+                "url": "/race_results/weekly_standings.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "DB backup",
+                "url": "/admin_db_backup.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Show Paid Status by year",
+                "url": "/Paid_Status_Year.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "View Team page as alternate user",
+                "url": "/team_view_as.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Email addresses",
+                "url": "/email.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Approve LP as regular segment pick",
+                "url": "/admin_pick_adjustment.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Add drivers for a new year",
+                "url": "/addDrivers.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Current segment chart by entry time (spoilers during open pick window)",
+                "url": "/current_segment_chart_by_entry_time.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "NASCAR Schedule on ESPN",
+                "url": "https://www.espn.com/racing/schedule",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    },
+    "admin_hosting_panel": {
+        "title": "Hosting & Infrastructure",
+        "items": [
+            {
+                "label": "DB (database u809830586_MRL_DB) (Hostinger)",
+                "url": "https://auth-db1928.hstgr.io/index.php?db=u809830586_MRL_DB",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Hostinger Backups",
+                "url": "https://hpanel.hostinger.com/websites/manliusracingleague.com/files/backups",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Website Dashboard (Hostinger)",
+                "url": "https://hpanel.hostinger.com/websites/manliusracingleague.com",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Website Home (Hostinger hPanel)",
+                "url": "https://hpanel.hostinger.com/",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "WP Admin",
+                "url": "/wp-admin/",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "MRL gmail account",
+                "url": "https://accounts.google.com/AccountChooser?Email=manliusracingleague@gmail.com&continue=https://mail.google.com/mail/#inbox",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    },
+    "league_panel": {
+        "title": "League Information",
+        "items": [
+            {
+                "label": "{year} Fees & Payment Info",
+                "url": "/{year}_Fees.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Rules",
+                "url": "/{year}_Rules.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Race Schedule - PDF",
+                "url": "/wp-content/uploads/{year}/01/{year}_Schedule_MRL.pdf",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Race Schedule - Spreadsheet",
+                "url": "/wp-content/uploads/{year}/01/{year}_Schedule_MRL.xlsx",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "{year} Race Schedule on NASCAR.com",
+                "url": "https://www.nascar.com/nascar-cup-series/{year}/schedule/",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    },
+    "team_panel": {
+        "title": "Team Menu",
+        "items": [
+            {
+                "label": "** Your Profile page (Change Theme)",
+                "url": "/profile.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "** Auto Scoring / Weekly Standings  - Beta",
+                "url": "/race_results/weekly_standings.php",
+                "enabled": false,
+                "new_tab": true
+            },
+            {
+                "label": "Team Chart(s) - view, PDF, spreadsheet for any year/segment",
+                "url": "/team_chart.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Driver Chart(s) - view, print for any year",
+                "url": "/showDrivers.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "Submitted Teams for Current Segment",
+                "url": "/submitted_teams.php",
+                "enabled": true,
+                "new_tab": true
+            }
+        ]
+    }
+}

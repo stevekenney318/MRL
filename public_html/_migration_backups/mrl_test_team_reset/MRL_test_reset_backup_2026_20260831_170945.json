@@ -1,0 +1,82 @@
+{
+    "tool_version": "v002",
+    "created_at": "2026-08-31 17:09:45",
+    "userID": 999,
+    "raceYear": "2026",
+    "user_picks": [
+        {
+            "pickID": 2441,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Kyle Larson",
+            "driverB": "Joey Logano",
+            "driverC": "Bubba Wallace",
+            "driverD": "Alex Bowman",
+            "entryDate": "2026-08-31 16:43:54",
+            "submission_id": "sub_20260831_164341_b503bbba",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        }
+    ],
+    "user_picks_history": [
+        {
+            "pickID": 1109,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Kyle Larson",
+            "driverB": "AJ Allmendinger",
+            "driverC": "Todd Gilliland",
+            "driverD": "Alex Bowman",
+            "entryDate": "2026-08-31 16:33:12",
+            "submission_id": "sub_20260831_163227_b4394f94",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        },
+        {
+            "pickID": 1110,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Kyle Larson",
+            "driverB": "AJ Allmendinger",
+            "driverC": "Bubba Wallace",
+            "driverD": "Alex Bowman",
+            "entryDate": "2026-08-31 16:34:13",
+            "submission_id": "sub_20260831_163355_543a63e3",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        },
+        {
+            "pickID": 1111,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Kyle Larson",
+            "driverB": "Joey Logano",
+            "driverC": "Bubba Wallace",
+            "driverD": "Alex Bowman",
+            "entryDate": "2026-08-31 16:43:54",
+            "submission_id": "sub_20260831_164341_b503bbba",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        }
+    ]
+}

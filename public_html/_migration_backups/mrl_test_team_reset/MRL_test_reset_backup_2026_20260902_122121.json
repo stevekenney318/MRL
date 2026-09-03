@@ -1,0 +1,82 @@
+{
+    "tool_version": "v002",
+    "created_at": "2026-09-02 12:21:21",
+    "userID": 999,
+    "raceYear": "2026",
+    "user_picks": [
+        {
+            "pickID": 2449,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Tyler Reddick",
+            "driverB": "AJ Allmendinger",
+            "driverC": "Ty Gibbs",
+            "driverD": "Shane van Gisbergen",
+            "entryDate": "2026-09-02 12:21:03",
+            "submission_id": "sub_20260902_121853_e2dfb282",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        }
+    ],
+    "user_picks_history": [
+        {
+            "pickID": 1123,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "John Hunter Nemechek",
+            "driverB": "Austin Dillon",
+            "driverC": "Ty Gibbs",
+            "driverD": "Shane van Gisbergen",
+            "entryDate": "2026-09-02 12:19:21",
+            "submission_id": "sub_20260902_121853_e2dfb282",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        },
+        {
+            "pickID": 1124,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Chase Elliott",
+            "driverB": "Joey Logano",
+            "driverC": "Ty Gibbs",
+            "driverD": "Shane van Gisbergen",
+            "entryDate": "2026-09-02 12:20:26",
+            "submission_id": "sub_20260902_121853_e2dfb282",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        },
+        {
+            "pickID": 1125,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Tyler Reddick",
+            "driverB": "AJ Allmendinger",
+            "driverC": "Ty Gibbs",
+            "driverD": "Shane van Gisbergen",
+            "entryDate": "2026-09-02 12:21:03",
+            "submission_id": "sub_20260902_121853_e2dfb282",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        }
+    ]
+}

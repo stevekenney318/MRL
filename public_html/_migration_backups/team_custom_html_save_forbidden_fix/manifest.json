@@ -1,0 +1,7 @@
+{
+    "created_at": "2026-08-31 14:31:21",
+    "task": "team_custom_html_save_forbidden_fix",
+    "source_sha256": "0a8860b1469535c5ac6b024b6f410c80e45d06baf59daf8bf1571241995539d5",
+    "source_version": "v007",
+    "target_version": "v008"
+}
