@@ -1,0 +1,26 @@
+{
+    "version": "v001",
+    "checked_at": "2026-09-06T06:03:01-04:00",
+    "mode": "AUTO",
+    "scope": "LIVE",
+    "year": "2026",
+    "segment": "S4",
+    "segment_name": "The Chase",
+    "deadline": "Sunday, September 6 at 5:00 PM ET",
+    "actions": [
+        {
+            "type": "NORMAL_OFFSET",
+            "offset_minutes": 120,
+            "scheduled_at": "2026-09-06T15:00:00-04:00",
+            "window_end": "2026-09-06T15:10:00-04:00",
+            "status": "NOT_DUE",
+            "results": []
+        }
+    ],
+    "status": "CHECK_COMPLETE",
+    "summary": {
+        "sent": 0,
+        "skipped": 0,
+        "failed": 0
+    }
+}

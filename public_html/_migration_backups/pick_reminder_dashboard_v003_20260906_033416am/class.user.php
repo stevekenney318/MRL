@@ -97,7 +97,7 @@ class USER
         $_SESSION['userSession'] = false;
     }
 
-    public function send_mail($email, $message, $subject, $bccEmails = array())
+    public function send_mail($email, $message, $subject)
     {
         require_once('mailer/class.phpmailer.php');
 
@@ -119,22 +119,6 @@ class USER
         $mail->AddReplyTo("manliusracingleague@gmail.com", "Manlius Racing League");
 
         $mail->AddAddress($email);
-
-        // Optional BCC list for callers that need recipient privacy.
-        // Existing 3-argument send_mail() calls are unchanged.
-        if (!is_array($bccEmails)) {
-            $bccEmails = array($bccEmails);
-        }
-        foreach ($bccEmails as $bccEmail) {
-            $bccEmail = trim((string)$bccEmail);
-            if ($bccEmail === '') {
-                continue;
-            }
-            if (strcasecmp($bccEmail, (string)$email) === 0) {
-                continue;
-            }
-            $mail->AddBCC($bccEmail);
-        }
 
         $mail->isHTML(true);
         $mail->Subject = $subject;

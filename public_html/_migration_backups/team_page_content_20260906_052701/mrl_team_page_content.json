@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-06 05:27:01",
+    "updated_at": "2026-09-05 12:40:39",
     "custom_html_block": {
         "enabled": true,
         "position": "below",
@@ -107,12 +107,6 @@
             {
                 "label": "\ud83c\udfc1\ud83d\uddbc\ufe0fWeekly Images for WP update",
                 "url": "/race_results/mrl_wp_images.html",
-                "enabled": true,
-                "new_tab": true
-            },
-            {
-                "label": "\ud83e\udd1e\u270d\ufe0f Auto Pick Reminder Dashboard",
-                "url": "/pick_reminder_dashboard.php",
                 "enabled": true,
                 "new_tab": true
             }

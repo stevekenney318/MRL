@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * cron_all_schedulers.php
  *
- * VERSION: v002
- * LAST MODIFIED: 9/6/2026 2:42:47 am
+ * VERSION: v001
+ * LAST MODIFIED: 5/25/2026 3:26:00 pm
  *
  * DESCRIPTION:
  * Small top-level launcher for the MRL master schedulers.
@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 date_default_timezone_set('America/New_York');
 
-const CAS_VERSION = 'v002';
-const CAS_SIGNATURE = 'CRON_ALL_SCHEDULERS v002';
+const CAS_VERSION = 'v001';
+const CAS_SIGNATURE = 'CRON_ALL_SCHEDULERS v001';
 
 $rootDir = __DIR__;
 
@@ -33,11 +33,7 @@ $targets = [
     [
         'name' => 'live',
         'script' => $rootDir . '/race_results/cron_master_scheduler.php',
-    ],    [
-        'name' => 'pick_reminder',
-        'script' => $rootDir . '/pick_reminder_scheduler.php',
     ],
-
     [
         'name' => 'testphp8',
         'script' => $rootDir . '/testphp8/race_results/cron_master_scheduler.php',

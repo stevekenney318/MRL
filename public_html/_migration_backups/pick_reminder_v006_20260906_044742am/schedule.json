@@ -85,7 +85,7 @@
             "interval_minutes": 1,
             "script": "pick_reminder_task.php",
             "args": [],
-            "run_method": "url",
+            "run_method": "php",
             "lock_minutes": 2,
             "timeout_seconds": 120,
             "description": "Runs the root Pick Reminder scheduler every minute. The Pick Reminder scheduler itself owns AUTO/MANUAL/OFF, TEST/LIVE, due-time and duplicate-send decisions."

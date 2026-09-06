@@ -1,0 +1,19 @@
+{
+    "version": 1,
+    "mode": "AUTO",
+    "scope": "LIVE",
+    "offsets_minutes": [
+        120
+    ],
+    "subject_template": "MRL Pick Reminder - {{year}} {{segment_name}}",
+    "body_template": "** This is an auto-generated notification **\r\n\r\nJust a reminder that {{team_name}} has not yet submitted picks for {{year}} {{segment_name}}.\r\nThey are due soon — {{deadline}}.\r\n{{team_page}}\r\nThanks, Steve",
+    "from_name": "Manlius Racing League",
+    "from_email": "noreply@manliusracingleague.com",
+    "reply_to": "manliusracingleague@gmail.com",
+    "team_page_url": "https://manliusracingleague.com/team.php",
+    "to_email": "manliusracingleague@gmail.com",
+    "auto_window_minutes": 10,
+    "test_auto_enabled": false,
+    "test_auto_at": "2026-09-06 05:02",
+    "updated_at": "2026-09-06T05:19:54-04:00"
+}

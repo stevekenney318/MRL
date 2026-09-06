@@ -78,17 +78,6 @@
                 "post_final_12h_to_48h": 360
             },
             "description": "Revision-aware schedule. Normal daily checks are used until a new final-result handoff is detected; then revision monitor runs more frequently for post-race stabilization before scaling back."
-        },
-        "pick_reminder": {
-            "enabled": true,
-            "type": "interval",
-            "interval_minutes": 1,
-            "script": "pick_reminder_task.php",
-            "args": [],
-            "run_method": "url",
-            "lock_minutes": 2,
-            "timeout_seconds": 120,
-            "description": "Runs the root Pick Reminder scheduler every minute. The Pick Reminder scheduler itself owns AUTO/MANUAL/OFF, TEST/LIVE, due-time and duplicate-send decisions."
         }
     }
 }
