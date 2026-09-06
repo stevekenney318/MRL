@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team_view_as.php
  *
- * VERSION: v003
- * LAST MODIFIED: 9/6/2026 1:18:32 am
+ * VERSION: v002
+ * LAST MODIFIED: 3/30/2026 1:22:11 pm
  *
  * DESCRIPTION:
  * Admin-only "View As" helper to simulate another user for viewing team.php.
@@ -13,11 +13,6 @@ declare(strict_types=1);
  * current host for team.php.
  *
  * CHANGELOG:
- *
- * v003 (9/6/2026)
- * - MRL Test Team (userID 999) now appears first in the View As dropdown.
- * - userID 999 is selected by default when no alternate user is currently active.
- * - If another alternate user is already active, that user remains selected.
  *
  * v002 (3/30/2026)
  * - Fixed team.php launch link so it works on both production and testphp8.
@@ -153,8 +148,7 @@ try {
     $sql = "SELECT userID, userName
             FROM users
             WHERE userActive = 'Y' OR userID = 999
-            ORDER BY CASE WHEN userID = 999 THEN 0 ELSE 1 END,
-                     userName ASC";
+            ORDER BY userName ASC";
     $stmt = $dbo->prepare($sql);
     $stmt->execute();
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -253,11 +247,7 @@ $teamPageUrl = mrl_current_host_url('/team.php');
                         $id = (int)($u['userID'] ?? 0);
                         $name = (string)($u['userName'] ?? '');
                     ?>
-                    <?php
-                        $selectedUidForDropdown = $hasAlternateUser ? $alternateUserUid : 999;
-                        $isSelected = ($id === $selectedUidForDropdown);
-                    ?>
-                    <option value="<?php echo $id; ?>"<?php echo $isSelected ? ' selected' : ''; ?>>
+                    <option value="<?php echo $id; ?>">
                         <?php echo h($name . ' (ID ' . $id . ')'); ?>
                     </option>
                 <?php endforeach; ?>
@@ -271,7 +261,7 @@ $teamPageUrl = mrl_current_host_url('/team.php');
 
 <?php
 echo "<div style='font:11px/1.2 monospace; color:#999; text-align:center; margin:0; padding:10px 0 0 0;'>"
-   . "FILE: " . basename(__FILE__) . " | VERSION: v003 | " . date('Y-m-d H:i:s')
+   . "FILE: " . basename(__FILE__) . " | VERSION: v002 | " . date('Y-m-d H:i:s')
    . "</div>";
 ?>
 
