@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-05 12:40:39",
+    "updated_at": "2026-08-31 22:54:14",
     "custom_html_block": {
         "enabled": true,
         "position": "below",
@@ -15,13 +15,13 @@
         "title": "League & Team",
         "items": [
             {
-                "label": "\ud83d\udc40\ud83d\udc40Check Status - At a Glance \ud83d\udc40\ud83d\udc40",
+                "label": "Check Status - At a Glance \ud83d\udc40",
                 "url": "https://manliusracingleague.com/aag.html",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "\ud83c\udf70\ud83c\udf70\ud83c\udf70\ud83c\udf70Segment Pick Window Utility",
+                "label": "Segment Pick Window Utility",
                 "url": "/admin_setup.php",
                 "enabled": true,
                 "new_tab": true
@@ -33,67 +33,67 @@
                 "new_tab": true
             },
             {
-                "label": "\ud83c\udfc1\ud83c\udfc1Race Results Menu",
+                "label": "Race Results Menu",
                 "url": "https://manliusracingleague.com/race_results/race_results_menu.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udccbAuto Scoring / Weekly Standings  - Beta",
+                "label": "Auto Scoring / Weekly Standings  - Beta",
                 "url": "/race_results/weekly_standings.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udcbeDB & Files backup utility",
-                "url": "/admin_backup.php",
+                "label": "DB backup",
+                "url": "/admin_db_backup.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udcb2\ud83d\udcb0\ud83d\udcb3Show Paid Status by year",
+                "label": "Show Paid Status by year",
                 "url": "/Paid_Status_Year.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udc53\ud83e\udd78View Team page as alternate user",
+                "label": "View Team page as alternate user",
                 "url": "/team_view_as.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udce9Email addresses",
+                "label": "Email addresses",
                 "url": "/email.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udd13\ud83d\udd12Approve LP as regular segment pick",
+                "label": "Approve LP as regular segment pick",
                 "url": "/admin_pick_adjustment.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "\ud83c\udf89Add drivers for a new year",
+                "label": "Add drivers for a new year",
                 "url": "/addDrivers.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udd5dCurrent segment chart by entry time (spoilers during open pick window)",
+                "label": "Current segment chart by entry time (spoilers during open pick window)",
                 "url": "/current_segment_chart_by_entry_time.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "NASCAR Schedule on ESPN \ud83d\udcfa",
+                "label": "NASCAR Schedule on ESPN",
                 "url": "https://www.espn.com/racing/schedule",
                 "enabled": true,
                 "new_tab": true
             },
             {
-                "label": "999\u2699\ufe0fMRL Test Team Reset - remove picks for testing",
+                "label": "MRL Test Team Reset - remove picks for testing",
                 "url": "/admin_mrl_test_team_reset.php",
                 "enabled": true,
                 "new_tab": true
@@ -101,12 +101,6 @@
             {
                 "label": "Submitted Teams",
                 "url": "/submitted_teams.php",
-                "enabled": true,
-                "new_tab": true
-            },
-            {
-                "label": "\ud83c\udfc1\ud83d\uddbc\ufe0fWeekly Images for WP update",
-                "url": "/race_results/mrl_wp_images.html",
                 "enabled": true,
                 "new_tab": true
             }
@@ -122,7 +116,7 @@
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udcbeHostinger Backups",
+                "label": "Hostinger Backups",
                 "url": "https://hpanel.hostinger.com/websites/manliusracingleague.com/files/backups",
                 "enabled": true,
                 "new_tab": true

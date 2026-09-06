@@ -1,0 +1,64 @@
+{
+    "tool_version": "v002",
+    "created_at": "2026-09-05 12:41:15",
+    "userID": 999,
+    "raceYear": "2026",
+    "user_picks": [
+        {
+            "pickID": 2450,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Kyle Larson",
+            "driverB": "Denny Hamlin",
+            "driverC": "Chase Briscoe",
+            "driverD": "William Byron",
+            "entryDate": "2026-09-02 12:24:05",
+            "submission_id": "sub_20260902_122348_40ef3c7f",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        }
+    ],
+    "user_picks_history": [
+        {
+            "pickID": 1126,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Josh Berry",
+            "driverB": "Ross Chastain",
+            "driverC": "Bubba Wallace",
+            "driverD": "Christopher Bell",
+            "entryDate": "2026-09-02 12:22:47",
+            "submission_id": "sub_20260902_122226_d2b694a4",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        },
+        {
+            "pickID": 1127,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Kyle Larson",
+            "driverB": "Denny Hamlin",
+            "driverC": "Chase Briscoe",
+            "driverD": "William Byron",
+            "entryDate": "2026-09-02 12:24:05",
+            "submission_id": "sub_20260902_122348_40ef3c7f",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "SEG",
+            "effective_race": 27,
+            "supersedes_pickID": null
+        }
+    ]
+}

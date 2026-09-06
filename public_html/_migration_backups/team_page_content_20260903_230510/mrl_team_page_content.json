@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-05 12:40:39",
+    "updated_at": "2026-09-03 23:00:08",
     "custom_html_block": {
         "enabled": true,
         "position": "below",
@@ -69,7 +69,7 @@
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udd13\ud83d\udd12Approve LP as regular segment pick",
+                "label": "Approve LP as regular segment pick",
                 "url": "/admin_pick_adjustment.php",
                 "enabled": true,
                 "new_tab": true
@@ -93,7 +93,7 @@
                 "new_tab": true
             },
             {
-                "label": "999\u2699\ufe0fMRL Test Team Reset - remove picks for testing",
+                "label": "9\ufe0f\u20e39\ufe0f\u20e39\ufe0f\u20e3MRL Test Team Reset - remove picks for testing",
                 "url": "/admin_mrl_test_team_reset.php",
                 "enabled": true,
                 "new_tab": true
