@@ -1,0 +1,349 @@
+MRL PROJECT SOURCE NOTE FILE
+TITLE: File Generation and Versioning Standard
+VERSION: v004
+LAST MODIFIED: 9/6/2026 1:36:32 pm
+
+CHANGELOG
+v004 (9/6/2026 1:36:32 pm)
+- Updated normal source-of-truth rule to GitHub stevekenney318/MRL main.
+- Added active-iteration precedence: newest tested chat version temporarily overrides GitHub until stabilized.
+- Removed retired MRL_testphp8 as the canonical example/source.
+- Added installer-package, preflight, backup, postflight, rollback, and UI conventions.
+- Added production-safety rules for cron/scheduler/email side effects.
+- Added project-documentation precedence so older planning notes do not override current project state.
+- Clarified the role of prior-chat exports as continuity/history rather than code authority.
+
+v003 (4/30/2026 3:05:00 am)
+- Established complete-file, versioning, timestamp, iteration/finalization, and downloadable-file standards.
+
+Purpose
+
+This document defines the standard process for generating PHP files and deployment/install packages for the Manlius Racing League (MRL) project during iterative chat-based development.
+
+The goal is to ensure that generated work:
+- remains consistent across chats
+- is immediately usable
+- preserves version history clarity
+- follows predictable naming conventions
+- supports controlled iteration before GitHub commits
+- avoids partial snippets requiring manual merging
+- can be deployed and rolled back safely
+- does not accidentally disturb established production behavior
+
+This standard applies to MRL PHP files and, where relevant, supporting HTML/CSS/JS files, installers, schedulers, configuration files, and project deployment utilities.
+
+Core principle
+
+MRL development uses an iterative refinement workflow.
+
+Files often evolve through multiple small adjustments before a final GitHub commit is made.
+
+A GitHub commit represents a stable checkpoint, not necessarily the end of experimentation.
+
+Source-of-truth hierarchy
+
+Normal stable state:
+- GitHub repository `stevekenney318/MRL`
+- default branch: `main`
+- GitHub is the normal stable code source of truth unless Steve explicitly says otherwise.
+
+Active iteration:
+- During an unfinished chat-based iteration, the newest version generated, installed, and actively being tested in the current chat is the working source of truth for that file or subsystem.
+- GitHub may temporarily be behind during this period.
+- Do not overwrite or regress an active tested version merely because GitHub still contains the previous stable version.
+- Once Steve stabilizes the work and updates GitHub, GitHub again becomes the baseline.
+
+When a needed file is available in the current GitHub repository and GitHub is current, fetch/use it rather than asking Steve to upload it again.
+
+Project documentation precedence
+
+When MRL project-source documents disagree, use this order:
+
+1. Newest active/tested work in the current chat for an unfinished iteration.
+2. Current GitHub `MRL/main` for stable code.
+3. Latest `MRL_Project_Status.md` for project status, current architecture, priorities, and handoff context.
+4. Current dedicated process standards such as this file.
+5. Older roadmaps, monitor-design notes, migration notes, handoff documents, and planning files as historical/reference material unless they are explicitly marked current.
+6. Prior-chat PDF/HTML exports as continuity/history sources.
+
+Prior-chat exports are valuable for reconstructing decisions and detailed context, but they do not override newer tested code, GitHub stable state, or the latest project-status document.
+
+Required output format
+
+When generating or modifying an MRL code file:
+
+Always provide:
+- a complete file
+- no placeholders
+- no partial snippets
+- no "insert existing code here"
+- immediately usable drop-in replacement
+
+Steve should never need to merge fragments manually unless he explicitly asks for a snippet.
+
+Filename convention
+
+Generated versioned files should follow:
+
+filename_vXXX_YYYYMMDD_HHMMSSam.php
+
+or the equivalent extension for the file type.
+
+Time must use:
+America/New_York
+
+Rules:
+- include version number when versioned delivery is appropriate
+- use lowercase am/pm
+- no spaces
+- preserve the logical/base filename
+- timestamp reflects generation time
+- timestamp should closely match LAST MODIFIED
+- line endings should be LF unless a specific file requires otherwise
+
+Example:
+
+weekly_standings_v054_20260414_041318pm.php
+
+Header standard
+
+Generated MRL code files should include the current MRL-style header near the top.
+
+Typical required elements:
+- VERSION: v###
+- LAST MODIFIED: M/D/YYYY h:mm:ss am/pm
+- CHANGELOG entries where the file already uses a changelog
+
+Rules:
+- use VERSION format `v###`
+- use America/New_York
+- use a human-readable LAST MODIFIED value
+- do not include BUILD TS unless explicitly requested
+- preserve existing useful changelog history
+- keep header formatting consistent with the file being updated
+
+Timestamp handling rule
+
+For all MRL generated files requiring timestamps, use America/New_York as the fixed required timezone for both filename timestamps and LAST MODIFIED timestamps.
+
+Do not:
+- infer timezone from the server
+- use UTC and convert approximately
+- guess the current time
+
+Use the current New York local time directly.
+
+Required formats:
+- Header: `LAST MODIFIED: M/D/YYYY h:mm:ss am/pm`
+- Filename: `filename_vXXX_YYYYMMDD_HHMMSSam.php`
+
+If exact current New York time is unavailable, obtain it from an available time tool or ask Steve rather than guessing.
+
+Canonical style baseline
+
+Use the current live MRL repository and the file being modified as the primary style baseline.
+
+Repository:
+`stevekenney318/MRL`
+branch:
+`main`
+
+Do not use the retired `MRL_testphp8` repository as the canonical current source.
+
+Iteration mode vs finalization mode
+
+Iteration mode
+
+During active development:
+- timestamps may update multiple times
+- small adjustments may occur between versions
+- version number may remain unchanged temporarily if Steve prefers
+- changelog text may be refined
+- formatting tweaks may occur
+- multiple downloadable files/installers may be generated
+- newest tested chat version is the active working baseline
+
+Finalization mode
+
+Before a stable GitHub checkpoint:
+- confirm version
+- confirm changelog
+- confirm LAST MODIFIED
+- confirm file is complete
+- confirm tested behavior
+- confirm no accidental debug/test behavior remains
+- confirm the final file matches what was actually deployed/tested
+
+After commit, that version becomes the new stable GitHub baseline.
+
+Version bump guidance
+
+Version bumps usually occur when:
+- behavior changes
+- output logic changes
+- display structure changes
+- data interpretation changes
+- new features are added
+- bug fixes affect results
+- a deployment/process file materially changes behavior
+
+Version bumps may be unnecessary for:
+- minor spacing tweaks
+- comment-only changes
+- documentation wording
+- temporary debugging
+- intermediate experimental adjustments
+
+Steve has final say on whether a version should bump.
+
+Downloadable file expectation
+
+When an MRL file is produced, provide a downloadable file whenever practical.
+
+This ensures:
+- exact copy of generated code
+- no formatting loss
+- no truncation risk
+- reliable transfer with WinSCP/local workflow
+- easy archiving and comparison
+
+Installer-package standard
+
+For multi-file, production, configuration, or architecture-sensitive changes, prefer an installer package when practical.
+
+Installer goal:
+- inspect the actual production baseline
+- make only the intended change
+- preserve rollback capability
+- verify the result
+- avoid unrelated edits
+
+Preflight requirements
+
+A good MRL installer should:
+- verify required files exist
+- verify expected current versions/signatures where practical
+- verify required folders/files are writable
+- verify expected configuration/state before changing it
+- verify dependent files/features required by the change
+- clearly display PASS/FAIL for each relevant check
+- block Apply if a required preflight fails
+
+Preflight should inspect reality, not merely assume the server matches a previously generated file.
+
+Backup requirements
+
+Before modifying production files/settings:
+- back up every target that will be changed
+- preserve enough information for an exact rollback
+- do not overwrite the rollback copy during the same installer run
+- back up configuration/JSON files before editing them
+
+Apply requirements
+
+Apply should:
+- make only the intended delta
+- preserve unrelated existing behavior
+- avoid broad rewrites when a narrow patch is safer
+- use atomic file replacement where practical
+- avoid destructive operations unless explicitly requested
+- not silently alter other scheduler tasks, cron entries, or unrelated configuration
+
+Validation/postflight
+
+After Apply:
+- run `php -l` on modified PHP files where practical
+- verify the expected version/signature/content
+- verify changed JSON/config remains valid
+- verify expected dependent entries still exist
+- confirm unrelated critical files/tasks were preserved
+
+If syntax validation or a critical postflight check fails:
+- automatically restore the backed-up original when practical
+- clearly report the failure and rollback result
+
+Rollback
+
+Installers should provide rollback when practical.
+
+Rollback should:
+- restore the exact backed-up target files/settings
+- avoid touching unrelated files
+- clearly report success/failure
+
+Installer UI convention
+
+Use:
+- green for Apply / positive action
+- blue for neutral, informational, save, or navigation actions
+- red for Rollback / destructive reversal
+
+Installer pages should favor:
+- dark MRL-friendly styling
+- readable preflight tables
+- clear descriptions of exactly what will and will not change
+- a direct open link to the affected page after success when useful
+
+Production-safety rules
+
+Do not change established production architecture merely to make a new feature easier.
+
+In particular:
+- do not alter Hostinger cron unless the requested change genuinely requires it
+- do not replace or redesign the proven master scheduler during in-season work without a clear need
+- preserve existing scheduler tasks when adding a new one
+- prefer integration with proven architecture over parallel competing schedulers
+- production-season changes should be as narrow as practical
+
+Installer side effects
+
+Unless explicitly required:
+- running an installer must not itself send email
+- running an installer must not itself execute scheduled jobs
+- running an installer must not create real production submissions/picks
+- running an installer must not trigger external actions merely as a side effect of deployment
+
+If a test action can send email or affect live data, make the scope and safety state obvious.
+
+Testing principle
+
+Test the actual path that production will use whenever possible.
+
+Examples:
+- scheduler tests should eventually exercise the real scheduler route
+- mail tests should use the actual production mail class/path
+- TEST scope should remain isolated from LIVE recipients
+- live recipient lists should be rechecked immediately before sending/action where practical
+
+Relationship to project status and roadmap
+
+`MRL_Project_Status.md` is the current living status/handoff document.
+
+This file defines how MRL files and deployment packages are generated and delivered.
+
+Older roadmap/design documents provide useful history but should not be treated as current status when they conflict with the latest project-status file.
+
+Summary
+
+MRL generated work should be:
+
+complete
+versioned when appropriate
+timestamped in New York time
+drop-in ready
+preflighted
+backed up
+narrowly applied
+validated
+rollback-capable when practical
+safe for established production behavior
+
+The intended workflow is:
+
+current stable GitHub baseline
+→ active chat iteration/test
+→ installer/manual deployment
+→ verification
+→ stable GitHub checkpoint
+
+with project continuity maintained by the latest project-status document plus prior-chat history when needed.
