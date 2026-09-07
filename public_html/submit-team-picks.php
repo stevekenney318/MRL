@@ -5,14 +5,20 @@ declare(strict_types=1);
 /**
  * submit-team-picks.php
  *
- * VERSION: v012
- * LAST MODIFIED: 8/30/2026
+ * VERSION: v013
+ * LAST MODIFIED: 9/7/2026 2:28:47 am
  *
  * DESCRIPTION:
  * Universal team pick submission handler for MRL / testphp8.
  * Supports normal SEG submissions and LP submissions using the same file.
  *
  * CHANGELOG:
+ *
+ * v013 (9/7/2026 2:28:47 am)
+ * - FIX: Late Pick deadline detection now accepts config_mrl.php display deadlines ending in "ET".
+ * - FIX: Parses the deadline explicitly in America/New_York instead of passing the display suffix to strtotime().
+ * - FIX: New LP submissions after the original deadline no longer fall through to the closed normal-window rejection because of an unparseable display suffix.
+ * - PRESERVE: No change to config_mrl.php, displayed ET labels, SEG/ADJ/RD behavior, LP effective-race calculation, database/history writes, or Team-page review/quiet-submit behavior.
  *
  * v012 (8/30/2026)
  * - UI: Sets a one-time session success flag after both the current-picks write and history write succeed.
@@ -96,7 +102,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/class.user.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/race_results/race_schedule_helper.php';
 
 $user_home = new USER();
-$scriptVersion = 'v012';
+$scriptVersion = 'v013';
 
 if (!$user_home->is_logged_in()) {
     $user_home->redirect('login.php');
@@ -316,12 +322,28 @@ function mrl_original_pick_deadline_passed(string $formLockDate, string $formLoc
         return false;
     }
 
-    $deadlineTs = strtotime($raw);
-    if ($deadlineTs === false) {
+    // config_mrl.php intentionally exposes human-readable ET display strings.
+    // "ET" is a display label, not a PHP timezone identifier, so normalize the
+    // suffix and parse explicitly in the MRL canonical timezone.
+    $normalized = preg_replace('/\s+ET$/i', '', $raw);
+    if (!is_string($normalized) || trim($normalized) === '') {
         return false;
     }
 
-    return time() >= $deadlineTs;
+    try {
+        $deadline = new DateTimeImmutable(
+            trim($normalized),
+            new DateTimeZone('America/New_York')
+        );
+        $now = new DateTimeImmutable(
+            'now',
+            new DateTimeZone('America/New_York')
+        );
+
+        return $now >= $deadline;
+    } catch (Throwable $e) {
+        return false;
+    }
 }
 
 function mrl_lp_effective_race_is_open(int $raceYear, int $effectiveRace): bool

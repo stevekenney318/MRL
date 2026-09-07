@@ -1,0 +1,10 @@
+{
+    "installer_version": "v002",
+    "installed_at_et": "2026-09-07T02:49:43-04:00",
+    "target": "/home/u809830586/domains/manliusracingleague.com/public_html/submit-team-picks.php",
+    "backup": "/home/u809830586/domains/manliusracingleague.com/public_html/_mrl_installer_backups/submit-team-picks.php.v012.20260907_024943.bak",
+    "original_sha256": "d54d4a8f731ba3a86b334c0bda93bbf5d1efa9726f3259a1b0e88049e71db7b7",
+    "installed_sha256": "6d4917b8090e6014ec1c772f644c00c015303896bdbda3a47378cebc4084dcad",
+    "from_version": "v012",
+    "to_version": "v013"
+}
