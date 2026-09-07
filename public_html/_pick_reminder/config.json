@@ -1,7 +1,7 @@
 {
     "version": 1,
-    "mode": "AUTO",
-    "scope": "LIVE",
+    "mode": "OFF",
+    "scope": "TEST",
     "offsets_minutes": [
         120
     ],
@@ -15,5 +15,5 @@
     "auto_window_minutes": 10,
     "test_auto_enabled": false,
     "test_auto_at": "2026-09-06 05:02",
-    "updated_at": "2026-09-06T05:19:54-04:00"
+    "updated_at": "2026-09-06T17:04:23-04:00"
 }
