@@ -111,7 +111,26 @@ class USER
         $mail->Port = 587;
 
         $mail->Username = "manliusracingleague@gmail.com";
-        $mail->Password = "rvldfazxntiyaxda";
+
+        // MRL_MAIL_SECRETS: Gmail App Password is stored outside public_html.
+        $mrlMailSecretsFile = dirname(__DIR__) . '/_mrl_private/mrl_mail_secrets.php';
+        if (!is_readable($mrlMailSecretsFile)) {
+            error_log('MRL mail configuration unavailable.');
+            return false;
+        }
+
+        $mrlMailSecrets = require $mrlMailSecretsFile;
+        $mrlMailPassword = is_array($mrlMailSecrets)
+            ? trim((string)($mrlMailSecrets['gmail_app_password'] ?? ''))
+            : '';
+
+        if ($mrlMailPassword === '') {
+            error_log('MRL mail credential missing.');
+            return false;
+        }
+
+        $mail->Password = $mrlMailPassword;
+        unset($mrlMailPassword, $mrlMailSecrets);
 
         $mail->CharSet = 'UTF-8';
 
