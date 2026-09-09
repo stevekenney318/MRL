@@ -1,0 +1,27 @@
+{
+    "installer_version": "v003",
+    "installed_at_et": "2026-09-09T02:44:18-04:00",
+    "files": {
+        "team_chart.php": {
+            "target": "/home/u809830586/domains/manliusracingleague.com/public_html/team_chart.php",
+            "backup": "/home/u809830586/domains/manliusracingleague.com/public_html/_mrl_installer_backups/team_chart.php.v018.20260909_024418.bak",
+            "original_sha256": "bc546f3b99855ff85fed0342090ced35977da8ddc1171ff676a904cef57255e1",
+            "from": "v018",
+            "to": "v019"
+        },
+        "current_segment_chart.php": {
+            "target": "/home/u809830586/domains/manliusracingleague.com/public_html/current_segment_chart.php",
+            "backup": "/home/u809830586/domains/manliusracingleague.com/public_html/_mrl_installer_backups/current_segment_chart.php.v007.20260909_024418.bak",
+            "original_sha256": "9a9550d334d18b828c9173f37299f428d84d2edc804b049cf4b0703cbec9680c",
+            "from": "v007",
+            "to": "v008"
+        },
+        "submitted_teams.php": {
+            "target": "/home/u809830586/domains/manliusracingleague.com/public_html/submitted_teams.php",
+            "backup": "/home/u809830586/domains/manliusracingleague.com/public_html/_mrl_installer_backups/submitted_teams.php.UNVERSIONED.20260909_024418.bak",
+            "original_sha256": "a8c7f4ad56be63dc0d13d71941bd76c21b1dfcbd3ace76e665a4e00bed5f689f",
+            "from": "UNVERSIONED",
+            "to": "v001"
+        }
+    }
+}

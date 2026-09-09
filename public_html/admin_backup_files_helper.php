@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 /*
     filename: admin_backup_files_helper.php
-    VERSION: v002
-    LAST MODIFIED: 9/3/2026 1:33:00 pm
+    VERSION: v003
+    LAST MODIFIED: __DISPLAY_REAL__
 
     PURPOSE:
     - MRL website-files backup helper for admin_backup.php.
@@ -15,6 +15,11 @@ declare(strict_types=1);
     - Uses small AJAX batches to avoid one long browser request.
 
     CHANGELOG:
+    v003 (__DISPLAY_REAL__)
+    - CHANGE: New file-backup ZIP names use 24-hour HHMMSSmmm timestamps with no am/pm suffix.
+    - COMPAT: Existing 12-hour am/pm ZIP names remain valid for Download/Delete.
+    - PRESERVE: No changes to backup contents, scan, batching, ZIP creation, manifest, download, delete, or restore-related behavior.
+
     v002 (9/3/2026 1:33:00 pm)
     - FIX: Keeps a temporary marker entry in a newly created ZIP so the archive
       physically exists and can be reopened by the next AJAX batch request.
@@ -96,7 +101,7 @@ function mrlfb_list_zips(string $root): array {
     return $files;
 }
 function mrlfb_valid_zip(string $name): bool {
-    return basename($name)===$name && preg_match('/^public_html_\d{8}_\d{9}(?:am|pm)\.zip$/', $name) === 1;
+    return basename($name)===$name && preg_match('/^public_html_\d{8}_\d{9}(?:am|pm)?\.zip$/', $name) === 1;
 }
 function mrlfb_fmt_bytes(int $b): string {
     $u=['B','KB','MB','GB']; $i=0; $v=(float)$b; while($v>=1024 && $i<count($u)-1){$v/=1024;$i++;}
@@ -121,7 +126,7 @@ if ($ajax !== '') {
     if ($ajax === 'start') {
         $scan=mrlfb_scan($sourceDir,$excludedTop);
         $id=date('Ymd_His') . '_' . bin2hex(random_bytes(3));
-        $stamp=date('Ymd_his') . sprintf('%03d',(int)floor((microtime(true)-floor(microtime(true)))*1000)) . date('a');
+        $stamp=date('Ymd_His') . sprintf('%03d',(int)floor((microtime(true)-floor(microtime(true)))*1000));
         $zipName='public_html_' . $stamp . '.zip';
         $finalPath=$backupRoot . DIRECTORY_SEPARATOR . $zipName;
         $zipPath=$finalPath . '.part';

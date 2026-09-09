@@ -1,0 +1,46 @@
+{
+    "installer_version": "v001",
+    "installed_at_et": "2026-09-09T04:08:09-04:00",
+    "files": {
+        "team_chart.php": {
+            "target": "/home/u809830586/domains/manliusracingleague.com/public_html/team_chart.php",
+            "backup": "/home/u809830586/domains/manliusracingleague.com/public_html/_mrl_installer_backups/team_chart.php.v020.20260909_040809.bak",
+            "original_sha256": "86b9e8561c0fcffe2f2bec2289c926afe52f9118a4cfede46ad78ea20ed2b39e",
+            "from": "v020",
+            "to": "v021",
+            "was_new": false
+        },
+        "current_user_team_chart.php": {
+            "target": "/home/u809830586/domains/manliusracingleague.com/public_html/current_user_team_chart.php",
+            "backup": "/home/u809830586/domains/manliusracingleague.com/public_html/_mrl_installer_backups/current_user_team_chart.php.v006.20260909_040809.bak",
+            "original_sha256": "e39196d3a86aebbbb9fddc311c4874d0bdcaefbae3519502aa72385cb85cfd2e",
+            "from": "v006",
+            "to": "v007",
+            "was_new": false
+        },
+        "race_results_monitor.php": {
+            "target": "/home/u809830586/domains/manliusracingleague.com/public_html/race_results/race_results_monitor.php",
+            "backup": "/home/u809830586/domains/manliusracingleague.com/public_html/_mrl_installer_backups/race_results_monitor.php.v139.20260909_040809.bak",
+            "original_sha256": "5b5a11d6dc9257a88465c08ddf3357fad9c7faacf75e6b56b461bf84a482678e",
+            "from": "v139",
+            "to": "v140",
+            "was_new": false
+        },
+        "_race_results_schedule.json": {
+            "target": "/home/u809830586/domains/manliusracingleague.com/public_html/race_results/_race_results_schedule.json",
+            "backup": "/home/u809830586/domains/manliusracingleague.com/public_html/_mrl_installer_backups/_race_results_schedule.json.pre_shared_theme.20260909_040809.bak",
+            "original_sha256": "444143c8365c1d6695b198757d346877b26e833c71ec57cc04789d66424de0fa",
+            "from": "runtime",
+            "to": "R28 World Wide Tech",
+            "was_new": false
+        },
+        "mrl_shared_theme.css": {
+            "target": "/home/u809830586/domains/manliusracingleague.com/public_html/mrl_team/mrl_shared_theme.css",
+            "backup": "",
+            "original_sha256": "",
+            "from": "NEW",
+            "to": "v001",
+            "was_new": true
+        }
+    }
+}

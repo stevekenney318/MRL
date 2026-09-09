@@ -1,0 +1,111 @@
+/**
+ * mrl_shared_theme.css
+ *
+ * VERSION: v001
+ * CREATED: 9/9/2026 4:08:09 am ET
+ *
+ * Shared MRL public-page theme foundation.
+ * First adopter: team_chart.php.
+ *
+ * The theme names and visual values intentionally match the existing Team Page
+ * themes. The Team Page itself remains unchanged in this pass.
+ */
+
+:root {
+    --mrl-page-width: 85%;
+    --mrl-page-max: 1600px;
+    --mrl-rd-panel: rgba(28,28,28,.48);
+    --mrl-rd-panel-header: rgba(34,34,34,.42);
+    --mrl-rd-border: rgba(195,195,195,.34);
+    --mrl-rd-gold: #f1c97f;
+    --mrl-rd-text: #f2f2f2;
+    --mrl-rd-muted: #d4d0c7;
+    --mrl-rd-blue: #43b7f0;
+    --mrl-rd-shadow: 0 10px 28px rgba(0,0,0,.30);
+}
+
+html {
+    min-height: 100%;
+    background: #151515;
+}
+
+html.mrl-theme-cars {
+    --mrl-rd-panel: rgba(28,28,28,.48);
+    --mrl-rd-panel-header: rgba(34,34,34,.42);
+    --mrl-rd-border: rgba(195,195,195,.34);
+    --mrl-rd-gold: #f1c97f;
+    --mrl-rd-text: #f2f2f2;
+    --mrl-rd-muted: #d4d0c7;
+    --mrl-rd-blue: #43b7f0;
+    background:
+        linear-gradient(rgba(10,20,15,.70), rgba(10,20,15,.70)),
+        url("/images/cars.jpg") center/cover no-repeat fixed !important;
+}
+
+html.mrl-theme-starry-night {
+    --mrl-rd-panel: rgba(19,22,31,.56);
+    --mrl-rd-panel-header: rgba(24,27,39,.50);
+    --mrl-rd-border: rgba(190,198,221,.34);
+    --mrl-rd-gold: #e8cf9a;
+    --mrl-rd-text: #f2f3f7;
+    --mrl-rd-muted: #d4d7e2;
+    --mrl-rd-blue: #67bdf2;
+    background:
+        linear-gradient(rgba(5,8,18,.60), rgba(5,8,18,.60)),
+        url("/images/starry_night.jpg") center/cover no-repeat fixed !important;
+}
+
+html.mrl-theme-dark {
+    --mrl-rd-panel: rgba(28,28,28,.88);
+    --mrl-rd-panel-header: rgba(34,34,34,.92);
+    --mrl-rd-border: rgba(195,195,195,.34);
+    --mrl-rd-gold: #f1c97f;
+    --mrl-rd-text: #f2f2f2;
+    --mrl-rd-muted: #d4d0c7;
+    --mrl-rd-blue: #43b7f0;
+    background: #151515 !important;
+}
+
+html.mrl-theme-light {
+    --mrl-rd-panel: rgba(255,255,255,.90);
+    --mrl-rd-panel-header: rgba(244,244,244,.96);
+    --mrl-rd-border: rgba(60,60,60,.28);
+    --mrl-rd-gold: #8b5b00;
+    --mrl-rd-text: #202020;
+    --mrl-rd-muted: #555;
+    --mrl-rd-blue: #006eaa;
+    background: #eceff1 !important;
+}
+
+html.mrl-theme-cars body,
+html.mrl-theme-starry-night body,
+html.mrl-theme-dark body,
+html.mrl-theme-light body {
+    min-height: 100%;
+    background: transparent !important;
+    color: var(--mrl-rd-text);
+}
+
+/* Shared future-facing primitives. */
+.mrl-themed-panel {
+    background: var(--mrl-rd-panel);
+    border: 1px solid var(--mrl-rd-border);
+    color: var(--mrl-rd-text);
+    box-shadow: var(--mrl-rd-shadow);
+}
+
+.mrl-themed-muted {
+    color: var(--mrl-rd-muted);
+}
+
+.mrl-themed-accent {
+    color: var(--mrl-rd-gold);
+}
+
+@media print {
+    html,
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+}

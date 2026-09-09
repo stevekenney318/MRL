@@ -4,14 +4,40 @@ declare(strict_types=1);
 /**
  * team_chart.php
  *
- * VERSION: v018
- * LAST MODIFIED: 8/24/2026 9:45:04 pm
+ * VERSION: v021
+ * LAST MODIFIED: 9/9/2026 2:44:18 am ET
  *
  * DESCRIPTION:
  * Public Team Chart page with PRG flow, print, spreadsheet export,
  * and render-time LP / RD chart annotations.
  *
  * CHANGELOG:
+ *
+ * v021 (9/9/2026 4:08:09 am ET)
+ * - UI: Control row now follows approved Live / year / year arrows / segment / segment arrows / report-actions layout.
+ * - UI: Removed redundant Choose year / Choose segment labels.
+ * - UI: Live is disabled while already viewing the configured current year/segment.
+ * - UI: Control row aligns to the existing chart edges; chart size/position remains unchanged.
+ * - THEME: Uses the logged-in user's Team theme through shared mrl_team/mrl_shared_theme.css v001.
+ * - PRESERVE: Auto-load dropdowns, arrow boundary disabling, privacy gate, chart colors, Print/Spreadsheet, LP/RD display, and timestamped exports.
+ *
+ * v020 (9/9/2026 3:11:07 am ET)
+ * - FIX: R28 footnote resolves the known canonical short-name value "World" through richer trusted schedule fields to "World Wide Tech".
+ * - UI: Footnote sizing now wins over shared teamchart table CSS and matches the smaller team.php note treatment.
+ * - UI: Year and segment dropdown changes load automatically; Show button removed.
+ * - UI: Adds side-by-side << >> navigation for year and segment plus Live jump to current configured year/segment.
+ * - EXPORT: Spreadsheet footnote font/fill are re-applied after global formatting so notes remain compact with peach background.
+ * - PRESERVE: LP/RD markers, The Chase naming, privacy gate, RD merged rows, Print/Spreadsheet actions, and timestamped filenames.
+ *
+ * v019 (9/9/2026 2:44:18 am ET)
+ * - CONSISTENCY: LP rows now append their marker to Team, Owner, all four drivers, and Submission Time in HTML and spreadsheet output.
+ * - CONSISTENCY: LP/RD effective-race notes now include the canonical short race name when available, e.g. R28 (World Wide Tech).
+ * - CONSISTENCY: S4 is Playoffs through 2025 and The Chase beginning in 2026.
+ * - UI: Standalone chart typography now matches the team.php current-segment chart more closely (Arial, 13pt; compact 12px notes).
+ * - UI: Adds << / >> segment navigation around the segment selector.
+ * - EXPORT: Spreadsheet includes chart notes and uses matching Arial typography.
+ * - EXPORT: Spreadsheet and print/PDF filenames now include current generation timestamp with milliseconds.
+ * - PRESERVE: Existing privacy gate, RD merged-row display, Approved Exception behavior, PRG flow, and database queries.
  *
  * v018 (8/24/2026 9:45:04 pm)
  * - SAFETY: Current-season driver picks remain private until the segment's first points race starts.
@@ -69,6 +95,7 @@ $_SESSION['return_to'] = $_SERVER['REQUEST_URI'] ?? '/team_chart.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config_mrl.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/class.user.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/mrl_team/mrl_theme_helper.php';
 require_once __DIR__ . '/race_results/race_schedule_helper.php';
 
 $user_home = new USER();
@@ -76,6 +103,16 @@ $user_home = new USER();
 if (!$user_home->is_logged_in()) {
     $user_home->redirect('login.php');
     exit;
+}
+
+$teamChartTheme = 'cars';
+try {
+    $teamChartUid = (int)($_SESSION['userSession'] ?? 0);
+    if (isset($dbo) && $dbo instanceof PDO && $teamChartUid > 0) {
+        $teamChartTheme = mrl_theme_get($dbo, $teamChartUid);
+    }
+} catch (Throwable $e) {
+    $teamChartTheme = 'cars';
 }
 
 if (!isset($adminStatusLine)) {
@@ -158,13 +195,102 @@ function tc_marker_symbol(int $index): string
     return str_repeat('*', max(1, $index));
 }
 
-function tc_effective_race_label($value): string
+function tc_segment_label(string $year, string $segment): string
+{
+    if (function_exists('mrl_config_segment_name')) {
+        return mrl_config_segment_name((int)$year, $segment);
+    }
+
+    $segment = strtoupper(trim($segment));
+    if ($segment === 'S1') return 'Segment #1';
+    if ($segment === 'S2') return 'Segment #2';
+    if ($segment === 'S3') return 'Segment #3';
+    if ($segment === 'S4') return (int)$year >= 2026 ? 'The Chase' : 'Playoffs';
+    return $segment;
+}
+
+function tc_short_race_name(string $year, int $raceNumber): string
+{
+    if ($raceNumber <= 0) return '';
+
+    try {
+        $race = mrl_schedule_helper_race_by_number((int)$year, $raceNumber);
+        if (!is_array($race)) return '';
+
+        $preferred = trim((string)(
+            $race['mrl_race_name']
+            ?? $race['race_name']
+            ?? $race['track_name']
+            ?? ''
+        ));
+
+        $clean = static function (string $name): string {
+            $name = str_replace('_', ' ', trim($name));
+            $name = preg_replace('/\s+/', ' ', $name);
+            $name = preg_replace('/^NASCAR\s+Cup\s+Series\s+at\s+/i', '', (string)$name);
+            return trim((string)$name);
+        };
+
+        $preferred = $clean($preferred);
+        if ($preferred === '') return '';
+
+        /*
+         * Known canonical R28 issue:
+         * mrl_race_name currently carries only "World".
+         * For that exact value only, inspect the other trusted canonical fields
+         * for the fuller World Wide Technology name.
+         * Other races continue to use the preferred canonical name unchanged.
+         */
+        if (strcasecmp($preferred, 'World') === 0) {
+            foreach (['race_name', 'track_name', 'display_name', 'name'] as $field) {
+                $candidate = $clean((string)($race[$field] ?? ''));
+                if (
+                    stripos($candidate, 'World Wide Technology') !== false
+                    || stripos($candidate, 'World Wide Tech') !== false
+                ) {
+                    return 'World Wide Tech';
+                }
+            }
+        }
+
+        if (
+            stripos($preferred, 'World Wide Technology') !== false
+            || stripos($preferred, 'World Wide Tech') !== false
+        ) {
+            return 'World Wide Tech';
+        }
+
+        return $preferred;
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
+function tc_effective_race_label(string $year, $value): string
 {
     $num = (int)$value;
     if ($num <= 0) {
         return '';
     }
-    return 'R' . str_pad((string)$num, 2, '0', STR_PAD_LEFT);
+
+    $label = 'R' . str_pad((string)$num, 2, '0', STR_PAD_LEFT);
+    $raceName = tc_short_race_name($year, $num);
+
+    if ($raceName !== '') {
+        $label .= ' (' . $raceName . ')';
+    }
+
+    return $label;
+}
+
+function tc_generation_stamp(): string
+{
+    $now = microtime(true);
+    $seconds = (int)floor($now);
+    $milliseconds = (int)floor(($now - $seconds) * 1000);
+
+    return date('Ymd_His', $seconds)
+        . str_pad((string)$milliseconds, 3, '0', STR_PAD_LEFT);
 }
 
 function tc_get_reference_pick_row(array $row, array $rowsByPickId, ?array $baseRow): ?array
@@ -193,7 +319,7 @@ function tc_get_changed_field_for_rd(array $row, ?array $referenceRow): ?string
     return null;
 }
 
-function tc_build_chart_context(array $rows): array
+function tc_build_chart_context(array $rows, string $year): array
 {
     $rowsByPickId = [];
     $baseRowsByTeam = [];
@@ -244,7 +370,7 @@ function tc_build_chart_context(array $rows): array
             $markerIndex++;
             $marker = tc_marker_symbol($markerIndex);
             $noteText = $teamName . ' — Late Pick';
-            $effectiveRaceLabel = tc_effective_race_label($row['effective_race'] ?? 0);
+            $effectiveRaceLabel = tc_effective_race_label($year, $row['effective_race'] ?? 0);
             if ($effectiveRaceLabel !== '') {
                 $noteText .= ' — Effective ' . $effectiveRaceLabel;
             }
@@ -255,7 +381,7 @@ function tc_build_chart_context(array $rows): array
                 $markerIndex++;
                 $marker = tc_marker_symbol($markerIndex);
                 $noteText = $teamName . ' — Replacement Driver';
-                $effectiveRaceLabel = tc_effective_race_label($row['effective_race'] ?? 0);
+                $effectiveRaceLabel = tc_effective_race_label($year, $row['effective_race'] ?? 0);
                 if ($effectiveRaceLabel !== '') {
                     $noteText .= ' — Effective ' . $effectiveRaceLabel;
                 }
@@ -278,6 +404,12 @@ function tc_build_chart_context(array $rows): array
                 $excelRow[$field] = ($field === $changedField) ? ($driver . ' ' . $marker) : $driver;
             } else {
                 $excelRow[$field] = $driver;
+            }
+        }
+        if ($pickType === 'LP' && $marker !== '') {
+            foreach (['teamName', 'userName', 'entryDate'] as $field) {
+                $value = trim((string)($excelRow[$field] ?? ''));
+                $excelRow[$field] = $value === '' ? '' : ($value . ' ' . $marker);
             }
         }
         $excelRows[] = $excelRow;
@@ -315,7 +447,7 @@ function tc_build_chart_context(array $rows): array
  * Sends a real XLSX file (no warning) using PhpSpreadsheet.
  * If PhpSpreadsheet is not installed, exits with a readable error.
  */
-function send_excel_xlsx(string $filenameBase, array $rows, string $title): void
+function send_excel_xlsx(string $filenameBase, array $rows, string $title, array $notes): void
 {
     $autoloadPath = __DIR__ . '/vendor/autoload.php';
     if (!file_exists($autoloadPath)) {
@@ -372,13 +504,37 @@ function send_excel_xlsx(string $filenameBase, array $rows, string $title): void
             $r = 4;
         }
 
+        $dataLastRow = $r - 1;
+
+        if (!empty($notes)) {
+            foreach ($notes as $note) {
+                $sheet->setCellValue(
+                    "A{$r}",
+                    (string)(($note['marker'] ?? '') . ' ' . ($note['text'] ?? ''))
+                );
+                $sheet->mergeCells("A{$r}:G{$r}");
+                $sheet->getStyle("A{$r}:G{$r}")->applyFromArray([
+                    'font' => ['name' => 'Arial', 'size' => 10],
+                    'alignment' => [
+                        'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+                        'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                    ],
+                    'fill' => [
+                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => $cHeader],
+                    ],
+                ]);
+                $r++;
+            }
+        }
+
         $lastRow    = $r - 1;
         $rangeAll   = "A1:G{$lastRow}";
         $rangeTitle = "A1:G1";
         $rangeHdr   = "A2:G2";
-        $rangeData  = ($lastRow >= 3) ? "A3:G{$lastRow}" : "";
+        $rangeData  = ($dataLastRow >= 3) ? "A3:G{$dataLastRow}" : "";
 
-        $sheet->getStyle($rangeAll)->getFont()->setName('Century Gothic')->setSize(12);
+        $sheet->getStyle($rangeAll)->getFont()->setName('Arial')->setSize(13);
 
         $sheet->getStyle($rangeTitle)->applyFromArray([
             'font' => ['bold' => true, 'size' => 16],
@@ -457,6 +613,29 @@ function send_excel_xlsx(string $filenameBase, array $rows, string $title): void
         if ($lastRow >= 3) {
             for ($i = 3; $i <= $lastRow; $i++) {
                 $sheet->getRowDimension($i)->setRowHeight(18);
+            }
+        }
+
+        if (!empty($notes)) {
+            $noteStartRow = $dataLastRow + 1;
+            for ($noteRow = $noteStartRow; $noteRow <= $lastRow; $noteRow++) {
+                $sheet->getStyle("A{$noteRow}:G{$noteRow}")->applyFromArray([
+                    'font' => [
+                        'name' => 'Arial',
+                        'size' => 9,
+                        'bold' => false,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+                        'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                    ],
+                    'fill' => [
+                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => $cHeader],
+                    ],
+                ]);
+                $sheet->getRowDimension($noteRow)->setRowHeight(16);
             }
         }
 
@@ -598,13 +777,7 @@ if ($isExcelPost) {
     $selectedSegment = $excelSeg;
 }
 
-$segmentNames = [
-    'S1' => 'Segment #1',
-    'S2' => 'Segment #2',
-    'S3' => 'Segment #3',
-    'S4' => 'Playoffs'
-];
-$segmentLabel = $segmentNames[$selectedSegment] ?? $selectedSegment;
+$segmentLabel = tc_segment_label($selectedYear, $selectedSegment);
 
 // ---------- open-pick privacy gating ----------
 $currentRaceYear = isset($raceYear) ? (string)$raceYear : '';
@@ -731,7 +904,7 @@ if ($needsChartData) {
 
 $chartContext = ['htmlRows' => [], 'excelRows' => [], 'notes' => []];
 if (!empty($picks)) {
-    $chartContext = tc_build_chart_context($picks);
+    $chartContext = tc_build_chart_context($picks, $selectedYear);
 }
 
 // ---------- EXCEL EXPORT ----------
@@ -749,16 +922,22 @@ if ($isExcelPost) {
     }
 
     $title = $selectedYear . ' ' . $segmentLabel . ' Team Chart';
-    send_excel_xlsx("Team_Chart_{$selectedYear}_{$selectedSegment}", $chartContext['excelRows'], $title);
+    send_excel_xlsx(
+        "Team_Chart_{$selectedYear}_{$selectedSegment}_" . tc_generation_stamp(),
+        $chartContext['excelRows'],
+        $title,
+        $chartContext['notes']
+    );
 }
 
 ?>
 <!DOCTYPE html>
-<html>
+<html class="mrl-theme-<?php echo h($teamChartTheme); ?>">
 <head>
     <meta charset="UTF-8">
     <title>Team Chart</title>
     <link rel="stylesheet" href="/mrl-styles.css?v=20260123_prg1">
+    <link rel="stylesheet" href="/mrl_team/mrl_shared_theme.css?v=001">
 
     <style>
         .teamchart-row {
@@ -785,6 +964,24 @@ if ($isExcelPost) {
             display: inline-flex;
             gap: 10px;
             align-items: center;
+            margin-left: auto;
+        }
+
+        .teamchart-row {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .teamchart-navpair {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .teamchart-navpair .teamchart-actionbtn {
+            min-width: 42px;
+            padding-left: 8px;
+            padding-right: 8px;
         }
 
         .teamchart-rd-merged {
@@ -792,16 +989,30 @@ if ($isExcelPost) {
             vertical-align: middle;
         }
 
-        .teamchart-notes {
-            margin-top: 8px;
-            color: #666;
-            font-size: 13px;
-            font-family: Arial, sans-serif;
-            text-align: left;
+        .teamchart-table,
+        .teamchart-table th,
+        .teamchart-table td {
+            font-family: Arial, sans-serif !important;
+            font-size: 13pt !important;
+            line-height: 140% !important;
         }
 
-        .teamchart-notes div + div {
-            margin-top: 2px;
+        .teamchart-table td.teamchart-notes-row,
+        .teamchart-table td.teamchart-notes-row .teamchart-note-line {
+            font-family: Arial, sans-serif !important;
+            font-size: 12px !important;
+            line-height: 1.35 !important;
+            text-align: left !important;
+        }
+
+        .teamchart-table td.teamchart-notes-row {
+            padding: 8px 12px !important;
+            background: #fabf8f !important;
+            color: #000000 !important;
+        }
+
+        .teamchart-note-line + .teamchart-note-line {
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -819,25 +1030,35 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
         <input type="hidden" name="action" value="show">
 
         <div class="teamchart-row">
-            <label class="teamchart-label" for="year">Choose year:</label>
-            <select id="year" name="year" class="teamchart-select" required>
+            <button type="button"
+                    id="btnLive"
+                    class="teamchart-actionbtn"
+                    data-live-year="<?php echo h($defaultYear); ?>"
+                    data-live-segment="<?php echo h($defaultSegment); ?>">Live</button>
+
+            <select id="year" name="year" class="teamchart-select" aria-label="Year" required>
                 <?php foreach ($yearsStr as $yStr): ?>
                     <option value="<?php echo h($yStr); ?>" <?php echo ($yStr === $selectedYear ? 'selected' : ''); ?>>
                         <?php echo h($yStr); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
+            <span class="teamchart-navpair">
+                <button type="button" id="btnPrevYear" class="teamchart-actionbtn" title="Previous year">&lt;&lt;</button>
+                <button type="button" id="btnNextYear" class="teamchart-actionbtn" title="Next year">&gt;&gt;</button>
+            </span>
 
-            <label class="teamchart-label" for="segment">Choose segment:</label>
-            <select id="segment" name="segment" class="teamchart-select" required>
+            <select id="segment" name="segment" class="teamchart-select" aria-label="Segment" required>
                 <?php foreach ($segmentsStr as $sStr): ?>
                     <option value="<?php echo h($sStr); ?>" <?php echo ($sStr === $selectedSegment ? 'selected' : ''); ?>>
                         <?php echo h($sStr); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
-
-            <button type="submit" class="teamchart-button">Show</button>
+            <span class="teamchart-navpair">
+                <button type="button" id="btnPrevSegment" class="teamchart-actionbtn" title="Previous segment">&lt;&lt;</button>
+                <button type="button" id="btnNextSegment" class="teamchart-actionbtn" title="Next segment">&gt;&gt;</button>
+            </span>
 
             <?php if ($chartDisplayed): ?>
                 <span id="chartActions" class="teamchart-actions">
@@ -905,11 +1126,16 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
                                         $driverC = trim((string)($row['driverC'] ?? ''));
                                         $driverD = trim((string)($row['driverD'] ?? ''));
 
+                                        $ownerDisplay = trim((string)($row['userName'] ?? ''));
+                                        $timeDisplay = trim((string)($row['entryDate'] ?? ''));
+
                                         if ($pickType === 'LP' && $marker !== '') {
                                             $driverA .= ' ' . $marker;
                                             $driverB .= ' ' . $marker;
                                             $driverC .= ' ' . $marker;
                                             $driverD .= ' ' . $marker;
+                                            $ownerDisplay .= ' ' . $marker;
+                                            $timeDisplay .= ' ' . $marker;
                                         }
 
                                         $teamDisplay = trim((string)($row['teamName'] ?? ''));
@@ -919,12 +1145,12 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
                                     ?>
                                     <tr>
                                         <td class="teamchart-cell-team"><?php echo h($teamDisplay); ?></td>
-                                        <td class="teamchart-cell-owner"><?php echo h($row['userName'] ?? ''); ?></td>
+                                        <td class="teamchart-cell-owner"><?php echo h($ownerDisplay); ?></td>
                                         <td class="teamchart-cell-a"><?php echo h($driverA); ?></td>
                                         <td class="teamchart-cell-b"><?php echo h($driverB); ?></td>
                                         <td class="teamchart-cell-c"><?php echo h($driverC); ?></td>
                                         <td class="teamchart-cell-d"><?php echo h($driverD); ?></td>
-                                        <td class="teamchart-cell-time"><?php echo h($row['entryDate'] ?? ''); ?></td>
+                                        <td class="teamchart-cell-time"><?php echo h($timeDisplay); ?></td>
                                     </tr>
                                 <?php else: ?>
                                     <?php
@@ -1006,6 +1232,12 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
     const actionsWrap = document.getElementById('chartActions');
     const btnPrint = document.getElementById('btnPrint');
     const btnExcel = document.getElementById('btnExcel');
+    const btnPrevYear = document.getElementById('btnPrevYear');
+    const btnNextYear = document.getElementById('btnNextYear');
+    const btnPrevSegment = document.getElementById('btnPrevSegment');
+    const btnNextSegment = document.getElementById('btnNextSegment');
+    const btnLive = document.getElementById('btnLive');
+    const teamchartForm = document.getElementById('teamchartForm');
 
     const excelForm = document.getElementById('excelForm');
     const excelYear = document.getElementById('excelYear');
@@ -1015,8 +1247,104 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
         if (actionsWrap) actionsWrap.style.display = 'none';
     }
 
-    if (yearSel) yearSel.addEventListener('change', hideActionsWhenChanged);
-    if (segSel)  segSel.addEventListener('change', hideActionsWhenChanged);
+    function submitSelection() {
+        if (!teamchartForm) return;
+        hideActionsWhenChanged();
+
+        if (typeof teamchartForm.requestSubmit === 'function') {
+            teamchartForm.requestSubmit();
+        } else {
+            teamchartForm.submit();
+        }
+    }
+
+    if (yearSel) yearSel.addEventListener('change', submitSelection);
+    if (segSel)  segSel.addEventListener('change', submitSelection);
+
+    function moveSelect(select, direction) {
+        if (!select) return;
+
+        const nextIndex = select.selectedIndex + direction;
+        if (nextIndex < 0 || nextIndex >= select.options.length) return;
+
+        select.selectedIndex = nextIndex;
+        submitSelection();
+    }
+
+    function updateNavButtons() {
+        if (btnPrevYear) {
+            btnPrevYear.disabled = !yearSel || yearSel.selectedIndex <= 0;
+        }
+        if (btnNextYear) {
+            btnNextYear.disabled = !yearSel || yearSel.selectedIndex >= yearSel.options.length - 1;
+        }
+        if (btnPrevSegment) {
+            btnPrevSegment.disabled = !segSel || segSel.selectedIndex <= 0;
+        }
+        if (btnNextSegment) {
+            btnNextSegment.disabled = !segSel || segSel.selectedIndex >= segSel.options.length - 1;
+        }
+        if (btnLive) {
+            const liveYear = btnLive.dataset.liveYear || '';
+            const liveSegment = btnLive.dataset.liveSegment || '';
+            btnLive.disabled = !!yearSel && !!segSel
+                && yearSel.value === liveYear
+                && segSel.value === liveSegment;
+        }
+    }
+
+    if (btnPrevYear) {
+        btnPrevYear.addEventListener('click', function () { moveSelect(yearSel, -1); });
+    }
+
+    if (btnNextYear) {
+        btnNextYear.addEventListener('click', function () { moveSelect(yearSel, 1); });
+    }
+
+    if (btnPrevSegment) {
+        btnPrevSegment.addEventListener('click', function () { moveSelect(segSel, -1); });
+    }
+
+    if (btnNextSegment) {
+        btnNextSegment.addEventListener('click', function () { moveSelect(segSel, 1); });
+    }
+
+    if (btnLive) {
+        btnLive.addEventListener('click', function () {
+            if (!yearSel || !segSel) return;
+
+            const liveYear = btnLive.dataset.liveYear || '';
+            const liveSegment = btnLive.dataset.liveSegment || '';
+
+            if (liveYear !== '') yearSel.value = liveYear;
+            if (liveSegment !== '') segSel.value = liveSegment;
+
+            submitSelection();
+        });
+    }
+
+    updateNavButtons();
+
+    function syncControlRowToChart() {
+        const chartTable = document.querySelector('.teamchart-table');
+        const controlRow = document.querySelector('.teamchart-row');
+
+        if (!chartTable || !controlRow) return;
+
+        const width = chartTable.getBoundingClientRect().width;
+        if (width > 0) {
+            controlRow.style.width = width + 'px';
+            controlRow.style.maxWidth = '100%';
+        }
+    }
+
+    window.addEventListener('resize', syncControlRowToChart);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncControlRowToChart);
+    } else {
+        syncControlRowToChart();
+    }
+    window.setTimeout(syncControlRowToChart, 0);
 
     if (btnExcel && excelForm && excelYear && excelSeg) {
         btnExcel.addEventListener('click', function () {
@@ -1032,7 +1360,35 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
 
             const y = yearSel.value || '';
             const s = segSel.value || '';
-            const fileTitle = 'Team_Chart_' + y + '_' + s;
+
+            function pad(value, width) {
+                return String(value).padStart(width, '0');
+            }
+
+            const now = new Date();
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).formatToParts(now);
+
+            const values = {};
+            parts.forEach(function (part) {
+                if (part.type !== 'literal') values[part.type] = part.value;
+            });
+
+            const hour = values.hour === '24' ? '00' : values.hour;
+            const generationStamp =
+                values.year + values.month + values.day + '_' +
+                hour + values.minute + values.second +
+                pad(now.getMilliseconds(), 3);
+
+            const fileTitle = 'Team_Chart_' + y + '_' + s + '_' + generationStamp;
 
             document.title = fileTitle;
             window.print();

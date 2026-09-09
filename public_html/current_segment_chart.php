@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * current_segment_chart.php
  *
- * VERSION: v007
- * LAST MODIFIED: 4/13/2026 3:33:00 pm
+ * VERSION: v009
+ * LAST MODIFIED: 9/9/2026 2:44:18 am ET
  *
  * DESCRIPTION:
  * Current segment team chart shown on team.php after the normal deadline.
@@ -13,6 +13,15 @@ declare(strict_types=1);
  * two-row RD blocks, team-name markers, and stacked footnotes.
  *
  * CHANGELOG:
+ *
+ * v009 (9/9/2026 3:11:07 am ET)
+ * - FIX: R28 footnote resolves the known canonical short-name value "World" through richer trusted schedule fields to "World Wide Tech".
+ * - PRESERVE: Existing smaller team.php footnote sizing, LP all-cell markers, RD display, colors, and 100% chart width.
+ *
+ * v008 (9/9/2026 2:44:18 am ET)
+ * - CONSISTENCY: LP rows append their marker to every displayed cell, including Owner and Submission Time.
+ * - CONSISTENCY: LP/RD effective-race notes include the canonical short race name when available.
+ * - PRESERVE: Existing 100% team.php width, Arial chart typography, RD merged rows, colors, and segment naming.
  *
  * v007 (4/13/2026)
  * - FIX: Restored table width to 100% so layout works correctly when included inside team.php.
@@ -33,6 +42,7 @@ session_start();
 date_default_timezone_set('America/New_York');
 include 'config.php';
 include 'config_mrl.php';
+require_once __DIR__ . '/race_results/race_schedule_helper.php';
 
 function csc_h($val): string {
     return htmlspecialchars((string)$val, ENT_QUOTES, 'UTF-8');
@@ -43,13 +53,71 @@ function csc_marker_symbol(int $index): string
     return str_repeat('*', max(1, $index));
 }
 
-function csc_effective_race_label($value): string
+function csc_short_race_name(string $year, int $raceNumber): string
+{
+    if ($raceNumber <= 0) return '';
+
+    try {
+        $race = mrl_schedule_helper_race_by_number((int)$year, $raceNumber);
+        if (!is_array($race)) return '';
+
+        $preferred = trim((string)(
+            $race['mrl_race_name']
+            ?? $race['race_name']
+            ?? $race['track_name']
+            ?? ''
+        ));
+
+        $clean = static function (string $name): string {
+            $name = str_replace('_', ' ', trim($name));
+            $name = preg_replace('/\s+/', ' ', $name);
+            $name = preg_replace('/^NASCAR\s+Cup\s+Series\s+at\s+/i', '', (string)$name);
+            return trim((string)$name);
+        };
+
+        $preferred = $clean($preferred);
+        if ($preferred === '') return '';
+
+        if (strcasecmp($preferred, 'World') === 0) {
+            foreach (['race_name', 'track_name', 'display_name', 'name'] as $field) {
+                $candidate = $clean((string)($race[$field] ?? ''));
+                if (
+                    stripos($candidate, 'World Wide Technology') !== false
+                    || stripos($candidate, 'World Wide Tech') !== false
+                ) {
+                    return 'World Wide Tech';
+                }
+            }
+        }
+
+        if (
+            stripos($preferred, 'World Wide Technology') !== false
+            || stripos($preferred, 'World Wide Tech') !== false
+        ) {
+            return 'World Wide Tech';
+        }
+
+        return $preferred;
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
+function csc_effective_race_label(string $year, $value): string
 {
     $num = (int)$value;
     if ($num <= 0) {
         return '';
     }
-    return 'R' . str_pad((string)$num, 2, '0', STR_PAD_LEFT);
+
+    $label = 'R' . str_pad((string)$num, 2, '0', STR_PAD_LEFT);
+    $raceName = csc_short_race_name($year, $num);
+
+    if ($raceName !== '') {
+        $label .= ' (' . $raceName . ')';
+    }
+
+    return $label;
 }
 
 function csc_get_reference_pick_row(array $row, array $rowsByPickId, ?array $baseRow): ?array
@@ -78,7 +146,7 @@ function csc_get_changed_field_for_rd(array $row, ?array $referenceRow): ?string
     return null;
 }
 
-function csc_build_chart_context(array $rows): array
+function csc_build_chart_context(array $rows, string $year): array
 {
     $rowsByPickId = [];
     $baseRowsByTeam = [];
@@ -124,7 +192,7 @@ function csc_build_chart_context(array $rows): array
             $markerIndex++;
             $marker = csc_marker_symbol($markerIndex);
             $noteText = $teamName . ' — Late Pick';
-            $effectiveRaceLabel = csc_effective_race_label($row['effective_race'] ?? 0);
+            $effectiveRaceLabel = csc_effective_race_label($year, $row['effective_race'] ?? 0);
             if ($effectiveRaceLabel !== '') {
                 $noteText .= ' — Effective ' . $effectiveRaceLabel;
             }
@@ -135,7 +203,7 @@ function csc_build_chart_context(array $rows): array
                 $markerIndex++;
                 $marker = csc_marker_symbol($markerIndex);
                 $noteText = $teamName . ' — Replacement Driver';
-                $effectiveRaceLabel = csc_effective_race_label($row['effective_race'] ?? 0);
+                $effectiveRaceLabel = csc_effective_race_label($year, $row['effective_race'] ?? 0);
                 if ($effectiveRaceLabel !== '') {
                     $noteText .= ' — Effective ' . $effectiveRaceLabel;
                 }
@@ -237,7 +305,7 @@ if ($result) {
 
 $chartContext = ['htmlRows' => [], 'notes' => []];
 if (!empty($rows)) {
-    $chartContext = csc_build_chart_context($rows);
+    $chartContext = csc_build_chart_context($rows, (string)$raceYear);
 }
 
 if (empty($chartContext['htmlRows'])) {
@@ -262,21 +330,26 @@ if (empty($chartContext['htmlRows'])) {
                 $teamDisplay .= ' ' . $marker;
             }
 
+            $ownerDisplay = trim((string)($row['userName'] ?? ''));
+            $timeDisplay = trim((string)($row['entryDate'] ?? ''));
+
             if ($pickType === 'LP' && $marker !== '') {
                 $driverA .= ' ' . $marker;
                 $driverB .= ' ' . $marker;
                 $driverC .= ' ' . $marker;
                 $driverD .= ' ' . $marker;
+                $ownerDisplay .= ' ' . $marker;
+                $timeDisplay .= ' ' . $marker;
             }
 
             echo "<tr>";
             echo "<td style=background-color:#b7dee8>" . csc_h($teamDisplay) . "</td>";
-            echo "<td style=background-color:#b7dee8>" . csc_h($row['userName'] ?? '') . "</td>";
+            echo "<td style=background-color:#b7dee8>" . csc_h($ownerDisplay) . "</td>";
             echo "<td style=background-color:#d9d9d9>" . csc_h($driverA) . "</td>";
             echo "<td style=background-color:#c4bd97>" . csc_h($driverB) . "</td>";
             echo "<td style=background-color:#b8cce4>" . csc_h($driverC) . "</td>";
             echo "<td style=background-color:#d8e4bc>" . csc_h($driverD) . "</td>";
-            echo "<td style=background-color:#b7dee8>" . csc_h($row['entryDate'] ?? '') . "</td>";
+            echo "<td style=background-color:#b7dee8>" . csc_h($timeDisplay) . "</td>";
             echo "</tr>";
 
         } else {

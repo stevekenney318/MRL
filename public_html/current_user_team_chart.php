@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * current_user_team_chart.php
  *
- * VERSION: v006
+ * VERSION: v007
  * LAST MODIFIED: 8/30/2026 9:37:58 am
  *
  * DESCRIPTION:
@@ -13,6 +13,10 @@ declare(strict_types=1);
  * LP/RD display logic to the current-year segment rows.
  *
  * CHANGELOG:
+ *
+ * v007 (9/9/2026 4:08:09 am ET)
+ * - CONSISTENCY: S4 displays The Chase for 2026 and later; Playoffs remains for 2025 and earlier.
+ * - PRESERVE: Existing yearly team chart, LP/RD markers, notes, driver tags, paid/team information, and table presentation.
  *
  * v006 (8/30/2026 9:37:58 am)
  * - FIX: Made the "No picks found for this year." row readable in dark/non-light Team themes.
@@ -426,7 +430,8 @@ function mapSegmentName($segment) {
         case 'S3':
             return 'Segment #3';
         case 'S4':
-            return 'Playoffs';
+            global $raceYear;
+            return (int)$raceYear >= 2026 ? 'The Chase' : 'Playoffs';
         default:
             return '';
     }

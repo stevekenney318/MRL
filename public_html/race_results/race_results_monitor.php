@@ -4,10 +4,15 @@ declare(strict_types=1);
 /**
  * race_results_monitor.php
  *
- * VERSION: v139
+ * VERSION: v140
  * LAST MODIFIED: 8/22/2026 7:26:00 pm
  *
  * CHANGELOG:
+ *
+ * v140 (9/9/2026 4:08:09 am ET)
+ *   - FIX: Central race short-label normalization now resolves World / World Wide Technology variants as World Wide Tech.
+ *   - CHANGE: Fix is applied in rr_monitor_short_race_label(), the source used by schedule/status short labels.
+ *   - PRESERVE: Schedule ingestion, race identity, snapshots, scoring, notification, scheduler ownership, and RD behavior.
  *
  * v139 (8/22/2026 7:26:00 pm)
  *   - CHANGE: Real RD detection now uses shared race_results_rd_helper.php v005 eligibility.
@@ -346,6 +351,20 @@ function rr_monitor_public_host(string $docRoot, string $scriptDir): string
 function rr_monitor_short_race_label(string $raceName): string
 {
     $slug = rr_sanitize_for_folder($raceName);
+
+    /*
+     * ESPN / schedule naming normalization:
+     * the 2026 World Wide Technology event can surface as either the full
+     * facility name or the already-truncated "World". Keep the public MRL
+     * short label stable at "World Wide Tech".
+     */
+    if (
+        strcasecmp($slug, 'World') === 0
+        || stripos($slug, 'World_Wide_Technology') !== false
+        || stripos($slug, 'World_Wide_Tech') !== false
+    ) {
+        return 'World Wide Tech';
+    }
 
     $map = [
         'Daytona_500' => 'Daytona',

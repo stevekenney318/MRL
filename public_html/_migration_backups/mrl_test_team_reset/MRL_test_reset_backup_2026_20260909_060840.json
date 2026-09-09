@@ -1,0 +1,82 @@
+{
+    "tool_version": "v002",
+    "created_at": "2026-09-09 06:08:40",
+    "userID": 999,
+    "raceYear": "2026",
+    "user_picks": [
+        {
+            "pickID": 2459,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Chris Buescher",
+            "driverB": "Ryan Preece",
+            "driverC": "Michael McDowell",
+            "driverD": "Brad Keselowski",
+            "entryDate": "2026-09-07 10:04:25",
+            "submission_id": "sub_20260907_100405_3572503b",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "LP",
+            "effective_race": 28,
+            "supersedes_pickID": null
+        }
+    ],
+    "user_picks_history": [
+        {
+            "pickID": 1137,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Tyler Reddick",
+            "driverB": "Joey Logano",
+            "driverC": "Michael McDowell",
+            "driverD": "Shane van Gisbergen",
+            "entryDate": "2026-09-07 03:07:07",
+            "submission_id": "sub_20260907_030650_b4a39a09",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "LP",
+            "effective_race": 28,
+            "supersedes_pickID": null
+        },
+        {
+            "pickID": 1138,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Tyler Reddick",
+            "driverB": "Ryan Preece",
+            "driverC": "Michael McDowell",
+            "driverD": "Brad Keselowski",
+            "entryDate": "2026-09-07 03:07:35",
+            "submission_id": "sub_20260907_030650_b4a39a09",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "LP",
+            "effective_race": 28,
+            "supersedes_pickID": null
+        },
+        {
+            "pickID": 1139,
+            "userID": 999,
+            "teamName": "MRL test team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Chris Buescher",
+            "driverB": "Ryan Preece",
+            "driverC": "Michael McDowell",
+            "driverD": "Brad Keselowski",
+            "entryDate": "2026-09-07 10:04:25",
+            "submission_id": "sub_20260907_100405_3572503b",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "LP",
+            "effective_race": 28,
+            "supersedes_pickID": null
+        }
+    ]
+}
