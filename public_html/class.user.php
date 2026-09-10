@@ -111,7 +111,6 @@ class USER
         $mail->Port = 587;
 
         $mail->Username = "manliusracingleague@gmail.com";
-
         // MRL_MAIL_SECRETS: Gmail App Password is stored outside public_html.
         $mrlMailSecretsFile = dirname(__DIR__) . '/_mrl_private/mrl_mail_secrets.php';
         if (!is_readable($mrlMailSecretsFile)) {
