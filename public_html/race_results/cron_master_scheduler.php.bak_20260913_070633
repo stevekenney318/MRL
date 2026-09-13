@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * cron_master_scheduler.php
  *
- * VERSION: v015
- * LAST MODIFIED: 9/13/2026 7:00:21 am
+ * VERSION: v014
+ * LAST MODIFIED: 6/21/2026 9:41:10 pm
  *
  * DESCRIPTION:
  * Basic JSON-driven master scheduler for MRL race-results automation.
@@ -25,11 +25,6 @@ declare(strict_types=1);
  *        -> race_results_classify_revisions.php when revisions are detected
  *
  * CHANGELOG:
- * v015 (9/13/2026 7:00:21 am)
- * - FIX: Race scheduler display labels now prefer canonical mrl_race_name before ESPN short_name/race_name.
- * - FIX: Both scheduler next-race state paths now preserve canonical compact short_name/mrl_race_name for downstream displays.
- * - PRESERVE: Scheduling cadence, race matching, monitor execution, revision scheduling, and database behavior are unchanged.
- *
  * v013 (6/21/2026)
  * - NEW: Updates optional NASCAR At a Glance cache after race_results_monitor runs.
  * - NOTE: NASCAR data remains info-only and does not drive MRL scoring/final/revision logic.
@@ -116,8 +111,8 @@ declare(strict_types=1);
 
 date_default_timezone_set('America/New_York');
 
-const CMS_VERSION = 'v015';
-const CMS_SIGNATURE = 'CRON_MASTER_SCHEDULER v015';
+const CMS_VERSION = 'v014';
+const CMS_SIGNATURE = 'CRON_MASTER_SCHEDULER v014';
 
 $baseDir = __DIR__;
 $schedulerDir = $baseDir . '/_scheduler';
@@ -839,8 +834,7 @@ function cms_auto_race_select_next_race(array $raceSchedule, array $monitorState
             $futureRace['_scheduler_override_reason'] = 'current schedule next race already has final captured; advanced to next future MRL race';
             $futureRace['_scheduler_previous_next_race'] = [
                 'race_name' => (string)($nextRace['race_name'] ?? ''),
-                'short_name' => (string)($nextRace['mrl_race_name'] ?? $nextRace['short_name'] ?? ''),
-                'mrl_race_name' => (string)($nextRace['mrl_race_name'] ?? $nextRace['short_name'] ?? ''),
+                'short_name' => (string)($nextRace['short_name'] ?? ''),
                 'mrl_race_code' => (string)($nextRace['mrl_race_code'] ?? ''),
                 'mrl_race_number' => $nextRace['mrl_race_number'] ?? null,
                 'race_id' => (string)($nextRace['race_id'] ?? ''),
@@ -1025,7 +1019,7 @@ function cms_auto_race_monitor_task_due(string $taskName, array $task, array $st
         $nextDueTs = $lastRunTs + ($interval * 60);
     }
 
-    $raceLabel = trim((string)($nextRace['mrl_race_code'] ?? '') . ' ' . (string)($nextRace['mrl_race_name'] ?? $nextRace['short_name'] ?? $nextRace['race_name'] ?? ''));
+    $raceLabel = trim((string)($nextRace['mrl_race_code'] ?? '') . ' ' . (string)($nextRace['short_name'] ?? $nextRace['race_name'] ?? ''));
 
     return [
         'due' => $due,
@@ -1040,8 +1034,7 @@ function cms_auto_race_monitor_task_due(string $taskName, array $task, array $st
             'next_race' => [
                 'label' => $raceLabel,
                 'race_name' => (string)($nextRace['race_name'] ?? ''),
-                'short_name' => (string)($nextRace['mrl_race_name'] ?? $nextRace['short_name'] ?? ''),
-                'mrl_race_name' => (string)($nextRace['mrl_race_name'] ?? $nextRace['short_name'] ?? ''),
+                'short_name' => (string)($nextRace['short_name'] ?? ''),
                 'mrl_race_code' => (string)($nextRace['mrl_race_code'] ?? ''),
                 'mrl_race_number' => $nextRace['mrl_race_number'] ?? null,
                 'start_at' => (string)($nextRace['start_at'] ?? ''),
