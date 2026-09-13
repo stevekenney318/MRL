@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v050
- * LAST MODIFIED: 9/13/2026 8:22:22 am
+ * VERSION: v048
+ * LAST MODIFIED: 9/13/2026 7:47:48 am
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,16 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v050 (9/13/2026 8:22:22 am)
- * - TEST/FIX: Removes backdrop-filter from the sticky masthead, the common parent of the account dropdown.
- * - PRESERVE: Account-menu HTML/CSS/JS behavior, geometry, links, and existing z-index values unchanged.
- * - PRESERVE: Masthead background/border/radius/shadow/layout plus picks, scoring, scheduler, themes, and DB behavior unchanged.
- *
- * v049 (9/13/2026 8:07:13 am)
- * - RESTORE: Removes v048 body-level dropdown portal experiment after it suppressed the account menu.
- * - RESTORE: Returns account dropdown to the known-working v047 open/close behavior.
- * - PRESERVE: Keeps v047 stacking values for later diagnosis; all other Team-page behavior unchanged.
  *
  * v048 (9/13/2026 7:47:48 am)
  * - FIX: Account dropdown now portals to document body while open, escaping sticky/backdrop-filter stacking contexts.
@@ -1314,7 +1304,8 @@ function teampage_render_announcement_text(string $text): void
             border:1px solid rgba(67,142,94,.72);
             border-radius:14px;
             background:linear-gradient(180deg,rgba(18,58,40,.78),rgba(20,35,29,.74));
-            /* v050: backdrop filtering removed here to avoid trapping the dropdown in a Chrome compositing layer. */
+            backdrop-filter:blur(3px);
+            -webkit-backdrop-filter:blur(3px);
             box-shadow:var(--mrl-rd-shadow);
         }
 
@@ -1360,7 +1351,12 @@ function teampage_render_announcement_text(string $text): void
         }
 
         .mrl-rd-user.open .mrl-rd-user-menu{display:block}
-
+        .mrl-rd-user-menu.mrl-rd-user-menu-portal{
+            display:block!important;
+            position:fixed!important;
+            z-index:2147483000!important;
+            margin:0!important;
+        }
 
         .mrl-rd-user-menu a{
             display:block;
@@ -1998,18 +1994,67 @@ function teampage_render_announcement_text(string $text): void
 
     var user = document.getElementById('mrl-rd-user');
     var button = document.getElementById('mrl-rd-user-button');
+    var menu = document.getElementById('mrl-rd-user-menu');
+    var menuPlaceholder = null;
 
-    if (user && button) {
+    if (user && button && menu) {
+        function positionUserMenuPortal() {
+            if (!menu.classList.contains('mrl-rd-user-menu-portal')) return;
+
+            var rect = button.getBoundingClientRect();
+            menu.style.left = Math.round(rect.left) + 'px';
+            menu.style.top = Math.round(rect.bottom + 7) + 'px';
+        }
+
+        function openUserMenu() {
+            if (menu.classList.contains('mrl-rd-user-menu-portal')) return;
+
+            menuPlaceholder = document.createComment('mrl-user-menu-placeholder');
+            menu.parentNode.insertBefore(menuPlaceholder, menu);
+            document.body.appendChild(menu);
+
+            user.classList.add('open');
+            menu.classList.add('mrl-rd-user-menu-portal');
+            positionUserMenuPortal();
+
+            button.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeUserMenu() {
+            user.classList.remove('open');
+            menu.classList.remove('mrl-rd-user-menu-portal');
+            menu.style.left = '';
+            menu.style.top = '';
+
+            if (menuPlaceholder && menuPlaceholder.parentNode) {
+                menuPlaceholder.parentNode.insertBefore(menu, menuPlaceholder);
+                menuPlaceholder.parentNode.removeChild(menuPlaceholder);
+            }
+
+            menuPlaceholder = null;
+            button.setAttribute('aria-expanded', 'false');
+        }
+
         button.addEventListener('click', function (event) {
             event.stopPropagation();
-            var open = user.classList.toggle('open');
-            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+            if (menu.classList.contains('mrl-rd-user-menu-portal')) {
+                closeUserMenu();
+            } else {
+                openUserMenu();
+            }
+        });
+
+        menu.addEventListener('click', function (event) {
+            event.stopPropagation();
         });
 
         document.addEventListener('click', function () {
-            user.classList.remove('open');
-            button.setAttribute('aria-expanded', 'false');
+            closeUserMenu();
         });
+
+        window.addEventListener('resize', positionUserMenuPortal);
+        window.addEventListener('scroll', positionUserMenuPortal, true);
     }
 
     function rememberDetails(id, storageKey) {

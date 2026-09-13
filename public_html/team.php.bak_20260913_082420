@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v050
- * LAST MODIFIED: 9/13/2026 8:22:22 am
+ * VERSION: v049
+ * LAST MODIFIED: 9/13/2026 8:07:13 am
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,11 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v050 (9/13/2026 8:22:22 am)
- * - TEST/FIX: Removes backdrop-filter from the sticky masthead, the common parent of the account dropdown.
- * - PRESERVE: Account-menu HTML/CSS/JS behavior, geometry, links, and existing z-index values unchanged.
- * - PRESERVE: Masthead background/border/radius/shadow/layout plus picks, scoring, scheduler, themes, and DB behavior unchanged.
  *
  * v049 (9/13/2026 8:07:13 am)
  * - RESTORE: Removes v048 body-level dropdown portal experiment after it suppressed the account menu.
@@ -1314,7 +1309,8 @@ function teampage_render_announcement_text(string $text): void
             border:1px solid rgba(67,142,94,.72);
             border-radius:14px;
             background:linear-gradient(180deg,rgba(18,58,40,.78),rgba(20,35,29,.74));
-            /* v050: backdrop filtering removed here to avoid trapping the dropdown in a Chrome compositing layer. */
+            backdrop-filter:blur(3px);
+            -webkit-backdrop-filter:blur(3px);
             box-shadow:var(--mrl-rd-shadow);
         }
 
