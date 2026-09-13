@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-13 07:48:39",
+    "updated_at": "2026-09-11 04:21:38",
     "custom_html_block": {
         "enabled": false,
         "position": "below",
@@ -230,12 +230,6 @@
             {
                 "label": "Submitted Teams for Current Segment",
                 "url": "/submitted_teams.php",
-                "enabled": true,
-                "new_tab": true
-            },
-            {
-                "label": "Logout",
-                "url": "/logout.php",
                 "enabled": true,
                 "new_tab": true
             }

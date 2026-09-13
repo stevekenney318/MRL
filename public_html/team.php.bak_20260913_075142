@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v048
- * LAST MODIFIED: 9/13/2026 7:47:48 am
+ * VERSION: v047
+ * LAST MODIFIED: 9/13/2026 7:36:42 am
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,11 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v048 (9/13/2026 7:47:48 am)
- * - FIX: Account dropdown now portals to document body while open, escaping sticky/backdrop-filter stacking contexts.
- * - UI: Dropdown remains anchored directly below the account button and follows scroll/resize while open.
- * - PRESERVE: Menu contents, layout, themes, picks, scoring, scheduler, and DB behavior unchanged.
  *
  * v047 (9/13/2026 7:36:42 am)
  * - FIX: Team-page account dropdown now stays above Admin Menu and other page content.
@@ -1351,12 +1346,6 @@ function teampage_render_announcement_text(string $text): void
         }
 
         .mrl-rd-user.open .mrl-rd-user-menu{display:block}
-        .mrl-rd-user-menu.mrl-rd-user-menu-portal{
-            display:block!important;
-            position:fixed!important;
-            z-index:2147483000!important;
-            margin:0!important;
-        }
 
         .mrl-rd-user-menu a{
             display:block;
@@ -1994,67 +1983,18 @@ function teampage_render_announcement_text(string $text): void
 
     var user = document.getElementById('mrl-rd-user');
     var button = document.getElementById('mrl-rd-user-button');
-    var menu = document.getElementById('mrl-rd-user-menu');
-    var menuPlaceholder = null;
 
-    if (user && button && menu) {
-        function positionUserMenuPortal() {
-            if (!menu.classList.contains('mrl-rd-user-menu-portal')) return;
-
-            var rect = button.getBoundingClientRect();
-            menu.style.left = Math.round(rect.left) + 'px';
-            menu.style.top = Math.round(rect.bottom + 7) + 'px';
-        }
-
-        function openUserMenu() {
-            if (menu.classList.contains('mrl-rd-user-menu-portal')) return;
-
-            menuPlaceholder = document.createComment('mrl-user-menu-placeholder');
-            menu.parentNode.insertBefore(menuPlaceholder, menu);
-            document.body.appendChild(menu);
-
-            user.classList.add('open');
-            menu.classList.add('mrl-rd-user-menu-portal');
-            positionUserMenuPortal();
-
-            button.setAttribute('aria-expanded', 'true');
-        }
-
-        function closeUserMenu() {
-            user.classList.remove('open');
-            menu.classList.remove('mrl-rd-user-menu-portal');
-            menu.style.left = '';
-            menu.style.top = '';
-
-            if (menuPlaceholder && menuPlaceholder.parentNode) {
-                menuPlaceholder.parentNode.insertBefore(menu, menuPlaceholder);
-                menuPlaceholder.parentNode.removeChild(menuPlaceholder);
-            }
-
-            menuPlaceholder = null;
-            button.setAttribute('aria-expanded', 'false');
-        }
-
+    if (user && button) {
         button.addEventListener('click', function (event) {
             event.stopPropagation();
-
-            if (menu.classList.contains('mrl-rd-user-menu-portal')) {
-                closeUserMenu();
-            } else {
-                openUserMenu();
-            }
-        });
-
-        menu.addEventListener('click', function (event) {
-            event.stopPropagation();
+            var open = user.classList.toggle('open');
+            button.setAttribute('aria-expanded', open ? 'true' : 'false');
         });
 
         document.addEventListener('click', function () {
-            closeUserMenu();
+            user.classList.remove('open');
+            button.setAttribute('aria-expanded', 'false');
         });
-
-        window.addEventListener('resize', positionUserMenuPortal);
-        window.addEventListener('scroll', positionUserMenuPortal, true);
     }
 
     function rememberDetails(id, storageKey) {
