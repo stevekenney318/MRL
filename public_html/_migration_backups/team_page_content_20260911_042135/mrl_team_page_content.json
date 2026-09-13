@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-11 04:21:38",
+    "updated_at": "2026-09-10 15:36:04",
     "custom_html_block": {
         "enabled": false,
         "position": "below",
@@ -14,18 +14,6 @@
     "admin_league_panel": {
         "title": "League & Team",
         "items": [
-            {
-                "label": "\ud83d\udccbAuto Scoring / Weekly Standings  - Beta",
-                "url": "/race_results/weekly_standings.php",
-                "enabled": true,
-                "new_tab": true
-            },
-            {
-                "label": "\ud83d\udcbeDB & Files backup utility",
-                "url": "/admin_backup.php",
-                "enabled": true,
-                "new_tab": true
-            },
             {
                 "label": "\ud83d\udc40\ud83d\udc40Check Status - At a Glance \ud83d\udc40\ud83d\udc40",
                 "url": "https://manliusracingleague.com/aag.html",
@@ -47,6 +35,18 @@
             {
                 "label": "\ud83c\udfc1\ud83c\udfc1Race Results Menu",
                 "url": "https://manliusracingleague.com/race_results/race_results_menu.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "\ud83d\udccbAuto Scoring / Weekly Standings  - Beta",
+                "url": "/race_results/weekly_standings.php",
+                "enabled": true,
+                "new_tab": true
+            },
+            {
+                "label": "\ud83d\udcbeDB & Files backup utility",
+                "url": "/admin_backup.php",
                 "enabled": true,
                 "new_tab": true
             },
