@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v047
- * LAST MODIFIED: 9/13/2026 7:36:42 am
+ * VERSION: v046
+ * LAST MODIFIED: 8/31/2026 4:39:31 pm
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,11 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v047 (9/13/2026 7:36:42 am)
- * - FIX: Team-page account dropdown now stays above Admin Menu and other page content.
- * - UI: Raises sticky masthead stacking layer and adds explicit user/dropdown z-index values.
- * - PRESERVE: Layout, menu position/content, themes, JavaScript, picks, scoring, scheduler, and DB behavior unchanged.
  *
  * v046 (8/31/2026 4:39:31 pm)
  * - FIX: Smart Pick Review baseline now refreshes immediately after a confirmed quiet submission.
@@ -1293,7 +1288,7 @@ function teampage_render_announcement_text(string $text): void
         .mrl-rd-sticky{
             position:sticky;
             top:8px;
-            z-index:5000;
+            z-index:1000;
             margin-top:8px!important;
             margin-bottom:14px!important;
             border:1px solid rgba(67,142,94,.72);
@@ -1313,7 +1308,7 @@ function teampage_render_announcement_text(string $text): void
             padding:8px 14px;
         }
 
-        .mrl-rd-user{position:relative;justify-self:start;z-index:5001}
+        .mrl-rd-user{position:relative;justify-self:start}
 
         .mrl-rd-user-button{
             appearance:none;
@@ -1334,7 +1329,6 @@ function teampage_render_announcement_text(string $text): void
         .mrl-rd-user-menu{
             display:none;
             position:absolute;
-            z-index:5002;
             top:calc(100% + 7px);
             left:0;
             min-width:190px;
