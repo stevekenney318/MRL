@@ -28,15 +28,10 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v069
+ * VERSION: v068
  * LAST MODIFIED: 8/29/2026 10:30:38 am
  *
  * CHANGELOG:
- *
- * v069 (9/13/2026 6:34:43 am ET)
- *   - CHANGE: Weekly Standings compact race labels now use the shared canonical race_schedule_helper rule.
- *   - PRESERVE: Existing compact naming including COTA, Indianapolis RC, Charlotte RC, World Wide Tech, and normal track labels.
- *   - PRESERVE: Scoring, snapshots, validation, audit, release history, navigation, print, spreadsheet, and UI behavior are unchanged.
  *
  * v068 (8/29/2026 10:30:38 am)
  *   - FIX: Removed v055 yearly-roster filler from live standings calculations so user_teams records with no actual participation are not manufactured as 0-point standings rows.
@@ -271,7 +266,6 @@ if ($isTestSite) {
 require_once __DIR__ . '/race_results_team_helper.php';
 require_once __DIR__ . '/race_results_snapshot_helper.php';
 require_once __DIR__ . '/race_results_engine.php';
-require_once __DIR__ . '/race_schedule_helper.php';
 require_once __DIR__ . '/weekly_standings_release_history_helper.php';
 
 function rrsg_h($val): string
@@ -1513,7 +1507,46 @@ function rrsg_sort_races_ascending(array $races): array
 
 function rrsg_short_race_label(string $raceName): string
 {
-    return mrl_schedule_helper_short_race_name($raceName);
+    $slug = rr_sanitize_for_folder($raceName);
+
+    $map = [
+        'EchoPark_Automotive_Grand_Prix' => 'COTA',
+        'NASCAR_Cup_Series_at_Circuit_of_the_Americas' => 'COTA',
+        'NASCAR_CUP_SERIES_AT_CIRCUIT_OF_THE_AMERICAS' => 'COTA',
+
+        'World_Wide_Technology_Raceway' => 'World Wide Tech',
+        'NASCAR_Cup_Series_at_World_Wide_Technology_Raceway' => 'World Wide Tech',
+        'NASCAR_CUP_SERIES_AT_WORLD_WIDE_TECHNOLOGY_RACEWAY' => 'World Wide Tech',
+
+        'Indianapolis_Road_Course' => 'Indianapolis RC',
+        'NASCAR_Cup_Series_at_Indianapolis_Road_Course' => 'Indianapolis RC',
+        'NASCAR_CUP_SERIES_AT_INDIANAPOLIS_ROAD_COURSE' => 'Indianapolis RC',
+
+        'Charlotte_Road_Course' => 'Charlotte RC',
+        'NASCAR_Cup_Series_at_Charlotte_Road_Course' => 'Charlotte RC',
+        'NASCAR_CUP_SERIES_AT_CHARLOTTE_ROAD_COURSE' => 'Charlotte RC',
+    ];
+
+    if (isset($map[$slug])) {
+        return $map[$slug];
+    }
+
+    $slug = preg_replace('/^MONSTER_ENERGY_NASCAR_CUP_SERIES_AT_/i', '', $slug);
+    $slug = preg_replace('/^NASCAR_CUP_SERIES_AT_/i', '', $slug);
+    $slug = preg_replace('/^NASCAR_Cup_Series_at_/i', '', $slug);
+
+    $slug = str_replace('World_Wide_Technology_Raceway', 'World Wide Tech', $slug);
+    $slug = str_replace('Indianapolis_Road_Course', 'Indianapolis_RC', $slug);
+    $slug = str_replace('Charlotte_Road_Course', 'Charlotte_RC', $slug);
+    $slug = str_replace('Road_Course', 'RC', $slug);
+
+    $slug = trim((string)$slug, '_');
+
+    if ($slug === '') {
+        $slug = 'Race';
+    }
+
+    return str_replace('_', ' ', $slug);
 }
 
 function rrsg_add_validation(array &$validation, string $level, string $message): void

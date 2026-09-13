@@ -4,16 +4,10 @@ declare(strict_types=1);
 /**
  * race_results_monitor.php
  *
- * VERSION: v141
+ * VERSION: v140
  * LAST MODIFIED: 8/22/2026 7:26:00 pm
  *
  * CHANGELOG:
- *
- * v141 (9/13/2026 6:34:43 am ET)
- *   - FIX: Schedule refresh now writes canonical compact mrl_race_name values on every run instead of allowing ESPN short-name changes to overwrite MRL display names.
- *   - CHANGE: Race status and subject labels use the shared race_schedule_helper compact-name rule.
- *   - FIX: 2026 R28 World remains World Wide Tech after scheduled monitor refreshes.
- *   - PRESERVE: Full ESPN race_name, race identity, snapshots, scoring, notifications, scheduler ownership, and RD behavior.
  *
  * v140 (9/9/2026 4:08:09 am ET)
  *   - FIX: Central race short-label normalization now resolves World / World Wide Technology variants as World Wide Tech.
@@ -154,7 +148,6 @@ $__rr_preflight_line = $__rr_preflight_now
 );
 
 require_once __DIR__ . '/race_results_engine.php';
-require_once __DIR__ . '/race_schedule_helper.php';
 require_once __DIR__ . '/race_results_snapshot_helper.php';
 require_once __DIR__ . '/race_results_snapshot_views_helper.php';
 require_once __DIR__ . '/race_results_team_helper.php';
@@ -357,7 +350,44 @@ function rr_monitor_public_host(string $docRoot, string $scriptDir): string
 
 function rr_monitor_short_race_label(string $raceName): string
 {
-    return mrl_schedule_helper_short_race_name($raceName);
+    $slug = rr_sanitize_for_folder($raceName);
+
+    /*
+     * ESPN / schedule naming normalization:
+     * the 2026 World Wide Technology event can surface as either the full
+     * facility name or the already-truncated "World". Keep the public MRL
+     * short label stable at "World Wide Tech".
+     */
+    if (
+        strcasecmp($slug, 'World') === 0
+        || stripos($slug, 'World_Wide_Technology') !== false
+        || stripos($slug, 'World_Wide_Tech') !== false
+    ) {
+        return 'World Wide Tech';
+    }
+
+    $map = [
+        'Daytona_500' => 'Daytona',
+        'EchoPark_Automotive_Grand_Prix' => 'COTA',
+        'NASCAR_Cup_Series_at_Circuit_of_the_Americas' => 'COTA',
+        'NASCAR_Cup_Series_at_Atlanta' => 'Atlanta',
+        'NASCAR_Cup_Series_at_Phoenix' => 'Phoenix',
+    ];
+
+    if (isset($map[$slug])) {
+        return $map[$slug];
+    }
+
+    $slug = preg_replace('/^NASCAR_Cup_Series_at_/', '', $slug);
+    $slug = preg_replace('/^NASCAR_Cup_Series_/', '', $slug);
+    $slug = preg_replace('/^AT_/', '', $slug);
+    $slug = trim((string)$slug, '_');
+
+    if ($slug === '') {
+        $slug = 'Race';
+    }
+
+    return $slug;
 }
 
 function rr_monitor_subject_token(int $year, string $raceFolderName, string $raceName): string
@@ -1208,15 +1238,13 @@ function rr_monitor_extract_live_race_status(string $html, int $year, string $ra
 
 function rr_monitor_short_schedule_name(array $race): string
 {
-    $name = trim((string)($race['mrl_race_name'] ?? ''));
-    if ($name === '') {
-        $name = trim((string)($race['short_name'] ?? ''));
-    }
+    $name = trim((string)($race['short_name'] ?? ''));
     if ($name === '') {
         $name = trim((string)($race['race_name'] ?? ''));
     }
-
-    return mrl_schedule_helper_short_race_name($name);
+    $name = preg_replace('/^NASCAR Cup Series at\s+/i', '', (string)$name);
+    $name = trim((string)$name);
+    return $name !== '' ? $name : 'Race';
 }
 
 function rr_monitor_format_schedule_start(array $race): string
@@ -1323,25 +1351,6 @@ function rr_monitor_fetch_and_store_schedule(int $year, int $timeoutSeconds, str
             $debug['mrl_identity_source'] = 'year_index';
         }
     }
-
-    // v141: Persist the canonical compact MRL label into every generated
-    // schedule row. Full ESPN race_name remains unchanged.
-    if ($ok) {
-        foreach ($races as &$raceRow) {
-            if (!is_array($raceRow)) {
-                continue;
-            }
-
-            $sourceName = trim((string)($raceRow['race_name'] ?? ''));
-            if ($sourceName === '') {
-                $sourceName = trim((string)($raceRow['short_name'] ?? ''));
-            }
-
-            $raceRow['mrl_race_name'] = mrl_schedule_helper_short_race_name($sourceName);
-        }
-        unset($raceRow);
-    }
-
     $mrlPointsRaces = ($ok && function_exists('rr_filter_mrl_schedule_points_races')) ? rr_filter_mrl_schedule_points_races($races) : [];
     $nextRace = $ok ? rr_find_next_scheduled_race($mrlPointsRaces, time()) : [];
 

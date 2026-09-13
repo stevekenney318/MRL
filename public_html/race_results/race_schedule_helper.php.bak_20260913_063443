@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * race_schedule_helper.php
  *
- * VERSION: v004
+ * VERSION: v003
  * LAST MODIFIED: 8/18/2026 4:13:00 am
  *
  * DESCRIPTION:
@@ -16,12 +16,6 @@ declare(strict_types=1);
  * Segment boundaries remain DB-driven from segment_race_ranges.
  *
  * CHANGELOG:
- *
- * v004 (9/13/2026 6:34:43 am ET)
- * - NEW: Central canonical compact MRL race-name helper shared by Weekly Standings, Race Monitor status, Team Chart schedule consumers, and generated schedule data.
- * - PRESERVE: Existing compact names including COTA, Indianapolis RC, Charlotte RC, and World Wide Tech.
- * - FIX: ESPN's truncated 2026 R28 value World now normalizes durably to World Wide Tech.
- * - PRESERVE: Full ESPN race_name data remains unchanged.
  *
  * v003 (8/18/2026 4:13:00 am)
  * - CHANGE: Replaced legacy /race_results/{year}/_schedule.json dependency with
@@ -111,80 +105,6 @@ if (!function_exists('mrl_schedule_helper_race_number')) {
     }
 }
 
-if (!function_exists('mrl_schedule_helper_short_race_name')) {
-    /**
-     * Canonical compact MRL race label.
-     *
-     * Origin: Weekly Standings compact-label rules.
-     * Full ESPN race_name values remain untouched; this helper is only for
-     * compact MRL labels used in controls/status/footnotes/generated schedule data.
-     */
-    function mrl_schedule_helper_short_race_name(string $raceName): string
-    {
-        $name = html_entity_decode(trim($raceName), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $name = str_replace(['/', '\\', ':', '|'], ' ', $name);
-        $name = preg_replace('/[^A-Za-z0-9 _-]+/', '', $name);
-        $name = preg_replace('/\s+/', ' ', (string)$name);
-        $name = trim((string)$name);
-
-        $slug = str_replace([' ', '-'], '_', $name);
-        $slug = preg_replace('/_+/', '_', (string)$slug);
-        $slug = trim((string)$slug, '_');
-
-        $map = [
-            'EchoPark_Automotive_Grand_Prix' => 'COTA',
-            'NASCAR_Cup_Series_at_Circuit_of_the_Americas' => 'COTA',
-            'NASCAR_CUP_SERIES_AT_CIRCUIT_OF_THE_AMERICAS' => 'COTA',
-
-            'World_Wide_Technology_Raceway' => 'World Wide Tech',
-            'NASCAR_Cup_Series_at_World_Wide_Technology_Raceway' => 'World Wide Tech',
-            'NASCAR_CUP_SERIES_AT_WORLD_WIDE_TECHNOLOGY_RACEWAY' => 'World Wide Tech',
-            'World_Wide_Technology' => 'World Wide Tech',
-            'World_Wide_Tech' => 'World Wide Tech',
-            'World' => 'World Wide Tech',
-            'NASCAR_Cup_Series_at_World' => 'World Wide Tech',
-            'NASCAR_CUP_SERIES_AT_WORLD' => 'World Wide Tech',
-
-            'Indianapolis_Road_Course' => 'Indianapolis RC',
-            'NASCAR_Cup_Series_at_Indianapolis_Road_Course' => 'Indianapolis RC',
-            'NASCAR_CUP_SERIES_AT_INDIANAPOLIS_ROAD_COURSE' => 'Indianapolis RC',
-
-            'Charlotte_Road_Course' => 'Charlotte RC',
-            'NASCAR_Cup_Series_at_Charlotte_Road_Course' => 'Charlotte RC',
-            'NASCAR_CUP_SERIES_AT_CHARLOTTE_ROAD_COURSE' => 'Charlotte RC',
-        ];
-
-        if (isset($map[$slug])) {
-            return $map[$slug];
-        }
-
-        $slug = preg_replace('/^MONSTER_ENERGY_NASCAR_CUP_SERIES_AT_/i', '', (string)$slug);
-        $slug = preg_replace('/^NASCAR_CUP_SERIES_AT_/i', '', (string)$slug);
-        $slug = preg_replace('/^NASCAR_Cup_Series_at_/i', '', (string)$slug);
-        $slug = preg_replace('/^NASCAR_CUP_SERIES_/i', '', (string)$slug);
-        $slug = preg_replace('/^NASCAR_Cup_Series_/i', '', (string)$slug);
-        $slug = preg_replace('/^AT_/i', '', (string)$slug);
-
-        if (
-            strcasecmp((string)$slug, 'World') === 0
-            || stripos((string)$slug, 'World_Wide_Technology') !== false
-            || stripos((string)$slug, 'World_Wide_Tech') !== false
-        ) {
-            return 'World Wide Tech';
-        }
-
-        $slug = str_replace('Indianapolis_Road_Course', 'Indianapolis_RC', (string)$slug);
-        $slug = str_replace('Charlotte_Road_Course', 'Charlotte_RC', (string)$slug);
-        $slug = str_replace('Road_Course', 'RC', (string)$slug);
-        $slug = trim((string)$slug, '_');
-
-        if ($slug === '') {
-            return 'Race';
-        }
-
-        return str_replace('_', ' ', (string)$slug);
-    }
-}
 if (!function_exists('mrl_schedule_helper_race_datetime')) {
     function mrl_schedule_helper_race_datetime(array $race): DateTimeImmutable
     {
