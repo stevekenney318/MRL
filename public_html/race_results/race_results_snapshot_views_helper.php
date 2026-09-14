@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * race_results_snapshot_views_helper.php
  *
- * VERSION: v001
- * LAST MODIFIED: 7/19/2026 1:35:18 pm
+ * VERSION: v002
+ * LAST MODIFIED: 9/13/2026 4:36:46 pm ET
  *
  * PURPOSE:
  * - Generate the complete companion family for one accepted canonical snapshot:
@@ -16,6 +16,12 @@ declare(strict_types=1);
  * - PHP 7.3 compatible.
  *
  * CHANGELOG:
+ * v002 (9/13/2026 4:36:46 pm ET)
+ *   - FIX: _mrl_segment driver pools now use race-effective competitive picks for the specific R## being generated.
+ *   - FIX: userID 0 / 999, MRL test team, and username MRL are excluded from the segment-driver source rows.
+ *   - FIX: LP / RD drivers enter the pool only when effective_race <= the generated race number; before that, the applicable baseline SEG / ADJ row remains authoritative.
+ *   - PRESERVE: Canonical ESPN snapshots, _lite / _mrl behavior, original NASCAR positions, filenames, and canonical file timestamps remain unchanged.
+ *
  * v001 (7/19/2026 1:35:18 pm)
  *   - NEW: Shared canonical -> _lite -> _mrl -> _mrl_segment generation.
  *   - NEW: _mrl uses all A/B/C/D drivers listed for the selected year.
@@ -262,47 +268,172 @@ function rrsv_query_year_drivers(string $year, $dbo, $dbconnect): array
     return $names;
 }
 
-function rrsv_query_segment_drivers(string $year, string $segment, $dbo, $dbconnect): array
+function rrsv_segment_driver_names_from_pick_rows(array $rows, int $raceNumber): array
 {
+    $teams = [];
+
+    foreach ($rows as $row) {
+        if (!is_array($row)) continue;
+
+        $userId = (int)($row['userID'] ?? 0);
+        $teamName = trim((string)($row['teamName'] ?? ''));
+        $userName = trim((string)($row['userName'] ?? ''));
+
+        if ($userId === 0 || $userId === 999) continue;
+        if (strcasecmp($teamName, 'MRL test team') === 0) continue;
+        if (strcasecmp($userName, 'MRL') === 0) continue;
+
+        $teamKey = (string)$userId;
+        if (!isset($teams[$teamKey])) {
+            $teams[$teamKey] = [
+                'base' => null,
+                'special' => null,
+            ];
+        }
+
+        $pickType = strtoupper(trim((string)($row['pick_type'] ?? 'SEG')));
+
+        if ($pickType === 'SEG' || $pickType === 'ADJ') {
+            // Match the current shared baseline-pick loader: first baseline row wins.
+            if ($teams[$teamKey]['base'] === null) {
+                $teams[$teamKey]['base'] = $row;
+            }
+            continue;
+        }
+
+        if ($pickType !== 'LP' && $pickType !== 'RD') {
+            continue;
+        }
+
+        $effectiveRace = (int)($row['effective_race'] ?? 0);
+        if ($effectiveRace <= 0 || $effectiveRace > $raceNumber) {
+            continue;
+        }
+
+        $current = $teams[$teamKey]['special'];
+        if ($current === null) {
+            $teams[$teamKey]['special'] = $row;
+            continue;
+        }
+
+        $currentRace = (int)($current['effective_race'] ?? 0);
+        $currentDate = strtotime((string)($current['entryDate'] ?? '')) ?: 0;
+        $rowDate = strtotime((string)($row['entryDate'] ?? '')) ?: 0;
+        $currentPickId = (int)($current['pickID'] ?? 0);
+        $rowPickId = (int)($row['pickID'] ?? 0);
+
+        if (
+            $effectiveRace > $currentRace
+            || ($effectiveRace === $currentRace && $rowDate > $currentDate)
+            || ($effectiveRace === $currentRace && $rowDate === $currentDate && $rowPickId > $currentPickId)
+        ) {
+            $teams[$teamKey]['special'] = $row;
+        }
+    }
+
     $names = [];
 
-    if ($dbo instanceof PDO) {
-        $stmt = $dbo->prepare(
-            'SELECT driverA, driverB, driverC, driverD FROM user_picks '
-            . 'WHERE raceYear = :year AND segment = :segment'
-        );
-        $stmt->execute([':year' => $year, ':segment' => $segment]);
+    foreach ($teams as $team) {
+        $effectiveRow = is_array($team['special'] ?? null)
+            ? $team['special']
+            : (is_array($team['base'] ?? null) ? $team['base'] : null);
 
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            foreach (['driverA', 'driverB', 'driverC', 'driverD'] as $field) {
-                $name = trim((string)($row[$field] ?? ''));
-                if ($name !== '') $names[rrsv_name_key($name)] = $name;
+        if ($effectiveRow === null) continue;
+
+        foreach (['driverA', 'driverB', 'driverC', 'driverD'] as $field) {
+            $name = trim((string)($effectiveRow[$field] ?? ''));
+            if ($name !== '') {
+                $names[rrsv_name_key($name)] = $name;
             }
         }
-        return $names;
+    }
+
+    return $names;
+}
+
+function rrsv_query_segment_drivers(string $year, string $segment, int $raceNumber, $dbo, $dbconnect): array
+{
+    $rows = [];
+
+    $pdoSql = "
+        SELECT
+            up.pickID,
+            up.userID,
+            up.teamName,
+            COALESCE(u.userName, '') AS userName,
+            up.driverA,
+            up.driverB,
+            up.driverC,
+            up.driverD,
+            up.entryDate,
+            up.pick_type,
+            up.effective_race
+        FROM user_picks up
+        LEFT JOIN users u ON u.userID = up.userID
+        WHERE up.raceYear = :year
+          AND up.segment = :segment
+          AND up.pick_type IN ('SEG', 'ADJ', 'LP', 'RD')
+          AND up.userID NOT IN (0, 999)
+          AND LOWER(TRIM(COALESCE(up.teamName, ''))) <> 'mrl test team'
+          AND COALESCE(u.userName, '') <> 'MRL'
+        ORDER BY up.userID ASC, up.entryDate ASC, up.pickID ASC
+    ";
+
+    if ($dbo instanceof PDO) {
+        $stmt = $dbo->prepare($pdoSql);
+        $stmt->execute([
+            ':year' => $year,
+            ':segment' => $segment,
+        ]);
+
+        $fetched = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (is_array($fetched)) {
+            $rows = $fetched;
+        }
+
+        return rrsv_segment_driver_names_from_pick_rows($rows, $raceNumber);
     }
 
     if ($dbconnect instanceof mysqli) {
-        $stmt = mysqli_prepare(
-            $dbconnect,
-            'SELECT driverA, driverB, driverC, driverD FROM user_picks WHERE raceYear = ? AND segment = ?'
-        );
+        $mysqliSql = "
+            SELECT
+                up.pickID,
+                up.userID,
+                up.teamName,
+                COALESCE(u.userName, '') AS userName,
+                up.driverA,
+                up.driverB,
+                up.driverC,
+                up.driverD,
+                up.entryDate,
+                up.pick_type,
+                up.effective_race
+            FROM user_picks up
+            LEFT JOIN users u ON u.userID = up.userID
+            WHERE up.raceYear = ?
+              AND up.segment = ?
+              AND up.pick_type IN ('SEG', 'ADJ', 'LP', 'RD')
+              AND up.userID NOT IN (0, 999)
+              AND LOWER(TRIM(COALESCE(up.teamName, ''))) <> 'mrl test team'
+              AND COALESCE(u.userName, '') <> 'MRL'
+            ORDER BY up.userID ASC, up.entryDate ASC, up.pickID ASC
+        ";
+
+        $stmt = mysqli_prepare($dbconnect, $mysqliSql);
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'ss', $year, $segment);
             mysqli_stmt_execute($stmt);
             $result = mysqli_stmt_get_result($stmt);
 
-            while ($row = mysqli_fetch_assoc($result)) {
-                foreach (['driverA', 'driverB', 'driverC', 'driverD'] as $field) {
-                    $name = trim((string)($row[$field] ?? ''));
-                    if ($name !== '') $names[rrsv_name_key($name)] = $name;
-                }
+            while ($result && ($row = mysqli_fetch_assoc($result))) {
+                $rows[] = $row;
             }
+
             mysqli_stmt_close($stmt);
         }
     }
 
-    return $names;
+    return rrsv_segment_driver_names_from_pick_rows($rows, $raceNumber);
 }
 
 function rrsv_filter_lite_html(string $liteHtml, array $allowedDrivers, string $viewLabel): array
@@ -460,7 +591,7 @@ function rrsv_generate_companion_set(
     }
 
     $yearDrivers = rrsv_query_year_drivers((string)$year, $dbo, $dbconnect);
-    $segmentDrivers = rrsv_query_segment_drivers((string)$year, $segment, $dbo, $dbconnect);
+    $segmentDrivers = rrsv_query_segment_drivers((string)$year, $segment, $raceNumber, $dbo, $dbconnect);
 
     if (empty($yearDrivers)) {
         $result['errors'][] = 'No MRL year drivers were found.';

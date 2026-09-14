@@ -28,10 +28,27 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v069
- * LAST MODIFIED: 8/29/2026 10:30:38 am
+ * VERSION: v072
+ * LAST MODIFIED: 9/13/2026 3:35:57 pm ET
  *
  * CHANGELOG:
+ *
+ * v072 (9/13/2026 8:49:41 pm ET)
+ *   - FIX: LP/RD overlay rows now preserve userID when the applicable special-pick row is constructed.
+ *   - FIX: Missing userID is no longer implicitly treated as userID 0 by the noncompetitive-test-team filter.
+ *   - FIX: Restores Over The Edge's valid LP R28 scoring while preserving R27 as No Picks / 0 points.
+ *   - PRESERVE: userID 0/999 and MRL test team remain excluded; v070/v071 competitive-roster completion remains intact.
+ *
+ * v071 (9/13/2026 3:44:52 pm ET)
+ *   - FIX: After race-effective scoring rows are built, Weekly Standings now appends any still-missing competitive-roster teams as explicit 0-point rows before totals/winners are calculated.
+ *   - FIX: This closes the R27 edge case where team loading correctly reached 18 but weekly-row generation still returned 17.
+ *   - PRESERVE: v070 competitive-roster filtering, LP/RD effective-race logic, scoring values, snapshots, release history, exports, print, and pre-2026 behavior remain unchanged.
+ *
+ * v070 (9/13/2026 3:35:57 pm ET)
+ *   - FIX: Weekly Standings now begins 2026+ race scoring from the competitive yearly roster so a legitimate team with no race-effective picks remains present as a 0-point row.
+ *   - FIX: Competitive roster authority excludes userID 0 / 999, "MRL test team", and stale user_teams rows with no actual user_picks participation in that race year.
+ *   - FIX: Roster completion occurs before weekly scoring, so expected competitive teams, teams loaded, and weekly rows generated stay aligned.
+ *   - PRESERVE: LP/RD effective-race behavior, scoring values, snapshots, release history, exports, print, and pre-2026 historical behavior are unchanged.
  *
  * v069 (9/13/2026 6:34:43 am ET)
  *   - CHANGE: Weekly Standings compact race labels now use the shared canonical race_schedule_helper rule.
@@ -1208,11 +1225,13 @@ function rrsg_build_public_audit_meta(array $selectedRaceMeta, ?array $selectedR
 
 function rrsg_is_noncompetitive_test_team(array $team): bool
 {
-    $userId = (int)($team['userID'] ?? 0);
+    $hasUserId = array_key_exists('userID', $team) && $team['userID'] !== null && $team['userID'] !== '';
+    $userId = $hasUserId ? (int)$team['userID'] : null;
     $teamName = strtolower(trim((string)($team['teamName'] ?? '')));
 
     // userID 0 is the current legacy test account; 999 is its planned positive-ID replacement.
-    if ($userId === 0 || $userId === 999) {
+    // A row with no userID field is not automatically a test row.
+    if ($hasUserId && ($userId === 0 || $userId === 999)) {
         return true;
     }
 
@@ -1279,6 +1298,15 @@ function rrsg_get_year_team_roster(string $raceYear, $dbo): array
         FROM user_teams ut
         LEFT JOIN users u ON u.userID = ut.userID
         WHERE ut.raceYear = :raceYear
+          AND ut.userID NOT IN (0, 999)
+          AND LOWER(TRIM(ut.teamName)) <> 'mrl test team'
+          AND EXISTS (
+              SELECT 1
+              FROM user_picks up_active
+              WHERE up_active.raceYear = ut.raceYear
+                AND up_active.userID = ut.userID
+                AND up_active.userID NOT IN (0, 999)
+          )
         ORDER BY ut.teamName ASC, ut.userID ASC
     ";
 
@@ -1294,7 +1322,7 @@ function rrsg_get_year_team_roster(string $raceYear, $dbo): array
 
     $roster = [];
     foreach ($rows as $row) {
-        if (!is_array($row)) {
+        if (!is_array($row) || rrsg_is_noncompetitive_test_team($row)) {
             continue;
         }
 
@@ -1312,6 +1340,54 @@ function rrsg_get_year_team_roster(string $raceYear, $dbo): array
 
     ksort($roster, SORT_NATURAL | SORT_FLAG_CASE);
     return $roster;
+}
+
+function rrsg_append_missing_competitive_team_rows(array $teamRows, array $roster): array
+{
+    if (empty($roster)) {
+        return $teamRows;
+    }
+
+    $seenTeams = [];
+    foreach ($teamRows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+
+        $teamName = strtolower(trim((string)($row['teamName'] ?? '')));
+        if ($teamName !== '') {
+            $seenTeams[$teamName] = true;
+        }
+    }
+
+    foreach ($roster as $teamName => $rosterRow) {
+        $teamKey = strtolower(trim((string)$teamName));
+        if ($teamKey === '' || isset($seenTeams[$teamKey])) {
+            continue;
+        }
+
+        $teamRows[] = [
+            'userID' => (int)($rosterRow['userID'] ?? 0),
+            'teamName' => (string)$teamName,
+            'userName' => (string)($rosterRow['userName'] ?? ''),
+            'driverA' => '',
+            'driverB' => '',
+            'driverC' => '',
+            'driverD' => '',
+            'pick_type' => 'MISS',
+            'effective_race' => 0,
+            'original_driverA' => '',
+            'original_driverB' => '',
+            'original_driverC' => '',
+            'original_driverD' => '',
+        ];
+    }
+
+    usort($teamRows, function ($a, $b) {
+        return strcasecmp((string)($a['teamName'] ?? ''), (string)($b['teamName'] ?? ''));
+    });
+
+    return $teamRows;
 }
 
 function rrsg_append_missing_roster_rows(array $weeklyRows, array $roster): array
@@ -1598,6 +1674,9 @@ function rrsg_segment_breakdown_rows(
 ): array {
     $rows = [];
     $racesAscending = $pointRaces;
+    $competitiveRoster = ((int)$selectedYear >= 2026)
+        ? rrsg_get_year_team_roster($selectedYear, $dbo ?? null)
+        : [];
 
     usort($racesAscending, function ($a, $b) {
         return ((int)$a['number']) <=> ((int)$b['number']);
@@ -1617,6 +1696,7 @@ function rrsg_segment_breakdown_rows(
         $raceTeamRowsBase = rr_get_segment_team_picks($dbo ?? null, $dbconnect ?? null, $selectedYear, $scoreSegment);
         $raceTeamRowsSpecial = rrsg_special_pick_rows($selectedYear, $scoreSegment, $dbo ?? null);
         $raceTeamRows = rrsg_overlay_special_rows_for_race($raceTeamRowsBase, $raceTeamRowsSpecial, $raceNumber, $scoreSegment);
+        $raceTeamRows = rrsg_append_missing_competitive_team_rows($raceTeamRows, $competitiveRoster);
         $snapshotFile = rrsg_find_snapshot_file((string)$race['raceFolder']);
         if ($snapshotFile === '') {
             continue;
@@ -1624,6 +1704,7 @@ function rrsg_segment_breakdown_rows(
 
         $driverPoints = rrs_load_snapshot_driver_points($snapshotFile);
         $weeklyRows = rrsg_build_weekly_rows($raceTeamRows, $driverPoints);
+        $weeklyRows = rrsg_append_missing_roster_rows($weeklyRows, $competitiveRoster);
 
         $rows[] = [
             'raceCode' => (string)$race['raceCode'],
@@ -1769,6 +1850,7 @@ function rrsg_overlay_special_rows_for_race(array $baseTeamRows, array $specialR
 
         if ($applicable !== null) {
             $rowsByTeam[$teamName] = [
+                'userID' => (int)($applicable['userID'] ?? ($rowsByTeam[$teamName]['userID'] ?? 0)),
                 'teamName' => $teamName,
                 'userName' => (string)($applicable['userName'] ?? ($rowsByTeam[$teamName]['userName'] ?? '')),
                 'driverA' => (string)($applicable['driverA'] ?? ''),
@@ -1800,6 +1882,7 @@ function rrsg_overlay_special_rows_for_race(array $baseTeamRows, array $specialR
              */
             if ($existingBaseRow === null || $existingBasePickType === 'LP') {
                 $rowsByTeam[$teamName] = [
+                    'userID' => (int)($firstSpecial['userID'] ?? ($rowsByTeam[$teamName]['userID'] ?? 0)),
                     'teamName' => $teamName,
                     'userName' => (string)($firstSpecial['userName'] ?? ($rowsByTeam[$teamName]['userName'] ?? '')),
                     'driverA' => '',
@@ -2229,9 +2312,14 @@ if ($selectedRace !== null) {
     $selectedRaceDisplay = rrsg_revision_display_label_for_race($selectedRace, $pointRacesAsc);
 }
 
+$competitiveRoster = ((int)$scoreYear >= 2026)
+    ? rrsg_get_year_team_roster($scoreYear, $dbo ?? null)
+    : [];
+
 $teamRowsBase = rr_get_segment_team_picks($dbo ?? null, $dbconnect ?? null, $scoreYear, $scoreSegment);
 $teamRowsSpecial = rrsg_special_pick_rows($scoreYear, $scoreSegment, $dbo ?? null);
 $teamRows = rrsg_overlay_special_rows_for_race($teamRowsBase, $teamRowsSpecial, $selectedRaceNumber, $scoreSegment);
+$teamRows = rrsg_append_missing_competitive_team_rows($teamRows, $competitiveRoster);
 
 $segmentTotals = [];
 $seasonTotals = [];
@@ -2275,6 +2363,7 @@ if ($selectedRace !== null) {
         $raceTeamRowsBase = rr_get_segment_team_picks($dbo ?? null, $dbconnect ?? null, $selectedYear, $raceSegment);
         $raceTeamRowsSpecial = rrsg_special_pick_rows($selectedYear, $raceSegment, $dbo ?? null);
         $raceTeamRows = rrsg_overlay_special_rows_for_race($raceTeamRowsBase, $raceTeamRowsSpecial, $raceNumber, $raceSegment);
+        $raceTeamRows = rrsg_append_missing_competitive_team_rows($raceTeamRows, $competitiveRoster);
 
         $snapshotFile = rrsg_find_snapshot_file($raceFolder);
         if ($raceCode === $selectedRaceCode && !empty($selectedVersionRelease)) {
@@ -2294,6 +2383,7 @@ if ($selectedRace !== null) {
         if ($snapshotFile !== '') {
             $driverPoints = rrs_load_snapshot_driver_points($snapshotFile);
             $weeklyRows = rrsg_build_weekly_rows($raceTeamRows, $driverPoints);
+            $weeklyRows = rrsg_append_missing_roster_rows($weeklyRows, $competitiveRoster);
             $winner = rrsg_get_weekly_winner($weeklyRows);
 
             foreach ($weeklyRows as $row) {
@@ -2377,16 +2467,42 @@ if ($selectedRace === null) {
         rrsg_add_validation($validation, 'fail', 'Selected race snapshot not found.');
     }
 
-    if (count($teamRows) > 0) {
-        rrsg_add_validation($validation, 'pass', 'Teams loaded: ' . count($teamRows));
-    } else {
-        rrsg_add_validation($validation, 'fail', 'No teams loaded for selected segment.');
-    }
+    $expectedCompetitiveTeams = count($competitiveRoster);
 
-    if (!empty($selectedRaceWeeklyRows)) {
-        rrsg_add_validation($validation, 'pass', 'Weekly rows generated: ' . count($selectedRaceWeeklyRows));
+    if ($expectedCompetitiveTeams > 0) {
+        rrsg_add_validation($validation, 'pass', 'Expected competitive teams: ' . $expectedCompetitiveTeams);
+
+        if (count($teamRows) === $expectedCompetitiveTeams) {
+            rrsg_add_validation($validation, 'pass', 'Teams loaded: ' . count($teamRows));
+        } else {
+            rrsg_add_validation(
+                $validation,
+                'fail',
+                'Teams loaded mismatch: expected ' . $expectedCompetitiveTeams . ', got ' . count($teamRows) . '.'
+            );
+        }
+
+        if (count($selectedRaceWeeklyRows) === $expectedCompetitiveTeams) {
+            rrsg_add_validation($validation, 'pass', 'Weekly rows generated: ' . count($selectedRaceWeeklyRows));
+        } else {
+            rrsg_add_validation(
+                $validation,
+                'fail',
+                'Weekly rows mismatch: expected ' . $expectedCompetitiveTeams . ', got ' . count($selectedRaceWeeklyRows) . '.'
+            );
+        }
     } else {
-        rrsg_add_validation($validation, 'fail', 'No weekly rows generated for selected race.');
+        if (count($teamRows) > 0) {
+            rrsg_add_validation($validation, 'pass', 'Teams loaded: ' . count($teamRows));
+        } else {
+            rrsg_add_validation($validation, 'fail', 'No teams loaded for selected segment.');
+        }
+
+        if (!empty($selectedRaceWeeklyRows)) {
+            rrsg_add_validation($validation, 'pass', 'Weekly rows generated: ' . count($selectedRaceWeeklyRows));
+        } else {
+            rrsg_add_validation($validation, 'fail', 'No weekly rows generated for selected race.');
+        }
     }
 
     $duplicateTeams = [];

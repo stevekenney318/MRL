@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-13 14:57:03",
+    "updated_at": "2026-09-13 07:48:39",
     "custom_html_block": {
         "enabled": false,
         "position": "below",
@@ -113,12 +113,6 @@
             {
                 "label": "\ud83e\udd1e\u270d\ufe0f Auto Pick Reminder Dashboard",
                 "url": "/pick_reminder_dashboard.php",
-                "enabled": true,
-                "new_tab": true
-            },
-            {
-                "label": "\ud83d\udcca Scheduler - System Debug Data",
-                "url": "/race_results/race_results_dashboard.php?tab=scheduler&export=bundle&t=20260913_145451",
                 "enabled": true,
                 "new_tab": true
             }

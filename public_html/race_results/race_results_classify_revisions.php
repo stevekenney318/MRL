@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * race_results_classify_revisions.php
  *
- * VERSION: v011
+ * VERSION: v012
  * LAST MODIFIED: 7/12/2026 1:15:52 pm
  *
  * DESCRIPTION:
@@ -35,6 +35,13 @@ declare(strict_types=1);
  * - save pair-level classification history for every adjacent snapshot pair
  *
  * CHANGELOG:
+ *
+ * v012 (9/13/2026 5:09:21 pm ET)
+ * - FIX: Segment-picked revision classification now resolves the competitive driver pool for the specific race number being classified.
+ * - FIX: userID 0 / 999, MRL test team, and username MRL cannot contribute drivers to MRL-impact classification.
+ * - FIX: SEG / ADJ remains the baseline; LP / RD becomes authoritative only when effective_race <= the classified race.
+ * - FIX: Future-race LP / RD rows no longer retroactively alter an earlier race's segment-picked driver universe.
+ * - PRESERVE: Canonical snapshots, all-driver comparison, MRL-listed comparison, release history, pair history, and artifact formats remain unchanged.
  *
  * v011 (7/12/2026 1:15:52 pm)
  * - FIX: Snapshot discovery now uses canonical source snapshots only.
@@ -125,8 +132,8 @@ declare(strict_types=1);
 
 date_default_timezone_set('America/New_York');
 
-const RRCR_VERSION = 'v011';
-const RRCR_SIGNATURE = 'RACE_RESULTS_CLASSIFY_REVISIONS v011';
+const RRCR_VERSION = 'v012';
+const RRCR_SIGNATURE = 'RACE_RESULTS_CLASSIFY_REVISIONS v012';
 const RRCR_SUMMARY_FILE = '_race_results_classification_summary.json';
 const RRCR_LAST_RUN_FILE = '_race_results_classification_last_run.json';
 const RRCR_PAIR_HISTORY_FILE = '_race_results_pair_classification_history.json';
@@ -665,15 +672,30 @@ function rrcr_get_mrl_listed_driver_pool(string $raceYear, PDO $dbo): array
 }
 
 
-function rrcr_get_segment_driver_pool(string $raceYear, string $segment, PDO $dbo): array
+function rrcr_get_segment_driver_pool(string $raceYear, string $segment, int $raceNumber, PDO $dbo): array
 {
-    $drivers = [];
-
     $sql = "
-        SELECT driverA, driverB, driverC, driverD
-        FROM user_picks
-        WHERE raceYear = :raceYear
-          AND segment = :segment
+        SELECT
+            up.pickID,
+            up.userID,
+            up.teamName,
+            COALESCE(u.userName, '') AS userName,
+            up.driverA,
+            up.driverB,
+            up.driverC,
+            up.driverD,
+            up.entryDate,
+            up.pick_type,
+            up.effective_race
+        FROM user_picks up
+        LEFT JOIN users u ON u.userID = up.userID
+        WHERE up.raceYear = :raceYear
+          AND up.segment = :segment
+          AND up.pick_type IN ('SEG', 'ADJ', 'LP', 'RD')
+          AND up.userID NOT IN (0, 999)
+          AND LOWER(TRIM(COALESCE(up.teamName, ''))) <> 'mrl test team'
+          AND COALESCE(u.userName, '') <> 'MRL'
+        ORDER BY up.userID ASC, up.entryDate ASC, up.pickID ASC
     ";
 
     $stmt = $dbo->prepare($sql);
@@ -687,23 +709,85 @@ function rrcr_get_segment_driver_pool(string $raceYear, string $segment, PDO $db
         return [];
     }
 
+    $teams = [];
+
     foreach ($rows as $row) {
         if (!is_array($row)) continue;
 
+        $userId = (int)($row['userID'] ?? 0);
+        if ($userId === 0 || $userId === 999) continue;
+
+        $teamName = trim((string)($row['teamName'] ?? ''));
+        $userName = trim((string)($row['userName'] ?? ''));
+        if (strcasecmp($teamName, 'MRL test team') === 0) continue;
+        if (strcasecmp($userName, 'MRL') === 0) continue;
+
+        $teamKey = (string)$userId;
+        if (!isset($teams[$teamKey])) {
+            $teams[$teamKey] = [
+                'base' => null,
+                'special' => null,
+            ];
+        }
+
+        $pickType = strtoupper(trim((string)($row['pick_type'] ?? 'SEG')));
+
+        if ($pickType === 'SEG' || $pickType === 'ADJ') {
+            // Match the current baseline pick loader: first baseline row wins.
+            if ($teams[$teamKey]['base'] === null) {
+                $teams[$teamKey]['base'] = $row;
+            }
+            continue;
+        }
+
+        if ($pickType !== 'LP' && $pickType !== 'RD') {
+            continue;
+        }
+
+        $effectiveRace = (int)($row['effective_race'] ?? 0);
+        if ($effectiveRace <= 0 || $effectiveRace > $raceNumber) {
+            continue;
+        }
+
+        $current = $teams[$teamKey]['special'];
+        if ($current === null) {
+            $teams[$teamKey]['special'] = $row;
+            continue;
+        }
+
+        $currentRace = (int)($current['effective_race'] ?? 0);
+        $currentDate = strtotime((string)($current['entryDate'] ?? '')) ?: 0;
+        $rowDate = strtotime((string)($row['entryDate'] ?? '')) ?: 0;
+        $currentPickId = (int)($current['pickID'] ?? 0);
+        $rowPickId = (int)($row['pickID'] ?? 0);
+
+        if (
+            $effectiveRace > $currentRace
+            || ($effectiveRace === $currentRace && $rowDate > $currentDate)
+            || ($effectiveRace === $currentRace && $rowDate === $currentDate && $rowPickId > $currentPickId)
+        ) {
+            $teams[$teamKey]['special'] = $row;
+        }
+    }
+
+    $drivers = [];
+
+    foreach ($teams as $team) {
+        $effectiveRow = is_array($team['special'] ?? null)
+            ? $team['special']
+            : (is_array($team['base'] ?? null) ? $team['base'] : null);
+
+        if ($effectiveRow === null) continue;
+
         foreach (['driverA', 'driverB', 'driverC', 'driverD'] as $field) {
-            $name = rrcr_normalize_driver_name((string)($row[$field] ?? ''));
+            $name = rrcr_normalize_driver_name((string)($effectiveRow[$field] ?? ''));
             if ($name !== '') {
                 $drivers[$name] = true;
             }
         }
     }
 
-    $pool = array_keys($drivers);
-    usort($pool, function ($a, $b) {
-        return strcasecmp((string)$a, (string)$b);
-    });
-
-    return $pool;
+    return rrcr_sort_driver_pool($drivers);
 }
 
 function rrcr_extract_driver_scoring_from_snapshot(string $snapshotFile): array
@@ -1346,7 +1430,7 @@ function rrcr_classify_race_revision_pair(
         ], $revisionStatus);
     }
 
-    $driverPool = rrcr_get_segment_driver_pool((string)$raceInfo['year'], (string)$raceInfo['segment'], $dbo);
+    $driverPool = rrcr_get_segment_driver_pool((string)$raceInfo['year'], (string)$raceInfo['segment'], (int)($raceInfo['number'] ?? 0), $dbo);
     $mrlListedDriverPool = rrcr_get_mrl_listed_driver_pool((string)$raceInfo['year'], $dbo);
     $oldScores = rrcr_extract_driver_scoring_from_snapshot($previousSnapshot);
     $newScores = rrcr_extract_driver_scoring_from_snapshot($currentSnapshot);

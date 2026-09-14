@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-13 14:57:03",
+    "updated_at": "2026-09-13 14:56:30",
     "custom_html_block": {
         "enabled": false,
         "position": "below",
@@ -117,7 +117,7 @@
                 "new_tab": true
             },
             {
-                "label": "\ud83d\udcca Scheduler - System Debug Data",
+                "label": "\ud83d\udccaScheduler - System Debug Data",
                 "url": "/race_results/race_results_dashboard.php?tab=scheduler&export=bundle&t=20260913_145451",
                 "enabled": true,
                 "new_tab": true
