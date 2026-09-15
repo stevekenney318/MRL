@@ -4,10 +4,15 @@ declare(strict_types=1);
 /**
  * race_results_monitor.php
  *
- * VERSION: v141
+ * VERSION: v142
  * LAST MODIFIED: 8/22/2026 7:26:00 pm
  *
  * CHANGELOG:
+ *
+ * v142 (9/15/2026 12:24:13 pm ET)
+ *   - MAINTENANCE: Updated RR_MONITOR_SIGNATURE from stale v138 to v142.
+ *   - CHANGE: Heartbeat/log diagnostic signature now matches the active file version.
+ *   - PRESERVE: Race monitoring, schedule refresh, snapshots, scoring, notifications, scheduler ownership, and RD behavior are unchanged.
  *
  * v141 (9/13/2026 6:34:43 am ET)
  *   - FIX: Schedule refresh now writes canonical compact mrl_race_name values on every run instead of allowing ESPN short-name changes to overwrite MRL display names.
@@ -111,7 +116,7 @@ ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/_race_results_monitor_php_errors.log');
 error_reporting(E_ALL);
 
-const RR_MONITOR_SIGNATURE = 'RACE_RESULTS_MONITOR v138';
+const RR_MONITOR_SIGNATURE = 'RACE_RESULTS_MONITOR v142';
 
 // ------------------------- PREFLIGHT HEARTBEAT -------------------------
 // This intentionally happens before helper includes and USER initialization.

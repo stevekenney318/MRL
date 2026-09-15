@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v050
- * LAST MODIFIED: 9/13/2026 8:22:22 am
+ * VERSION: v051
+ * LAST MODIFIED: 9/15/2026 1:01:16 pm ET
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,6 +13,13 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
+ *
+ * v051 (9/15/2026 1:01:16 pm ET)
+ * - CLEANUP: Restores the intended pre-investigation v046 masthead stacking/backdrop CSS after the dropdown issue was traced to Stylus.
+ * - UI: Admin Menu and Previous Years Picks now use blue Hide / Unhide state pills instead of +/- indicators.
+ * - UI: Manage Team Page Content is now a matching green action pill.
+ * - UI: Footer now matches the WordPress footer wording/layout with the older-pages notice above the centered copyright line.
+ * - PRESERVE: Existing details/localStorage behavior plus picks, LP, RD, scoring, quiet submit, Smart Pick Review, scheduler, themes, and DB behavior.
  *
  * v050 (9/13/2026 8:22:22 am)
  * - TEST/FIX: Removes backdrop-filter from the sticky masthead, the common parent of the account dropdown.
@@ -1308,13 +1315,14 @@ function teampage_render_announcement_text(string $text): void
         .mrl-rd-sticky{
             position:sticky;
             top:8px;
-            z-index:5000;
+            z-index:1000;
             margin-top:8px!important;
             margin-bottom:14px!important;
             border:1px solid rgba(67,142,94,.72);
             border-radius:14px;
             background:linear-gradient(180deg,rgba(18,58,40,.78),rgba(20,35,29,.74));
-            /* v050: backdrop filtering removed here to avoid trapping the dropdown in a Chrome compositing layer. */
+            backdrop-filter:blur(3px);
+            -webkit-backdrop-filter:blur(3px);
             box-shadow:var(--mrl-rd-shadow);
         }
 
@@ -1327,7 +1335,7 @@ function teampage_render_announcement_text(string $text): void
             padding:8px 14px;
         }
 
-        .mrl-rd-user{position:relative;justify-self:start;z-index:5001}
+        .mrl-rd-user{position:relative;justify-self:start}
 
         .mrl-rd-user-button{
             appearance:none;
@@ -1348,7 +1356,6 @@ function teampage_render_announcement_text(string $text): void
         .mrl-rd-user-menu{
             display:none;
             position:absolute;
-            z-index:5002;
             top:calc(100% + 7px);
             left:0;
             min-width:190px;
@@ -1486,22 +1493,53 @@ function teampage_render_announcement_text(string $text): void
         }
 
         .mrl-rd-admin-wrap>summary::-webkit-details-marker{display:none}
-        .mrl-rd-admin-wrap>summary::before{content:"+ ";font-weight:500}
-        .mrl-rd-admin-wrap[open]>summary::before{content:"− "}
+        .mrl-rd-admin-wrap>summary::after{
+            content:"Unhide";
+            display:inline-block;
+            margin-left:10px;
+            padding:3px 11px 4px;
+            border:2px solid #75adf5;
+            border-radius:999px;
+            background:#e8f2ff;
+            color:#0d4f97;
+            font:700 14px/1.15 Tahoma,Verdana,Segoe UI,sans-serif;
+            vertical-align:2px;
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.38);
+        }
+        .mrl-rd-admin-wrap[open]>summary::after{
+            content:"Hide";
+            border-color:#9cc9ff;
+            background:#2f6fac;
+            color:#fff;
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);
+        }
         .mrl-rd-admin-wrap[open]>summary{border-bottom:1px solid rgba(255,255,255,.09)}
 
         .mrl-rd-admin-fixed-control{
             margin:12px 14px 0;
-            padding:10px 14px;
-            border:1px solid var(--mrl-rd-border);
-            border-radius:10px;
-            background:rgba(0,0,0,.16);
+            padding:0;
+            border:0;
+            background:transparent;
         }
 
         .mrl-rd-admin-fixed-control a{
-            color:var(--mrl-rd-blue)!important;
+            display:inline-block;
+            padding:5px 13px 6px;
+            border:2px solid #58a978;
+            border-radius:999px;
+            background:#dff3e7;
+            color:#17683b!important;
             text-decoration:none!important;
             font-weight:800;
+            line-height:1.15;
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
+        }
+
+        .mrl-rd-admin-fixed-control a:hover{
+            border-color:#8fd0a8;
+            background:#2f8a58;
+            color:#fff!important;
+            text-decoration:none!important;
         }
 
         .mrl-rd-admin-grid,
@@ -1650,8 +1688,26 @@ function teampage_render_announcement_text(string $text): void
         }
 
         .mrl-previous-years summary::-webkit-details-marker{display:none}
-        .mrl-previous-years summary::before{content:"+ ";font-weight:400}
-        .mrl-previous-years[open] summary::before{content:"− "}
+        .mrl-previous-years summary::after{
+            content:"Unhide";
+            display:inline-block;
+            margin-left:10px;
+            padding:3px 11px 4px;
+            border:2px solid #75adf5;
+            border-radius:999px;
+            background:#e8f2ff;
+            color:#0d4f97;
+            font:700 14px/1.15 Tahoma,Verdana,Segoe UI,sans-serif;
+            vertical-align:4px;
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.38);
+        }
+        .mrl-previous-years[open] summary::after{
+            content:"Hide";
+            border-color:#9cc9ff;
+            background:#2f6fac;
+            color:#fff;
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);
+        }
 
         .mrl-previous-years-content{
             width:100%!important;
@@ -1688,8 +1744,17 @@ function teampage_render_announcement_text(string $text): void
         html.mrl-theme-light .mrl-rd-list{color:#202020!important}
         html.mrl-theme-light .mrl-rd-list li::marker{color:#555!important}
         html.mrl-theme-light .mrl-rd-list a{color:#006eaa!important}
-        html.mrl-theme-light .mrl-rd-admin-fixed-control{background:rgba(255,255,255,.78)!important}
-        html.mrl-theme-light .mrl-rd-admin-fixed-control a{color:#006eaa!important}
+        html.mrl-theme-light .mrl-rd-admin-fixed-control{background:transparent!important}
+        html.mrl-theme-light .mrl-rd-admin-fixed-control a{
+            background:#dff3e7!important;
+            border-color:#58a978!important;
+            color:#17683b!important;
+        }
+        html.mrl-theme-light .mrl-rd-admin-fixed-control a:hover{
+            background:#2f8a58!important;
+            border-color:#2f8a58!important;
+            color:#fff!important;
+        }
         html.mrl-theme-light .mrl-rd-notice-panel{background:rgba(255,255,255,.88)!important;color:#000!important}
         html.mrl-theme-light .mrl-rd-notice-panel *{color:#000!important}
         html.mrl-theme-light .mrl-rd-notice-panel a{color:#006eaa!important}
@@ -1981,10 +2046,15 @@ function teampage_render_announcement_text(string $text): void
 
 <br>
 
-<div style="width:85%; margin:0 auto; border:none; text-align:left;">
-    <p style='font-size:12.0pt; line-height:120%; font-family:"Century Gothic",sans-serif; color:#dfcca8;'>
-        Copyright &copy; 2017-<script>document.write(new Date().getFullYear())</script> Manlius Racing League
-    </p>
+<div style="width:85%; margin:0 auto; border:none; text-align:center; padding:18px 12px; box-sizing:border-box;">
+    <div style="font-size:16pt; line-height:1.2; font-family:'Century Gothic',sans-serif; color:#dfcca8;">
+        <div style="margin-bottom:10px;">
+            Some older pages may contain links or images that no longer work.
+        </div>
+        <div>
+            Copyright &copy; 2017-<script>document.write(new Date().getFullYear())</script> Manlius Racing League
+        </div>
+    </div>
 </div>
 
 <script src="bootstrap/js/jquery-1.9.1.min.js"></script>
