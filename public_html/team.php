@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v051
- * LAST MODIFIED: 9/15/2026 1:01:16 pm ET
+ * VERSION: v052
+ * LAST MODIFIED: 9/15/2026 1:13:23 pm ET
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,6 +13,10 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
+ *
+ * v052 (9/15/2026 1:13:23 pm ET)
+ * - UI: Reverses Manage Team Page Content pill colors so the default state is solid green with white text and hover is light green with dark green text.
+ * - PRESERVE: All v051 layout, masthead cleanup, Hide/Unhide pills, footer, localStorage behavior, picks, LP, RD, scoring, scheduler, themes, and DB behavior.
  *
  * v051 (9/15/2026 1:01:16 pm ET)
  * - CLEANUP: Restores the intended pre-investigation v046 masthead stacking/backdrop CSS after the dropdown issue was traced to Stylus.
@@ -1525,20 +1529,20 @@ function teampage_render_announcement_text(string $text): void
         .mrl-rd-admin-fixed-control a{
             display:inline-block;
             padding:5px 13px 6px;
-            border:2px solid #58a978;
+            border:2px solid #8fd0a8;
             border-radius:999px;
-            background:#dff3e7;
-            color:#17683b!important;
+            background:#2f8a58;
+            color:#fff!important;
             text-decoration:none!important;
             font-weight:800;
             line-height:1.15;
-            box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.20);
         }
 
         .mrl-rd-admin-fixed-control a:hover{
-            border-color:#8fd0a8;
-            background:#2f8a58;
-            color:#fff!important;
+            border-color:#58a978;
+            background:#dff3e7;
+            color:#17683b!important;
             text-decoration:none!important;
         }
 
@@ -1746,14 +1750,14 @@ function teampage_render_announcement_text(string $text): void
         html.mrl-theme-light .mrl-rd-list a{color:#006eaa!important}
         html.mrl-theme-light .mrl-rd-admin-fixed-control{background:transparent!important}
         html.mrl-theme-light .mrl-rd-admin-fixed-control a{
+            background:#2f8a58!important;
+            border-color:#8fd0a8!important;
+            color:#fff!important;
+        }
+        html.mrl-theme-light .mrl-rd-admin-fixed-control a:hover{
             background:#dff3e7!important;
             border-color:#58a978!important;
             color:#17683b!important;
-        }
-        html.mrl-theme-light .mrl-rd-admin-fixed-control a:hover{
-            background:#2f8a58!important;
-            border-color:#2f8a58!important;
-            color:#fff!important;
         }
         html.mrl-theme-light .mrl-rd-notice-panel{background:rgba(255,255,255,.88)!important;color:#000!important}
         html.mrl-theme-light .mrl-rd-notice-panel *{color:#000!important}
