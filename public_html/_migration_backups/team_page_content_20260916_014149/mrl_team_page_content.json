@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-16 01:42:51",
+    "updated_at": "2026-09-15 17:41:11",
     "custom_html_block": {
         "enabled": false,
         "position": "below",
@@ -170,13 +170,13 @@
         "items": [
             {
                 "label": "{year} Fees & Payment Info",
-                "url": "/league_info/{year}_Fees.php",
+                "url": "/{year}_Fees.php",
                 "enabled": true,
                 "new_tab": true
             },
             {
                 "label": "{year} Rules",
-                "url": "/league_info/{year}_Rules.php",
+                "url": "/{year}_Rules.php",
                 "enabled": true,
                 "new_tab": true
             },

@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v053
+ * VERSION: v052
  * LAST MODIFIED: 9/15/2026 1:13:23 pm ET
  *
  * DESCRIPTION:
@@ -1111,8 +1111,8 @@ $teamPageContentDefaults = [
     'league_panel' => [
         'title' => 'League Information',
         'items' => [
-            ['label' => '{year} Fees & Payment Info', 'url' => '/league_info/{year}_Fees.php', 'enabled' => true, 'new_tab' => true],
-            ['label' => '{year} Rules', 'url' => '/league_info/{year}_Rules.php', 'enabled' => true, 'new_tab' => true],
+            ['label' => '{year} Fees & Payment Info', 'url' => '/{year}_Fees.php', 'enabled' => true, 'new_tab' => true],
+            ['label' => '{year} Rules', 'url' => '/{year}_Rules.php', 'enabled' => true, 'new_tab' => true],
             ['label' => '{year} Race Schedule - PDF', 'url' => '/wp-content/uploads/{year}/01/{year}_Schedule_MRL.pdf', 'enabled' => true, 'new_tab' => true],
             ['label' => '{year} Race Schedule - Spreadsheet', 'url' => '/wp-content/uploads/{year}/01/{year}_Schedule_MRL.xlsx', 'enabled' => true, 'new_tab' => true],
             ['label' => '{year} Race Schedule on NASCAR.com', 'url' => 'https://www.nascar.com/nascar-cup-series/{year}/schedule/', 'enabled' => true, 'new_tab' => true],

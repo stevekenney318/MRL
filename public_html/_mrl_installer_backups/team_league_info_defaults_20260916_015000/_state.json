@@ -1,0 +1,12 @@
+{
+    "installed_at": "2026-09-16T01:57:27-04:00",
+    "installer_version": "v001",
+    "target_file": "team.php",
+    "from_version": "v052",
+    "to_version": "v053",
+    "changes": [
+        "'url' => '/{year}_Fees.php' -> 'url' => '/league_info/{year}_Fees.php'",
+        "'url' => '/{year}_Rules.php' -> 'url' => '/league_info/{year}_Rules.php'"
+    ],
+    "backup": "_mrl_installer_backups/team_league_info_defaults_20260916_015000/team.php.v052.backup"
+}

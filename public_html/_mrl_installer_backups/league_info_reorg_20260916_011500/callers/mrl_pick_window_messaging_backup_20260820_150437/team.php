@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v022
- * LAST MODIFIED: 8/20/2026 7:36:02 pm
+ * VERSION: v020
+ * LAST MODIFIED: 8/19/2026 7:12:00 pm
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,17 +13,6 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
- *
- * v022 (8/20/2026 7:36:02 pm)
- * - FIX: Upper-left user dropdown no longer depends on Bootstrap dropdown JavaScript.
- * - NEW: Small native-JavaScript toggle opens/closes the existing MRL Home / Profile / Logout menu.
- * - PRESERVE: Existing menu appearance/links, page layout, charts, PHP routing, pick logic, LP/RD logic, and data.
- *
- * v021 (8/20/2026 2:33:24 pm)
- * - CHANGE: Pick-window closed/open messaging now follows shared automatic state.
- * - NEW: Closed-between-segments message tells users when the next segment opens.
- * - FIX: Early normal windows are treated/displayed as normal picks, not LP messaging.
- * - PRESERVE: LP, SPECIAL_AUTH, RD routing and current-segment chart behavior.
  *
  * v020 (8/19/2026 7:12:00 pm)
  * - NEW: Admin menu link to admin_pick_adjustment.php.
@@ -793,7 +782,7 @@ $phpMyAdminUrl = $phpMyAdminDb !== ''
 
             <ul class="nav pull-left">
                 <li class="dropdown">
-                    <a href="#" role="button" class="dropdown-toggle" id="mrl-user-menu-toggle" aria-haspopup="true" aria-expanded="false">
+                    <a href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">
                         <i class="icon-user"></i>
                         <?php echo teampage_h($first_name); ?> <i class="caret"></i>
                     </a>
@@ -865,8 +854,8 @@ $phpMyAdminUrl = $phpMyAdminDb !== ''
         <br>
         <br>
         <u style="color:red;">League Info as of 2026-02-03 11:09:24</u><br><br>
-        2026 Fees & Payment info is <a href="/league_info/2026_Fees.php" target="_blank" rel="noopener noreferrer">here</a><br>
-        2026 Rules are <a href="/league_info/2026_Rules.php" target="_blank" rel="noopener noreferrer">here</a><br>
+        2026 Fees & Payment info is <a href="/2026_Fees.php" target="_blank" rel="noopener noreferrer">here</a><br>
+        2026 Rules are <a href="/2026_Rules.php" target="_blank" rel="noopener noreferrer">here</a><br>
         2026 Race Schedule - PDF (on MRL) is <a href="/wp-content/uploads/2026/01/2026_Schedule_MRL.pdf" target="_blank" rel="noopener noreferrer">here</a><br>
         2026 Race Schedule - Spreadsheet (on MRL) is <a href="/wp-content/uploads/2026/01/2026_Schedule_MRL.xlsx" target="_blank" rel="noopener noreferrer">here</a><br>
         2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here</a><br>
@@ -936,32 +925,23 @@ $phpMyAdminUrl = $phpMyAdminDb !== ''
 
             } else {
 
-                // If the active normal pick segment has not opened yet, explain when it opens.
-                if (isset($pickWindowStatus) && $pickWindowStatus === 'CLOSED_BEFORE_OPEN') {
+                // This only occurs before the first segment's automatic window opens,
+                // or when an admin override deliberately schedules a future opening.
+                // For an in-progress segment the deadline is already past, so LP/RD
+                // routing below remains unchanged.
+                if ($end_ts !== false && $user_ts < $end_ts && !$normalPickWindowOpen) {
                     $openText = isset($pickWindowOpenAt) && trim((string)$pickWindowOpenAt) !== ''
                         ? (string)$pickWindowOpenAt
                         : 'the scheduled opening time';
-                    echo teampage_h((string)$raceYear) . " " . teampage_h((string)$segmentName)
-                        . " picks open on " . teampage_h($openText) . ".";
+                    echo "Normal picks for " . teampage_h((string)$raceYear) . " " . teampage_h((string)$segmentName)
+                        . " open on " . teampage_h($openText) . ".";
                 } else {
                     if ($showRdWrapper) {
                         include 'team_replacement_driver.php';
                     } elseif ($teamFormMode === 'LP' || $teamFormMode === 'SPECIAL_AUTH') {
                         include 'team-late-pick.php';
                     } else {
-                        $closedSegmentLabel = isset($scoringSegmentName) && trim((string)$scoringSegmentName) !== ''
-                            ? (string)$scoringSegmentName
-                            : (string)$segmentName;
-
-                        echo teampage_h((string)$raceYear) . " " . teampage_h($closedSegmentLabel) . " picks are closed.";
-
-                        if (isset($nextSegment) && trim((string)$nextSegment) !== ''
-                            && isset($nextSegmentName) && trim((string)$nextSegmentName) !== ''
-                            && isset($nextPickWindowOpenAt) && trim((string)$nextPickWindowOpenAt) !== '') {
-                            echo " " . teampage_h((string)$raceYear) . " " . teampage_h((string)$nextSegmentName)
-                                . " picks open on " . teampage_h((string)$nextPickWindowOpenAt) . ".";
-                        }
-
+                        echo teampage_h((string)$formLockedMessage) . " - past Lock date of " . teampage_h((string)$formLockDate);
                         echo "<br><br>";
                         include 'current_segment_chart.php';
                     }
@@ -1006,51 +986,5 @@ while ($yearRow = $stmtYears->fetch(PDO::FETCH_ASSOC)) {
 <script src="bootstrap/js/jquery-1.9.1.min.js"></script>
 <script src="bootstrap/js/bootstrap.min.js"></script>
 <script src="assets/scripts.js"></script>
-
-<script>
-(function () {
-    var toggle = document.getElementById('mrl-user-menu-toggle');
-    if (!toggle) {
-        return;
-    }
-
-    var dropdown = toggle.parentNode;
-    if (!dropdown) {
-        return;
-    }
-
-    function closeMenu() {
-        dropdown.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-    }
-
-    function toggleMenu(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        var isOpen = dropdown.classList.contains('open');
-        if (isOpen) {
-            closeMenu();
-        } else {
-            dropdown.classList.add('open');
-            toggle.setAttribute('aria-expanded', 'true');
-        }
-    }
-
-    toggle.addEventListener('click', toggleMenu, false);
-
-    document.addEventListener('click', function (event) {
-        if (!dropdown.contains(event.target)) {
-            closeMenu();
-        }
-    }, false);
-
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape' || event.keyCode === 27) {
-            closeMenu();
-        }
-    }, false);
-})();
-</script>
 </body>
 </html>

@@ -865,8 +865,8 @@ $phpMyAdminUrl = $phpMyAdminDb !== ''
         <br>
         <br>
         <u style="color:red;">League Info as of 2026-02-03 11:09:24</u><br><br>
-        2026 Fees & Payment info is <a href="/league_info/2026_Fees.php" target="_blank" rel="noopener noreferrer">here</a><br>
-        2026 Rules are <a href="/league_info/2026_Rules.php" target="_blank" rel="noopener noreferrer">here</a><br>
+        2026 Fees & Payment info is <a href="/2026_Fees.php" target="_blank" rel="noopener noreferrer">here</a><br>
+        2026 Rules are <a href="/2026_Rules.php" target="_blank" rel="noopener noreferrer">here</a><br>
         2026 Race Schedule - PDF (on MRL) is <a href="/wp-content/uploads/2026/01/2026_Schedule_MRL.pdf" target="_blank" rel="noopener noreferrer">here</a><br>
         2026 Race Schedule - Spreadsheet (on MRL) is <a href="/wp-content/uploads/2026/01/2026_Schedule_MRL.xlsx" target="_blank" rel="noopener noreferrer">here</a><br>
         2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here</a><br>

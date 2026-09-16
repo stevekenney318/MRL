@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-16 01:42:51",
+    "updated_at": "2026-09-16 01:41:49",
     "custom_html_block": {
         "enabled": false,
         "position": "below",
@@ -176,7 +176,7 @@
             },
             {
                 "label": "{year} Rules",
-                "url": "/league_info/{year}_Rules.php",
+                "url": "/{league_info/year}_Rules.php",
                 "enabled": true,
                 "new_tab": true
             },

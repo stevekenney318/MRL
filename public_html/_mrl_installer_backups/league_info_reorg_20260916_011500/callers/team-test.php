@@ -68,8 +68,8 @@ $season_year  = '2026';
 $info_updated = '2026-02-03';
 
 $league_links = [
-    ['label' => $season_year . ' Fees & Payment info',         'url' => 'https://manliusracingleague.com/league_info/2026_Fees.php'],
-    ['label' => $season_year . ' Rules',                       'url' => 'https://manliusracingleague.com/league_info/2026_Rules.php'],
+    ['label' => $season_year . ' Fees & Payment info',         'url' => 'https://manliusracingleague.com/2026_Fees.php'],
+    ['label' => $season_year . ' Rules',                       'url' => 'https://manliusracingleague.com/2026_Rules.php'],
     ['label' => $season_year . ' Race Schedule — PDF',         'url' => 'https://manliusracingleague.com/wp-content/uploads/2026/01/2026_Schedule_MRL.pdf'],
     ['label' => $season_year . ' Race Schedule — Spreadsheet', 'url' => 'https://manliusracingleague.com/wp-content/uploads/2026/01/2026_Schedule_MRL.xlsx'],
     ['label' => $season_year . ' Race Schedule on NASCAR.com', 'url' => 'https://www.nascar.com/nascar-cup-series/2026/schedule/'],

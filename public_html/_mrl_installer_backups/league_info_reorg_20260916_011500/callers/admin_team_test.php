@@ -170,8 +170,8 @@ if (isset($dbconnect)) {
             <br>
             <br>
             <u style="color:red;">League Info as of 2026-01-28 21:50:08</u><br><br>
-            2026 Fees & Payment info is <a href="https://manliusracingleague.com/league_info/2026_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
-            2026 Rules are <a href="https://manliusracingleague.com/league_info/2026_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Fees & Payment info is <a href="https://manliusracingleague.com/2026_Fees.php" target="_blank" rel="noopener noreferrer">here </a><br>
+            2026 Rules are <a href="https://manliusracingleague.com/2026_Rules.php" target="_blank" rel="noopener noreferrer">here </a><br>
             2026 Race Schedule - PDF (on MRL) is <a href="https://manliusracingleague.com/wp-content/uploads/2026/01/2026_Schedule_MRL.pdf" target="_blank" rel="noopener noreferrer">here </a><br>
             2026 Race Schedule - Spreadsheet (on MRL) is <a href="https://manliusracingleague.com/wp-content/uploads/2026/01/2026_Schedule_MRL.xlsx" target="_blank" rel="noopener noreferrer">here </a><br>
             2026 Race Schedule (on NASCAR) is <a href="https://www.nascar.com/nascar-cup-series/2026/schedule/" target="_blank" rel="noopener noreferrer">here </a><br>

@@ -1,0 +1,174 @@
+{
+    "created_at": "2026-09-16T06:32:36+00:00",
+    "installer_version": "v001",
+    "rows": [
+        {
+            "storage": "wp_postmeta",
+            "record_id": 921,
+            "post_id": 413,
+            "value": "http://manliusracingleague.com/2017_S1_Team_chart.php",
+            "sha256": "e06887acfb72f5f83f14f6d5c95975b20d261cb2b2807a9fe095736daa944dbc"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 5,
+            "post_id": 5,
+            "value": "<h3>Thanks to everyone for getting their picks in. This will go much smoother for Segment 2 when you all enter your own picks !\r\nBelow is a link to the Team Chart for Segment 1. Take a look and make sure your picks are correct. Let me know if you need any corrections.</h3>\r\n<h3><a href=\"http://manliusracingleague.com/2017_S1_Team_chart.php\" target=\"_blank\">2017_S1_Team_chart.php</a></h3>\r\n<h3>On behalf of Jeff and myself, good luck to all !201\r\n-- Steve</h3>",
+            "sha256": "39403364b06209f31c6b48a4b3b7ef600d1a8600a8be86719f32720ae3be337f"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 172,
+            "post_id": 172,
+            "value": "<h4>Please note \u2013 after the update went out, we were notified of an error (on entry, not selection) in one of the team picks - this change resulted in no change in position for any team.</h4>\r\n<h4>Here is the revised <a href=\"http://manliusracingleague.com/wp-content/uploads/2017/03/Week-1-Update-Rev_A.pdf\">Week 1 Update</a></h4>\r\n<h4>And here is the updated <a href=\"http://manliusracingleague.com/2017_S1_Team_chart.php\" target=\"_blank\">Segment 1 Team Chart</a>.</h4>",
+            "sha256": "1cbe5232fde23fc684a56436807801afc3cc878e07c5d60537ddfa09215338ff"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 525,
+            "post_id": 525,
+            "value": "<h4>Thanks everyone !</h4>\r\n<h4>Here is the <a href=\"http://manliusracingleague.com/2017_S2_Team_chart.php\" target=\"_blank\" rel=\"noopener noreferrer\">Team Chart</a>\u00a0for segment 2 !</h4>\r\n<h4>Good luck to all !</h4>\r\n&nbsp;",
+            "sha256": "345f334871e990c51afffe9abd8826e2c803081a3167ca24c6f0ccff0bdaf89f"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 640,
+            "post_id": 640,
+            "value": "<h4>Here is the <a href=\"http://manliusracingleague.com/2017_S3_Team_chart.php\" target=\"_blank\" rel=\"noopener noreferrer\">Team Chart</a>\u00a0for segment 3 !</h4>\r\n<h4>Thanks for getting your picks in ! \u00a0<del>Still missing picks from\u00a0Over The Edge (Reid Strickland).</del></h4>\r\n<h4>Good luck to all !</h4>",
+            "sha256": "0c4f97b367874634692645223c6f4d8eee52621496f489ed72b45a265385b65e"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 783,
+            "post_id": 783,
+            "value": "Here is the <span style=\"text-decoration: underline;\"><a href=\"http://manliusracingleague.com/2017_S4_Team_chart.php\" target=\"_blank\" rel=\"noopener noreferrer\">Team Chart</a></span>\u00a0for the Playoffs (Segment 4) !\r\n\r\nThanks for getting your picks in !\u00a0 Please check to make sure they are correct.\r\n\r\nStill missing picks from\u00a0Redneck Racing (Jody Jones) and Jimmy's Johnson (Trevor MacPherson). Those teams will receive ZERO point for this weeks race, and subsequent races until their picks are received.\r\n\r\nGood luck to all !",
+            "sha256": "d0f13226b8d97985e414ef27f589ceaf698501611975f95fae722d51d6d95a5a"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 920,
+            "post_id": 920,
+            "value": "Here's the latest .... All picks received have been entered into the database...\r\nPlease login and confirm your picks -&gt;\u00a0<a href=\"https://manliusracingleague.com/team.php\" target=\"_blank\" rel=\"noopener\">Login here</a>\r\n\r\n<span style=\"text-decoration: underline;\">Missing picks from:</span>\r\n\r\nCalvin Hickling\r\nJohn Deecher\r\nJody Jones\r\nJoe Massey\r\n\r\n<span style=\"text-decoration: underline;\">Not returning this year:</span>\r\n\r\nRhonda Catanzaro\r\nDenise Rieck\r\nTrevor MacPherson\r\n\r\nHere is the preliminary\u00a0<span style=\"text-decoration: underline;\"><a href=\"https://manliusracingleague.com/2018_S1_Team_chart.php\" target=\"_blank\" rel=\"noopener noreferrer\">Team Chart</a></span>\u00a0(no picks shown) for Segment 1 of 2018 ...\r\n\r\n&nbsp;\r\n\r\n&nbsp;",
+            "sha256": "a3256cc1648ce7c60d4dd8671226117fe8cea51992f1655a9c7138fcf1811016"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 925,
+            "post_id": 925,
+            "value": "OK, here we go !\u00a0 2018 season is less than a couple of hours away....\r\n\r\nHere's the team chart for Segment 1 ... we're down a few, and haven't heard from a couple (contact Jeff if you still want to get in this year).\r\n\r\n<span style=\"text-decoration: underline;\"><a href=\"https://manliusracingleague.com/2018_S1_Team_chart.php\" target=\"_blank\" rel=\"noopener\">2018 S1 Team chart</a></span>\r\n\r\nPlease check your teams for to make sure they are correct to what you submitted.\r\n\r\nGood luck to all !",
+            "sha256": "7687ceef1e31ae2245c52f1ba3fca465574d33a669aa635b218be616b1d63f03"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 1026,
+            "post_id": 1026,
+            "value": "OK, here we go !\u00a0 <span style=\"text-decoration: underline;\"><a href=\"https://manliusracingleague.com/2018_S2_Team_chart.php\" target=\"_blank\" rel=\"noopener\">2018 segment 2</a></span> is about to begin.\r\n\r\nHere\u2019s the team chart\u2026 still missing a team or 2. So check the list and let me know. I've entered everything I have.\r\n\r\n<span style=\"text-decoration: underline;\"><a href=\"https://manliusracingleague.com/2018_S2_Team_chart.php\" target=\"_blank\" rel=\"noopener\">2018 S2 Team chart</a></span>\r\n\r\nPlease check your teams for to make sure they are correct to what you submitted.\r\n\r\nGood luck to all !\r\n\r\n* edit: corrected link , was segment 1",
+            "sha256": "537a19a3fec6a4431b8682f171af7d0345b5f3716e30d9471ed7a6bad50b8e99"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 1049,
+            "post_id": 1049,
+            "value": "I've been made aware of issues opening the team chart ... I'm working to get to the bottom of it , but in the meantime, here is a new link , a pdf, and a jpg file that you should be able to open.\r\n\r\n<span style=\"text-decoration: underline;\"><a class=\"row-title\" href=\"http://manliusracingleague.com/2018_S2_Team_chart.php\" target=\"_blank\" rel=\"noopener\" aria-label=\"\u201c2018 Segment 2\u201d (Edit)\">2018 Segment 2 team chart (in browser)</a></span>\r\n\r\n<span style=\"text-decoration: underline;\"><a href=\"http://manliusracingleague.com/wp-content/uploads/2018/05/2018_S2_Team_chart.pdf\" target=\"_blank\" rel=\"noopener\">2018_S2_Team_chart (pdf)</a></span>\r\n\r\n<a href=\"http://manliusracingleague.com/wp-content/uploads/2018/05/2018_S2_Team_chart.jpg\"><img class=\"alignnone wp-image-1051 size-medium\" src=\"http://manliusracingleague.com/wp-content/uploads/2018/05/2018_S2_Team_chart-300x253.jpg\" alt=\"\" width=\"300\" height=\"253\" /></a>\r\n\r\n&nbsp;",
+            "sha256": "036bdb3df70b02436305a53a1606862b3bd09598071585a2dd22e4ce9b2ea09d"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 1152,
+            "post_id": 1152,
+            "value": "A couple of items to note prior to starting Segment 3...\u00a0<!--more-->\r\n\r\n<strong>1</strong> - Thanks to everyone for getting their picks in. Even with the holiday, this went much smoother than prior segments !\r\n\r\nHere\u2019s the team chart for <a href=\"https://manliusracingleague.com/2018_S3_Team_chart.php\" target=\"_blank\" rel=\"noopener\"><span style=\"text-decoration: underline;\">Segment 3</span></a> (Webpage)\r\n\r\n<span style=\"text-decoration: underline;\"><a href=\"http://manliusracingleague.com/wp-content/uploads/2018/07/2018_S3_Team_chart.pdf\" target=\"_blank\" rel=\"noopener\">2018_S3_Team_chart</a></span>\u00a0(pdf)\r\n\r\n<a href=\"http://manliusracingleague.com/wp-content/uploads/2018/07/2018_S3_Team_chart.jpg\" target=\"_blank\" rel=\"noopener\"><span style=\"text-decoration: underline;\">2018_S3_Team_chart</span></a> (jpg)\r\n\r\nPlease check your teams for to make sure they are correct to what you submitted.\r\n\r\nGood luck to all !\r\n\r\n<strong>2</strong> - You should have noticed a new look to the website ... trying out a new template, let me know your <a href=\"mailto:ManliusRacingLeague@gmail.com?subject=Website changes\" target=\"_blank\" rel=\"noopener\"><span style=\"text-decoration: underline;\">thoughts</span></a>.\r\n\r\nThanks, Steve\r\n\r\n&nbsp;",
+            "sha256": "a852a8b3f009c88aad9fd8f505f38e02940e0eeddbfc1b2b6538d4736e6e4816"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 1214,
+            "post_id": 1214,
+            "value": "<a href=\"http://manliusracingleague.com/2018_S1_Team_chart.php\" target=\"_blank\" rel=\"noopener\">2018_S1_Team_chart</a>\r\n\r\n<a href=\"http://manliusracingleague.com/2018_S2_Team_chart.php\" target=\"_blank\" rel=\"noopener\">2018_S2_Team_chart</a>\r\n\r\n<a href=\"http://manliusracingleague.com/2018_S3_Team_chart.php\" target=\"_blank\" rel=\"noopener\">2018_S3_Team_chart</a>",
+            "sha256": "90b1a107597e518a98dfc37bd931ad98a48ebe17d46c44ac3e133f8d3dd632f4"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 1329,
+            "post_id": 1329,
+            "value": "<!-- wp:paragraph -->\r\n<p>Thanks to everyone for getting their picks in.\u00a0 This has been been the smoothest segment so far for me ! Please let me know any comments you may have regarding ONLINE picks ! <!--more--></p>\r\n<!-- /wp:paragraph -->\r\n\r\n<!-- wp:paragraph -->\r\n<p>Here\u2019s the team chart for\u00a0<a href=\"https://manliusracingleague.com/2018_S4_Team_chart.php\" target=\"_blank\" rel=\"noreferrer noopener\">Segment 4</a>\u00a0(Webpage)</p>\r\n<!-- /wp:paragraph -->\r\n\r\n<!-- wp:paragraph -->\r\n<p><span style=\"text-decoration: underline;\"><a href=\"http://manliusracingleague.com/wp-content/uploads/2018/09/2018_S4_Team_chart.pdf\" target=\"_blank\" rel=\"noopener\">2018_S4_Team_chart</a> </span>(pdf)</p>\r\n<p>&nbsp;</p>\r\n<!-- /wp:paragraph -->\r\n\r\n<!-- wp:paragraph -->\r\n<p><a href=\"http://manliusracingleague.com/wp-content/uploads/2018/09/2018_S4_Team_chart.jpg\" target=\"_blank\" rel=\"noopener\"><img class=\"alignnone wp-image-1332 size-thumbnail\" src=\"http://manliusracingleague.com/wp-content/uploads/2018/09/2018_S4_Team_chart-150x150.jpg\" alt=\"\" width=\"150\" height=\"150\" /></a>(jpg)</p>\r\n<!-- /wp:paragraph -->\r\n\r\n<!-- wp:paragraph -->\r\n<p>Please check your teams for to make sure they are correct to what you submitted.</p>\r\n<!-- /wp:paragraph -->\r\n\r\n<!-- wp:paragraph -->\r\n<p>Good luck to all !</p>\r\n<!-- /wp:paragraph -->\r\n\r\n<!-- wp:paragraph -->\r\n<p>Thanks, Steve</p>\r\n<!-- /wp:paragraph -->",
+            "sha256": "6b2a0a65b7f24d06d1cc6cf1b92857039f58970bab2cab0c8ed41bfa26508914"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 1487,
+            "post_id": 1487,
+            "value": "<!-- wp:paragraph -->\n<p>Thanks to everyone for getting their picks in.&nbsp; We're getting better at ONLINE picks ! Just a couple of tiny things to address, but all in all it's going great. </p>\n<!-- /wp:paragraph -->\n\n<!-- wp:more -->\n<!--more-->\n<!-- /wp:more -->\n\n<!-- wp:paragraph -->\n<p>Here\u2019s the team chart for&nbsp;<a rel=\"noreferrer noopener\" aria-label=\" (opens in a new tab)\" href=\"https://manliusracingleague.com/2019_S1_Team_chart.php\" target=\"_blank\">Segment 1</a>&nbsp;(Webpage)</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p><span style=\"text-decoration: underline;\"><a href=\"http://manliusracingleague.com/wp-content/uploads/2019/02/2019_S1_Team_chart.pdf\" target=\"_blank\" rel=\"noreferrer noopener\" aria-label=\" (opens in a new tab)\">2019_S1_Team_chart</a> </span>(pdf)</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:image {\"id\":1497,\"width\":312,\"height\":257,\"linkDestination\":\"media\"} -->\n<figure class=\"wp-block-image is-resized\"><a href=\"https://manliusracingleague.com/wp-content/uploads/2019/02/2019_S1_Team_Chart.jpg\" target=\"_blank\" rel=\"noreferrer noopener\"><img src=\"http://manliusracingleague.com/wp-content/uploads/2019/02/2019_S1_Team_Chart.jpg\" alt=\"\" class=\"wp-image-1497\" width=\"312\" height=\"257\"/></a><figcaption>(jpg)</figcaption></figure>\n<!-- /wp:image -->\n\n<!-- wp:paragraph -->\n<p>Please check your teams for to make sure they are correct to what you submitted.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Good luck to all !</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Thanks, Steve</p>\n<!-- /wp:paragraph -->",
+            "sha256": "1a000de5b5541f7b7fd27c9f5f9a406a12a8290937ed2b99ee0845fa551c459e"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 1617,
+            "post_id": 1617,
+            "value": "Thanks to everyone for getting their picks in.<!--more--> We only had 1 issue, which was quickly and easily resolved !\n\nHere\u2019s the team chart for\u00a0<a href=\"https://manliusracingleague.com/2019_S2_Team_chart.php\" target=\"_blank\" rel=\"noreferrer noopener\" aria-label=\" (opens in a new tab)\">Segment 2</a>\u00a0(Webpage)\n\n<a href=\"https://manliusracingleague.com/wp-content/uploads/2019/04/2019_S2_Team_chart.pdf\" target=\"_blank\" rel=\"noreferrer noopener\" aria-label=\" (opens in a new tab)\">2019_S2_Team_chart</a> (pdf)\n\n<a href=\"https://manliusracingleague.com/wp-content/uploads/2019/04/2019_S2_Team_Chart.jpg\" target=\"_blank\" rel=\"noopener noreferrer\"><img class=\"alignnone wp-image-1619\" src=\"https://manliusracingleague.com/wp-content/uploads/2019/04/2019_S2_Team_Chart.jpg\" alt=\"\" width=\"618\" height=\"541\" /></a>\n\nAs always, please check your teams to make sure they are correct to what you submitted.\n\nGood luck to all !\n\nThanks, Steve",
+            "sha256": "281b010c96ffd3c3a826f5db4ab014a627eb1fc859a2d561b4b756e680adca85"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 1750,
+            "post_id": 1750,
+            "value": "<p>Thanks to everyone for getting their picks in before the deadline !!<!--more--></p>\n<p>Here\u2019s the team chart for&nbsp;<a href=\"https://manliusracingleague.com/2019_S3_Team_chart.php\" target=\"_blank\" rel=\"noreferrer noopener\" aria-label=\" (opens in a new tab)\">Segment 3</a>&nbsp;(Webpage)</p>\n<p><a href=\"https://manliusracingleague.com/wp-content/uploads/2019/07/2019_S3_Team_chart.pdf\" target=\"_blank\" rel=\"noreferrer noopener\" aria-label=\" (opens in a new tab)\">2019_S3_Team_chart</a> (pdf)</p>\n<p></p>\n\n<!-- wp:image {\"id\":1761,\"linkDestination\":\"media\"} -->\n<figure class=\"wp-block-image\"><a href=\"https://manliusracingleague.com/wp-content/uploads/2019/07/2019_S3_Team_Chart.jpg\" target=\"_blank\" rel=\"noreferrer noopener\"><img src=\"https://manliusracingleague.com/wp-content/uploads/2019/07/2019_S3_Team_Chart-1024x881.jpg\" alt=\"\" class=\"wp-image-1761\"/></a></figure>\n<!-- /wp:image -->\n\n<!-- wp:paragraph -->\n<p>As always, please <a href=\"https://manliusracingleague.com/team.php\" target=\"_blank\" rel=\"noreferrer noopener\" aria-label=\"check your teams (opens in a new tab)\">check your teams</a> to make sure they are correct to what you submitted.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Good luck to all !</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Thanks, Steve</p>\n<!-- /wp:paragraph -->",
+            "sha256": "7a55a56619b8c864080deec951af280dfcb9da74537abb532a9e35ad3d39ede7"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 2091,
+            "post_id": 2091,
+            "value": "<p style=\"padding-left: 40px;\">Thanks to everyone for getting their picks in. We have<!--more--> 2 new teams this year ... eagleeyefire racing\u00a0 (owned by Arnold Platt) &amp; T. Dogg Racing\u00a0 (owned by Tom legg) !\u00a0 Welcome guys!\u00a0 Unfortunately we did lose 1 team from our ranks ... Shot in the Dark will not be joining us this year.</p>\n<p>Here\u2019s the team chart for\u00a0<a href=\"http://manliusracingleague.com/2020_S1_Team_chart.php\" target=\"_blank\" rel=\"noreferrer noopener\" aria-label=\" (opens in a new tab)\">Segment 1</a>\u00a0(Webpage)</p>\n<p><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/02/2020_S1_Team_chart.pdf\" target=\"_blank\" rel=\"noreferrer noopener\" aria-label=\" (opens in a new tab)\" data-rich-text-format-boundary=\"true\">2020_S1_Team_chart</a> (pdf)</p>\n<p>\u00a0</p>\n\n<!-- wp:image {\"id\":2102,\"sizeSlug\":\"large\"} -->\n<figure class=\"wp-block-image size-large\"><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/02/2020_S1_Team_Chart-1-1024x812.jpg\" target=\"_blank\" rel=\"noopener noreferrer\"><img src=\"https://manliusracingleague.com/wp-content/uploads/2020/02/2020_S1_Team_Chart-1-1024x812.jpg\" alt=\"\" class=\"wp-image-2102\"/></a></figure>\n<!-- /wp:image -->\n\n<!-- wp:paragraph -->\n<p>As always, please verify your picks ! Thanks !</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Good luck to all !</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Thanks, Steve</p>\n<!-- /wp:paragraph -->",
+            "sha256": "cf4ae3664eb67ae000784491b644fc8b77952ab6d1b0d44c581b4bbde36aaa90"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 2406,
+            "post_id": 2406,
+            "value": "<!-- wp:paragraph -->\r\n<p>Still missing 1 team, but here\u2019s the team chart for Segment 3  (<a rel=\"noreferrer noopener\" href=\"https://manliusracingleague.com/2020_S3_Team_chart.php\" target=\"_blank\">Webpage</a>) at this time. As always, please review your picks to make sure they are correct. Good luck to all !</p>\r\n<!-- /wp:paragraph -->\r\n\r\n<!-- wp:file {\"id\":2411,\"href\":\"https://manliusracingleague.com/wp-content/uploads/2020/07/2020_S3_Team_chart.pdf\"} -->\r\n<div class=\"wp-block-file\"><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/07/2020_S3_Team_chart.pdf\" target=\"_blank\" rel=\"noreferrer noopener\">2020_S3_Team_chart</a><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/07/2020_S3_Team_chart.pdf\" class=\"wp-block-file__button\" download>Download</a></div>\r\n<!-- /wp:file -->\r\n\r\n<!-- wp:image {\"id\":2414,\"sizeSlug\":\"large\"} -->\r\n<figure class=\"wp-block-image size-large\"><img src=\"https://manliusracingleague.com/wp-content/uploads/2020/07/2020_S3_Team_Chart-1024x840.jpg\" alt=\"\" class=\"wp-image-2414\"/></figure>\r\n<!-- /wp:image -->",
+            "sha256": "f709c04c3e404b0fb59b51b771cb09a3acd7b1616a1520b861cdc62254e6b3d6"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 2424,
+            "post_id": 2424,
+            "value": "<!-- wp:paragraph -->\n<p>Race #18 \u2013 <a rel=\"noreferrer noopener\" href=\"https://manliusracingleague.com/wp-content/uploads/2020/07/Week_18_2020_Update.pdf\" target=\"_blank\">Texas </a>is complete and Austin Dillon takes the crown.<br><br>4 Tires and Fuel captures the top spot in the first race of segment #3 with 180 points \u2013 congrats!<br>This give 4 Tires a 15 point lead for the segment over Pedal to the metal \u2013 15 points back.<br>For the year, Go Daddy holds the top spot by 25 over Hott Wheels.<br><br>Race #19 \u2013 <a rel=\"noreferrer noopener\" href=\"https://manliusracingleague.com/wp-content/uploads/2020/07/Week_19_2020_Update.pdf\" target=\"_blank\">Kansas </a>\u2013 Hamlin takes the win for his 5th of 2020.<br><br>Congratulations to Take a Left\u2026 with a huge total of 194 at Kansas.<br>4 Tires and fuel keeps the top spot for the segment, but is now just 4 points ahead of Parkhill Racing.<br>Go Daddy remains at the top for the year, by 26 over Hott Wheels.<br><br>So sorry for the delay in getting this out as many of you may know we had some serious family issues to attend, but all is now somewhat back to normal. Thanks for your patience.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>There was a technical issue preventing Hillsdale Racing to submit their picks, however they have now been up uploaded to the database. No penalty involved.  - <a href=\"https://manliusracingleague.com/2020_S3_Team_chart.php\">https://manliusracingleague.com/2020_S3_Team_chart.php</a></p>\n<!-- /wp:paragraph -->\n\n<!-- wp:file {\"id\":2429,\"href\":\"https://manliusracingleague.com/wp-content/uploads/2020/07/Week_18_2020_Update.pdf\"} -->\n<div class=\"wp-block-file\"><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/07/Week_18_2020_Update.pdf\">Week_18_2020_Update</a><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/07/Week_18_2020_Update.pdf\" class=\"wp-block-file__button\" download>Download</a></div>\n<!-- /wp:file -->\n\n<!-- wp:file {\"id\":2430,\"href\":\"https://manliusracingleague.com/wp-content/uploads/2020/07/Week_19_2020_Update.pdf\"} -->\n<div class=\"wp-block-file\"><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/07/Week_19_2020_Update.pdf\">Week_19_2020_Update</a><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/07/Week_19_2020_Update.pdf\" class=\"wp-block-file__button\" download>Download</a></div>\n<!-- /wp:file -->",
+            "sha256": "e594e080ba8660ecc2f298fc55e1b02691fe0dfb333c70ed315b1f22ce614d39"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 2566,
+            "post_id": 2566,
+            "value": "<!-- wp:paragraph -->\n<p>Hopefully you have already seen <a rel=\"noreferrer noopener\" href=\"https://manliusracingleague.com/2020_S4_Team_chart.php\" target=\"_blank\">this </a>on your team page.  All picks were in with plenty of time to spare.  Good Luck to all. </p>\n<!-- /wp:paragraph -->\n\n<!-- wp:image {\"id\":2573,\"sizeSlug\":\"large\",\"linkDestination\":\"media\",\"className\":\"is-style-default\"} -->\n<figure class=\"wp-block-image size-large is-style-default\"><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/09/2020_S4_Team_Chart.jpg\" target=\"_blank\" rel=\"noopener noreferrer\"><img src=\"https://manliusracingleague.com/wp-content/uploads/2020/09/2020_S4_Team_Chart-1024x576.jpg\" alt=\"\" class=\"wp-image-2573\"/></a></figure>\n<!-- /wp:image -->\n\n<!-- wp:file {\"id\":2574,\"href\":\"https://manliusracingleague.com/wp-content/uploads/2020/09/2020_S4_Team_chart.pdf\"} -->\n<div class=\"wp-block-file\"><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/09/2020_S4_Team_chart.pdf\" target=\"_blank\" rel=\"noreferrer noopener\">2020_S4_Team_chart</a><a href=\"https://manliusracingleague.com/wp-content/uploads/2020/09/2020_S4_Team_chart.pdf\" class=\"wp-block-file__button\" download>Download</a></div>\n<!-- /wp:file -->\n\n<!-- wp:paragraph -->\n<p>Thanks to all for making this happen. This has been my goal since I started working on this. To make it as automated and hands off as possible. It will be so easy transitioning from segment to segment now.  Just change 3 variables, and it's on. </p>\n<!-- /wp:paragraph -->\n\n<!-- wp:image {\"id\":2571,\"sizeSlug\":\"large\",\"className\":\"is-style-default\"} -->\n<figure class=\"wp-block-image size-large is-style-default\"><img src=\"https://manliusracingleague.com/wp-content/uploads/2020/09/20200907_212242_000279-1024x389.jpg\" alt=\"\" class=\"wp-image-2571\"/></figure>\n<!-- /wp:image -->\n\n<!-- wp:paragraph -->\n<p>Starting a new year still has some work involved, but I plan on working on that next. So if you do happen to visit your team page and it looks a little different, you'll know what's going on !</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>P.S. - Anyone interested in joining our <strong>NFL Pick-Em pool</strong> ... Look for the email sent from me (<a rel=\"noreferrer noopener\" href=\"mailto:stevekenney318@gmail.com\" data-type=\"mailto\" data-id=\"mailto:stevekenney318@gmail.com\" target=\"_blank\">stevekenney318@gmail.com</a>) to you on Thu, Sep 3, 9:43 PM\u00a0... or <a rel=\"noreferrer noopener\" href=\"mailto:stevekenney318@gmail.com\" target=\"_blank\">email me</a> for details ! We've got 9 or 10 commited, but are looking for more !!</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Thanks again - Steve !!</p>\n<!-- /wp:paragraph -->",
+            "sha256": "3cfd3413db4a4f64b32135c8ea77924059615784f1e71c558a7dcf19282b071c"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 3261,
+            "post_id": 3261,
+            "value": "<!-- wp:paragraph -->\n<p>2022 is off and running. We have 22 teams this year \u2013 thank you all for joining. <a rel=\"noreferrer noopener\" href=\"https://manliusracingleague.com/2022_S1_Team_chart.php\" target=\"_blank\">2022 S1 Team Chart</a><br>Austin Cindric wins the <a href=\"https://manliusracingleague.com/wp-content/uploads/2022/02/2022-Week-01-Results.pdf\" data-type=\"URL\" data-id=\"https://manliusracingleague.com/wp-content/uploads/2022/02/2022-Week-01-Results.pdf\" target=\"_blank\" rel=\"noreferrer noopener\">Daytona 500</a>!!!<br> <br>Congratulations to Just Another Donation with the high point total this week of 181\u2026<br>You just reduced your donation again this year!!<br> <br>Good luck this weekend in Cali \u2026<br> <br>Jeff<br><br></p>\n<!-- /wp:paragraph -->\n\n<!-- wp:embed {\"url\":\"https://www.youtube.com/watch?v=RxsH7hQY6bw\",\"type\":\"video\",\"providerNameSlug\":\"youtube\",\"responsive\":true,\"className\":\"wp-embed-aspect-16-9 wp-has-aspect-ratio\"} -->\n<figure class=\"wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio\"><div class=\"wp-block-embed__wrapper\">\nhttps://www.youtube.com/watch?v=RxsH7hQY6bw\n</div></figure>\n<!-- /wp:embed -->",
+            "sha256": "381226dc1212d6702b8412d005eed4b3d3a428b5c7acaefcf33a1f740d5227a1"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 4126,
+            "post_id": 4126,
+            "value": "<!-- wp:paragraph -->\n<p>Unfortunately, 6 teams missed the pick deadline of 9/3/2023 6:00 prn, which will result in 0 weekly points until their picks are made.  I have reopened the submission form for these teams, and they should be able to see it on their team page. You can see the current list of teams that have not submitted their picks for 2023 S4<a rel=\"noreferrer noopener\" href=\"https://manliusracingleague.com/submitted_teams.php\" target=\"_blank\"> here</a> .And as soon as they do it will populate on the Team Chart <a rel=\"noreferrer noopener\" href=\"https://manliusracingleague.com/2023_S4_Team_chart.php\" target=\"_blank\">here</a>.</p>\n<!-- /wp:paragraph -->",
+            "sha256": "45816f3dd8cf89b8cd0c43757660ff508922d04977108008a58cf10d2b9113a8"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 4331,
+            "post_id": 4331,
+            "value": "<!-- wp:paragraph -->\n<p>Here they are , the <a href=\"https://manliusracingleague.com/2024_S1_Team_chart.php\" data-type=\"link\" data-id=\"https://manliusracingleague.com/2024_S1_Team_chart.php\">2024 Segment 1 teams</a> !!</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:image {\"id\":4333,\"sizeSlug\":\"large\",\"linkDestination\":\"none\"} -->\n<figure class=\"wp-block-image size-large\"><img src=\"https://manliusracingleague.com/wp-content/uploads/2024/02/2024-S1-Team-Chart-OFFICIAL-20240219.160221317-1024x564.jpg\" alt=\"\" class=\"wp-image-4333\"/></figure>\n<!-- /wp:image -->\n\n<!-- wp:paragraph -->\n<p>Good Luck to all !</p>\n<!-- /wp:paragraph -->",
+            "sha256": "3b7da87e808805eab06e8a27dfda0392ebef9809ff17ee19e12b54731b5906a3"
+        },
+        {
+            "storage": "wp_posts",
+            "record_id": 5354,
+            "post_id": 5354,
+            "value": "<!-- wp:navigation-link {\"className\":\" menu-item menu-item-type-custom menu-item-object-custom\",\"description\":\"\",\"id\":null,\"kind\":\"custom\",\"label\":\"2017 S1 Team Chart\",\"opensInNewTab\":false,\"rel\":null,\"title\":\"\",\"type\":\"custom\",\"url\":\"http://manliusracingleague.com/2017_S1_Team_chart.php\"} /--><!-- wp:navigation-link {\"className\":\" menu-item menu-item-type-custom menu-item-object-custom\",\"description\":\"\",\"id\":null,\"kind\":\"custom\",\"label\":\"Leaderboard as of 4/1/2017\",\"opensInNewTab\":false,\"rel\":null,\"title\":\"\",\"type\":\"custom\",\"url\":\"http://manliusracingleague.com/wp-content/uploads/2017/03/Week-05-Update.pdf\"} /-->",
+            "sha256": "64f61e0c2009e82f63cdc6d6ab9eb5c59f3b69b3576fe192923d6e142ad68884"
+        }
+    ]
+}

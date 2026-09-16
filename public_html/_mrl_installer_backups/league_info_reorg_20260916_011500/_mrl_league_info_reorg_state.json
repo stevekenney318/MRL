@@ -1,0 +1,75 @@
+{
+    "tool": "MRL League Information Relocation Installer",
+    "version": "v001",
+    "installed_at": "2026-09-16T01:22:18-04:00",
+    "destination": "league_info",
+    "moved_files": [
+        "2019_rules.docx",
+        "2019_rules.htm",
+        "2020_rules.htm",
+        "2024_Fees.php",
+        "2024_Rules.php",
+        "2024_Schedule.html",
+        "2024_Schedule.php",
+        "2025_Fees.php",
+        "2025_Rules.php",
+        "2026_Fees.php",
+        "2026_Rules.php"
+    ],
+    "moved_companion_dirs": [],
+    "repair_counts": {
+        "2019_rules.docx": [],
+        "2019_rules.htm": [],
+        "2020_rules.htm": [],
+        "2024_Fees.php": {
+            "class.user.php": 1,
+            "config.php": 1,
+            "config_mrl.php": 1,
+            "header.php": 1
+        },
+        "2024_Rules.php": {
+            "class.user.php": 1,
+            "config.php": 1,
+            "config_mrl.php": 1,
+            "header.php": 1
+        },
+        "2024_Schedule.html": [],
+        "2024_Schedule.php": {
+            "class.user.php": 1,
+            "config.php": 1,
+            "config_mrl.php": 1,
+            "header.php": 1
+        },
+        "2025_Fees.php": {
+            "class.user.php": 1,
+            "config.php": 1,
+            "config_mrl.php": 1,
+            "header.php": 1
+        },
+        "2025_Rules.php": {
+            "class.user.php": 1,
+            "config.php": 1,
+            "config_mrl.php": 1,
+            "header.php": 1
+        },
+        "2026_Fees.php": [],
+        "2026_Rules.php": {
+            "header.php": 1
+        }
+    },
+    "caller_edits": {
+        "admin_team_test.php": 2,
+        "mrl_pick_window_messaging_backup_20260820_150437/team.php": 2,
+        "mrl_team_user_menu_backup_20260820_201542/team.php": 2,
+        "mrl_team_user_menu_backup_20260820_203534/team.php": 2,
+        "team-test.php": 2
+    },
+    "caller_files": [
+        "admin_team_test.php",
+        "mrl_pick_window_messaging_backup_20260820_150437/team.php",
+        "mrl_team_user_menu_backup_20260820_201542/team.php",
+        "mrl_team_user_menu_backup_20260820_203534/team.php",
+        "team-test.php"
+    ],
+    "dynamic_team_route_repaired": false
+}
