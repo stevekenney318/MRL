@@ -56,7 +56,7 @@ echo "<br><br>";
 
 echo "This is a live list of teams with picks for Segment 1.<br><br>";
 
-include 'team_charts/2017_S1_Team_chart.php';
+include '2017_S1_Team_chart.php';
 
 echo "<br><br>";
 

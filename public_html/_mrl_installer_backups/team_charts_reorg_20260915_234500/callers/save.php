@@ -105,7 +105,7 @@ line-height:120%;font-family:"Century Gothic",sans-serif;color:#dfcca8'>
 </table>		
 <?php
 
-include 'team_charts/2020_user_team_chart.php';
+include '2020_user_team_chart.php';
 
 ?>
 <table align="center" style="width:70%"><tr><td>
