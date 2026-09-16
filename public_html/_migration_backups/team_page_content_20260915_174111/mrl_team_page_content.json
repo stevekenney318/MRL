@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-15 17:41:11",
+    "updated_at": "2026-09-13 14:57:03",
     "custom_html_block": {
         "enabled": false,
         "position": "below",
@@ -99,7 +99,7 @@
                 "new_tab": true
             },
             {
-                "label": "\u2705 Submitted Teams \u2705",
+                "label": "Submitted Teams",
                 "url": "/submitted_teams.php",
                 "enabled": true,
                 "new_tab": true
