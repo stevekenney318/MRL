@@ -1,0 +1,38 @@
+{
+    "tool": "MRL Team Chart Stragglers Add-On Installer",
+    "version": "v001",
+    "installed_at": "2026-09-16T01:05:32-04:00",
+    "destination": "team_charts",
+    "moved_files": [
+        "2017_Team_chart.php",
+        "2017-s2-no-picks-yet.php",
+        "2017-s3-no-picks-yet.php",
+        "2017-s4-no-picks-yet.php",
+        "2023_All_Teams_chart.php",
+        "2023_All_Teams_history_chart.php"
+    ],
+    "repair_counts": {
+        "2017_Team_chart.php": {
+            "config.php": 1
+        },
+        "2017-s2-no-picks-yet.php": {
+            "config.php": 1
+        },
+        "2017-s3-no-picks-yet.php": {
+            "config.php": 1
+        },
+        "2017-s4-no-picks-yet.php": {
+            "config.php": 1
+        },
+        "2023_All_Teams_chart.php": {
+            "class.user.php": 1,
+            "config.php": 1,
+            "config_mrl.php": 1
+        },
+        "2023_All_Teams_history_chart.php": {
+            "class.user.php": 1,
+            "config.php": 1,
+            "config_mrl.php": 1
+        }
+    }
+}
