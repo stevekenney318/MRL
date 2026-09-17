@@ -1,0 +1,62 @@
+{
+    "installed_at": "2026-09-16T03:11:42-04:00",
+    "removed_files": [
+        "2019_rules.docx",
+        "2019_rules.htm",
+        "2020_rules.htm",
+        "2024_Fees.php",
+        "2024_Rules.php",
+        "2024_Schedule.html",
+        "2024_Schedule.php",
+        "2025_Fees.php",
+        "2025_Rules.php",
+        "2026_Fees.php",
+        "2026_Rules.php"
+    ],
+    "backup_rows": {
+        "2019_rules.docx": {
+            "mtime": 1765271964,
+            "sha256": "3f75a7e10d099efd3315fcf13bcc641b88ba8db3708c563cf8bbfe45c08a74a3"
+        },
+        "2019_rules.htm": {
+            "mtime": 1765271964,
+            "sha256": "acd1548589aa362d0e2627f374630fe1124ee66100dd753f861c7f4987f74e2b"
+        },
+        "2020_rules.htm": {
+            "mtime": 1765271964,
+            "sha256": "2039ac63c7a59df83abc19603822ad944844d461085f3d5b6f5a4e7e26a9cb41"
+        },
+        "2024_Fees.php": {
+            "mtime": 1765866154,
+            "sha256": "4c8348eb46400aa9c4fe027cac2d41a84e69d089d6fcea28a4b73cb49730040e"
+        },
+        "2024_Rules.php": {
+            "mtime": 1765866154,
+            "sha256": "9327312a45ac0b9ed05489941cc876f791d56104be7b732b67e36691966b9a35"
+        },
+        "2024_Schedule.html": {
+            "mtime": 1765271964,
+            "sha256": "de2685e9a47ac4e0fe7967bc1cb31a16bef62a118c84162ea0819e45621eeee0"
+        },
+        "2024_Schedule.php": {
+            "mtime": 1765866153,
+            "sha256": "61a6355304709753cb9485828f883a4db0305a75c0f7f9c77230901adf435423"
+        },
+        "2025_Fees.php": {
+            "mtime": 1769495219,
+            "sha256": "43d8779892baa76055ce8b43dfcdb43b24c7911ad14b089d126e18b193d8e714"
+        },
+        "2025_Rules.php": {
+            "mtime": 1765866153,
+            "sha256": "f33b0d34e8cdcaaf1bf4035a4e98ba908a264602610d9265e5003fd91e224643"
+        },
+        "2026_Fees.php": {
+            "mtime": 1771223419,
+            "sha256": "0cd94beeb8a4011246f7c458b4740b4a9392d54b80af3323059f04aed833763a"
+        },
+        "2026_Rules.php": {
+            "mtime": 1769649138,
+            "sha256": "60227623dadc8841d5baecbd31063f02e6d50c7f0a9c63b1d6f18f9ce43a85da"
+        }
+    }
+}
