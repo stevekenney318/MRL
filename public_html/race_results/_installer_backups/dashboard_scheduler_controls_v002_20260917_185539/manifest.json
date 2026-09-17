@@ -1,0 +1,12 @@
+{
+    "installer_version": "v002",
+    "installed_at": "2026-09-17 18:59:50",
+    "target": "/home/u809830586/domains/manliusracingleague.com/public_html/race_results/race_results_dashboard.php",
+    "from_version": "v023",
+    "to_version": "v024",
+    "target_before_sha256": "1e6df205bc49b2717db8346851036415ed0145733e1ab9c4c661a963eb3ad376",
+    "target_after_sha256": "239dae53a1403f3c4cfb80c0fc508240b90dcf525958e3c690e45407603b7c56",
+    "schedule_sha256_unchanged": "4f70bc6a79e94a9f2ea8f5d2d8cf9b9a96ef7f2e16c1af98fc46548092bdb15b",
+    "master_scheduler_sha256_unchanged": "285a4b6c5c816886ce22ed8e5e7f4bcb5e0e734718a15917330a17052a08e55c",
+    "backup_target": "/home/u809830586/domains/manliusracingleague.com/public_html/race_results/_installer_backups/dashboard_scheduler_controls_v002_20260917_185539/race_results_dashboard.php"
+}

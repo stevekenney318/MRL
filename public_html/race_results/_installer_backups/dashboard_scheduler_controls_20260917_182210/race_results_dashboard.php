@@ -11,32 +11,10 @@ if (!headers_sent()) {
 /**
  * race_results_dashboard.php
  *
- * VERSION: v025
- * LAST MODIFIED: 9/17/2026 7:06:58 pm
+ * VERSION: v022
+ * LAST MODIFIED: 7/26/2026 10:41:38 am
  *
  * CHANGELOG:
- *
- * v025 (9/17/2026 7:06:58 pm)
- *   - UI: Restores the original left-side title/subtitle treatment inside the green operator bar.
- *   - CHANGE: Banner title is now MRL Scheduler; subtitle remains the current site host/domain.
- *   - PRESERVE: Master/Race/Revision controls, pause behavior, scheduler logic, and configuration are unchanged.
- *
- * v024 (9/17/2026 6:55:39 pm)
- *   - CHANGE: Master OFF now acts only as a gate; Race and Revision stored ON/OFF settings are preserved.
- *   - UI: Race and Revision controls dim and show Paused by Master while Master is OFF.
- *   - UI: Race and Revision switches are temporarily non-clickable while Master is OFF; their stored positions remain visible.
- *   - FIX: Snapshot and scheduler panels now report current operator-control state instead of stale prior next-run decisions.
- *   - FIX: Master OFF reports scheduler paused while the Hostinger cron heartbeat may continue normally.
- *   - PRESERVE: schedule.json structure, cron_master_scheduler.php, Hostinger cron, task cadence logic, and Pick Reminder are unchanged.
- *
- * v023 (9/17/2026 6:22:10 pm)
- *   - NEW: Replaces Scheduler / Monitor / Revision tabs with Master / Race / Revision operator controls.
- *   - NEW: Each operator control combines section navigation with a live ON/OFF switch backed by existing schedule.json enabled flags.
- *   - SAFETY: Toggle POST actions require an authenticated MRL admin session and a session CSRF token.
- *   - PRESERVE: Hostinger cron and cron_master_scheduler.php are unchanged; existing scheduler architecture remains authoritative.
- *   - CHANGE: Removes redundant LIVE/Production banner presentation and compacts dashboard metadata into one horizontal control area.
- *   - CHANGE: Removes the System Snapshot heading/status badge and tightens snapshot spacing.
- *   - CHANGE: Revision Monitor Watching now says "Completed races through:" before the latest watched race.
  *
  * v022 (7/26/2026 10:41:38 am)
  *   - CHANGE: NASCAR At a Glance now displays only Cup Series live data.
@@ -116,7 +94,7 @@ if (!headers_sent()) {
  *   - NEW: Added scheduler heartbeat freshness status to separate current cron heartbeat from scheduler/task configuration.
  */
 
-const RACE_RESULTS_DASHBOARD_VERSION = 'v025';
+const RACE_RESULTS_DASHBOARD_VERSION = 'v022';
 
 // visual id of sandbox/test site only
 $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
@@ -692,114 +670,6 @@ function sd_daily_task_status(array $task, array $taskState, DateTimeImmutable $
     ];
 }
 
-// -----------------------------------------------------------------------------
-// v023 scheduler operator controls
-// -----------------------------------------------------------------------------
-if (session_status() === PHP_SESSION_NONE) {
-    @session_start();
-}
-
-if (empty($_SESSION['mrl_scheduler_toggle_token'])) {
-    try {
-        $_SESSION['mrl_scheduler_toggle_token'] = bin2hex(random_bytes(24));
-    } catch (Exception $e) {
-        $_SESSION['mrl_scheduler_toggle_token'] = hash('sha256', session_id() . '|' . __FILE__);
-    }
-}
-
-$schedulerToggleToken = (string)$_SESSION['mrl_scheduler_toggle_token'];
-
-function rr_dash_scheduler_toggle_require_admin(): void
-{
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/config_mrl.php';
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/class.user.php';
-
-    $userHome = new USER();
-
-    if (!$userHome->is_logged_in()) {
-        $_SESSION['return_to'] = $_SERVER['REQUEST_URI'] ?? '/race_results/race_results_dashboard.php';
-        header('Location: /login.php');
-        exit;
-    }
-
-    $uid = (int)($_SESSION['userSession'] ?? 0);
-    if (!isAdmin($uid)) {
-        http_response_code(403);
-        echo '<div style="margin:24px;padding:18px;border:1px solid #a33;border-radius:10px;background:#171111;color:#ff8585;font:16px Arial,sans-serif">MRL admin authorization is required to change scheduler controls.</div>';
-        exit;
-    }
-}
-
-function rr_dash_scheduler_toggle_write(string $schedulePath, array $scheduleData): void
-{
-    $json = json_encode($scheduleData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    if (!is_string($json)) {
-        throw new RuntimeException('Unable to encode schedule.json.');
-    }
-
-    $backupPath = $schedulePath . '.dashboard_toggle_previous';
-    if (is_file($schedulePath) && !@copy($schedulePath, $backupPath)) {
-        throw new RuntimeException('Unable to create schedule.json toggle backup.');
-    }
-
-    $tmp = $schedulePath . '.tmp.' . bin2hex(random_bytes(6));
-    if (@file_put_contents($tmp, $json . "\n", LOCK_EX) === false) {
-        @unlink($tmp);
-        throw new RuntimeException('Unable to write temporary schedule.json.');
-    }
-
-    @chmod($tmp, 0644);
-
-    if (!@rename($tmp, $schedulePath)) {
-        @unlink($tmp);
-        throw new RuntimeException('Unable to replace schedule.json atomically.');
-    }
-}
-
-if (
-    ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
-    && (string)($_POST['dashboard_action'] ?? '') === 'scheduler_toggle'
-) {
-    rr_dash_scheduler_toggle_require_admin();
-
-    $postedToken = (string)($_POST['toggle_token'] ?? '');
-    if ($postedToken === '' || !hash_equals($schedulerToggleToken, $postedToken)) {
-        http_response_code(400);
-        echo '<div style="margin:24px;padding:18px;border:1px solid #a33;border-radius:10px;background:#171111;color:#ff8585;font:16px Arial,sans-serif">Scheduler control token validation failed. Reload the dashboard and try again.</div>';
-        exit;
-    }
-
-    $control = strtolower(trim((string)($_POST['control'] ?? '')));
-    $desired = ((string)($_POST['desired'] ?? '0') === '1');
-
-    $toggleSchedule = sd_read_json($schedulePath);
-    if (empty($toggleSchedule)) {
-        throw new RuntimeException('schedule.json is missing or invalid.');
-    }
-
-    if ($control === 'master') {
-        $toggleSchedule['enabled'] = $desired;
-    } elseif ($control === 'race') {
-        if (!isset($toggleSchedule['tasks']['race_results_monitor']) || !is_array($toggleSchedule['tasks']['race_results_monitor'])) {
-            throw new RuntimeException('race_results_monitor task is missing from schedule.json.');
-        }
-        $toggleSchedule['tasks']['race_results_monitor']['enabled'] = $desired;
-    } elseif ($control === 'revision') {
-        if (!isset($toggleSchedule['tasks']['race_results_revision_monitor']) || !is_array($toggleSchedule['tasks']['race_results_revision_monitor'])) {
-            throw new RuntimeException('race_results_revision_monitor task is missing from schedule.json.');
-        }
-        $toggleSchedule['tasks']['race_results_revision_monitor']['enabled'] = $desired;
-    } else {
-        throw new RuntimeException('Unknown scheduler control.');
-    }
-
-    rr_dash_scheduler_toggle_write($schedulePath, $toggleSchedule);
-
-    $returnUri = (string)($_SERVER['REQUEST_URI'] ?? '/race_results/race_results_dashboard.php');
-    header('Location: ' . $returnUri);
-    exit;
-}
 $schedule = sd_read_json($schedulePath);
 $state = sd_read_json($statePath);
 $heartbeat = sd_read_text($heartbeatPath);
@@ -824,8 +694,6 @@ $year = isset($schedule['year']) ? (string)$schedule['year'] : '';
 $schedulerHeartbeatFreshness = rr_dash_file_freshness($heartbeatPath, $now, 120, 300);
 
 $tasks = isset($schedule['tasks']) && is_array($schedule['tasks']) ? $schedule['tasks'] : [];
-$raceSchedulerEnabled = !empty($tasks['race_results_monitor']['enabled']);
-$revisionSchedulerEnabled = !empty($tasks['race_results_revision_monitor']['enabled']);
 $taskCount = count($tasks);
 $stateTasks = isset($state['tasks']) && is_array($state['tasks']) ? $state['tasks'] : [];
 
@@ -3040,224 +2908,6 @@ if ((string)($_GET['rr_run'] ?? '') === 'ok') {
     }
 
 
-
-    /* v023 operator controls + compact dashboard layout */
-    .dashboard-top {
-        display: none !important;
-    }
-
-    .env-banner {
-        display: none !important;
-    }
-
-    .scheduler-operator-bar {
-        position: relative;
-        display: flex;
-        align-items: stretch;
-        justify-content: center;
-        gap: 18px;
-        margin: 0 0 8px 0;
-        padding: 7px 14px;
-        border: 1px solid #477a59;
-        border-radius: 14px;
-        background: linear-gradient(180deg, rgba(38,63,48,0.82), rgba(28,40,33,0.94));
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
-    }
-
-    .scheduler-bar-brand {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        min-width: 220px;
-        text-align: left;
-        pointer-events: none;
-    }
-
-    .scheduler-bar-brand .env-title {
-        font-size: 23px;
-        line-height: 1.05;
-    }
-
-    .scheduler-bar-brand .env-subtitle {
-        margin-top: 2px;
-        font-size: 12px;
-    }
-
-    .scheduler-control-single,
-    .scheduler-control-pair {
-        display: flex;
-        align-items: stretch;
-        gap: 8px;
-    }
-
-    .scheduler-control-single {
-        padding-right: 18px;
-        border-right: 1px solid rgba(140,190,155,0.28);
-    }
-
-    .scheduler-nav-control {
-        min-width: 112px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-    }
-
-    .scheduler-nav-label {
-        display: block;
-        width: 100%;
-        padding: 3px 12px 4px;
-        border-radius: 10px;
-        color: #f0f0f0;
-        text-decoration: none;
-        text-align: center;
-        font-weight: 800;
-        font-size: 18px;
-        line-height: 1.05;
-        border: 1px solid transparent;
-    }
-
-    .scheduler-nav-label:hover {
-        color: #ffffff;
-        border-color: rgba(255,255,255,0.24);
-        background: rgba(255,255,255,0.05);
-    }
-
-    .scheduler-nav-label.active {
-        color: #ffd27d;
-        border-color: rgba(255,194,85,0.42);
-        background: rgba(255,183,55,0.08);
-    }
-
-    .scheduler-toggle-form {
-        margin: 0;
-        padding: 0;
-    }
-
-    .scheduler-switch {
-        position: relative;
-        display: block;
-        width: 58px;
-        height: 26px;
-        padding: 0;
-        border: 1px solid #686868;
-        border-radius: 999px;
-        background: #2a2a2a;
-        cursor: pointer;
-        box-shadow: inset 0 1px 4px rgba(0,0,0,.55);
-    }
-
-    .scheduler-switch::before {
-        content: "";
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #d34b4b;
-        border: 1px solid rgba(255,255,255,.32);
-        box-shadow: 0 1px 4px rgba(0,0,0,.65);
-        transition: left .15s ease, background .15s ease;
-    }
-
-    .scheduler-switch.is-on {
-        border-color: #3f8b59;
-        background: rgba(31,82,49,.78);
-    }
-
-    .scheduler-switch.is-on::before {
-        left: 35px;
-        background: #38c86b;
-    }
-
-    .scheduler-switch:focus-visible {
-        outline: 2px solid #4b92ff;
-        outline-offset: 2px;
-    }
-
-    .scheduler-nav-control.paused-by-master {
-        opacity: 0.42;
-    }
-
-    .scheduler-nav-control.paused-by-master .scheduler-switch {
-        cursor: not-allowed;
-    }
-
-    .scheduler-pause-hint {
-        min-height: 13px;
-        margin-top: -2px;
-        color: #f0bd61;
-        font-size: 10px;
-        font-weight: 800;
-        line-height: 1;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-    }
-
-    .control-panel {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        flex-wrap: wrap;
-        padding-top: 7px;
-        padding-bottom: 7px;
-    }
-
-    .control-panel .topline,
-    .control-panel .control-row {
-        flex-wrap: nowrap;
-        gap: 7px;
-        margin: 0;
-    }
-
-    .control-panel .topline > .pill:nth-child(1),
-    .control-panel .topline > .pill:nth-child(3) {
-        display: none;
-    }
-
-    .snapshot-card {
-        padding-top: 10px;
-        padding-bottom: 10px;
-    }
-
-    .snapshot-card > h2 {
-        display: none;
-    }
-
-    .snapshot-grid {
-        gap: 10px;
-    }
-
-    .snapshot-tile {
-        padding-top: 10px;
-        padding-bottom: 10px;
-    }
-
-    @media (max-width: 980px) {
-        .scheduler-operator-bar {
-            flex-wrap: wrap;
-            gap: 8px;
-            padding-top: 52px;
-        }
-
-        .scheduler-bar-brand {
-            top: 10px;
-            transform: none;
-        }
-
-        .scheduler-control-single {
-            padding-right: 0;
-            border-right: 0;
-        }
-
-        .control-panel .topline,
-        .control-panel .control-row {
-            flex-wrap: wrap;
-        }
-    }
 </style>
 </head>
 <body>
@@ -3270,63 +2920,6 @@ if ((string)($_GET['rr_run'] ?? '') === 'ok') {
     </div>
 </div>
 
-<div class="scheduler-operator-bar" aria-label="MRL Scheduler controls">
-    <div class="scheduler-bar-brand">
-        <div class="env-title">MRL Scheduler</div>
-        <div class="env-subtitle"><?php echo sd_html($dashboardEnvironmentHost); ?></div>
-    </div>
-
-    <div class="scheduler-control-single">
-        <div class="scheduler-nav-control">
-            <a class="scheduler-nav-label <?php echo $mainTab === 'scheduler' ? 'active' : ''; ?>"
-               href="<?php echo h(rr_combined_tab_url($selfUrl, 'scheduler', $tailLines, $autoRefresh, $classYear)); ?>">Master</a>
-            <form method="post" class="scheduler-toggle-form">
-                <input type="hidden" name="dashboard_action" value="scheduler_toggle">
-                <input type="hidden" name="control" value="master">
-                <input type="hidden" name="desired" value="<?php echo $schedulerEnabled ? '0' : '1'; ?>">
-                <input type="hidden" name="toggle_token" value="<?php echo h($schedulerToggleToken); ?>">
-                <button class="scheduler-switch <?php echo $schedulerEnabled ? 'is-on' : 'is-off'; ?>"
-                        type="submit"
-                        aria-label="Turn Master scheduler <?php echo $schedulerEnabled ? 'off' : 'on'; ?>"
-                        title="Master scheduler: <?php echo $schedulerEnabled ? 'ON — click to turn OFF' : 'OFF — click to turn ON'; ?>"></button>
-            </form>
-        </div>
-    </div>
-
-    <div class="scheduler-control-pair">
-        <div class="scheduler-nav-control <?php echo !$schedulerEnabled ? 'paused-by-master' : ''; ?>">
-            <a class="scheduler-nav-label <?php echo $mainTab === 'monitor' ? 'active' : ''; ?>"
-               href="<?php echo h(rr_combined_tab_url($selfUrl, 'monitor', $tailLines, $autoRefresh, $classYear)); ?>">Race</a>
-            <form method="post" class="scheduler-toggle-form">
-                <input type="hidden" name="dashboard_action" value="scheduler_toggle">
-                <input type="hidden" name="control" value="race">
-                <input type="hidden" name="desired" value="<?php echo $raceSchedulerEnabled ? '0' : '1'; ?>">
-                <input type="hidden" name="toggle_token" value="<?php echo h($schedulerToggleToken); ?>">
-                <button class="scheduler-switch <?php echo $raceSchedulerEnabled ? 'is-on' : 'is-off'; ?>"
-                        type="submit" <?php echo !$schedulerEnabled ? 'disabled' : ''; ?>
-                        aria-label="Turn Race monitor scheduler <?php echo $raceSchedulerEnabled ? 'off' : 'on'; ?>"
-                        title="<?php echo !$schedulerEnabled ? 'Race monitor paused by Master' : ('Race monitor: ' . ($raceSchedulerEnabled ? 'ON — click to turn OFF' : 'OFF — click to turn ON')); ?>"></button>
-            </form>
-            <?php if (!$schedulerEnabled): ?><div class="scheduler-pause-hint">Paused by Master</div><?php endif; ?>
-        </div>
-
-        <div class="scheduler-nav-control <?php echo !$schedulerEnabled ? 'paused-by-master' : ''; ?>">
-            <a class="scheduler-nav-label <?php echo $mainTab === 'revision' ? 'active' : ''; ?>"
-               href="<?php echo h(rr_combined_tab_url($selfUrl, 'revision', $tailLines, $autoRefresh, $classYear)); ?>">Revision</a>
-            <form method="post" class="scheduler-toggle-form">
-                <input type="hidden" name="dashboard_action" value="scheduler_toggle">
-                <input type="hidden" name="control" value="revision">
-                <input type="hidden" name="desired" value="<?php echo $revisionSchedulerEnabled ? '0' : '1'; ?>">
-                <input type="hidden" name="toggle_token" value="<?php echo h($schedulerToggleToken); ?>">
-                <button class="scheduler-switch <?php echo $revisionSchedulerEnabled ? 'is-on' : 'is-off'; ?>"
-                        type="submit" <?php echo !$schedulerEnabled ? 'disabled' : ''; ?>
-                        aria-label="Turn Revision monitor scheduler <?php echo $revisionSchedulerEnabled ? 'off' : 'on'; ?>"
-                        title="<?php echo !$schedulerEnabled ? 'Revision monitor paused by Master' : ('Revision monitor: ' . ($revisionSchedulerEnabled ? 'ON — click to turn OFF' : 'OFF — click to turn ON')); ?>"></button>
-            </form>
-            <?php if (!$schedulerEnabled): ?><div class="scheduler-pause-hint">Paused by Master</div><?php endif; ?>
-        </div>
-    </div>
-</div>
 <div class="env-banner <?php echo sd_html($dashboardEnvironmentClass); ?>">
     <div>
         <div class="env-title"><?php echo sd_html($dashboardEnvironmentLabel); ?></div>
@@ -3341,7 +2934,7 @@ if ((string)($_GET['rr_run'] ?? '') === 'ok') {
             Scheduler: <?php echo $schedulerEnabled ? 'enabled' : 'disabled'; ?>
         </span>
         <span class="pill <?php echo sd_html((string)$schedulerHeartbeatFreshness['class']); ?>">
-            <?php echo $schedulerEnabled ? 'Scheduler: ' : 'Cron heartbeat: '; ?><?php echo sd_html((string)$schedulerHeartbeatFreshness['label']); ?>
+            Scheduler: <?php echo sd_html((string)$schedulerHeartbeatFreshness['label']); ?>
             <span class="small">(<?php echo sd_html((string)$schedulerHeartbeatFreshness['age_text']); ?>)</span>
         </span>
         <span class="pill <?php echo $dryRun ? 'warn' : 'good'; ?>" title="Dry run checks scheduled tasks but does not run monitor or revision scripts.">
@@ -3394,35 +2987,6 @@ $dashLastSnapshot = rr_dash_last_revision_snapshot(isset($classSummary['rows']) 
 $dashRevisionWatching = rr_dash_revision_watching_summary($baseDir, (int)$classYear, $dashRevisionSchedule);
 $dashCronMain = (string)$schedulerHeartbeatFreshness['label'] === 'running' ? 'Scheduler firing every minute' : 'Scheduler ' . (string)$schedulerHeartbeatFreshness['label'];
 $dashCronDetail = (string)$schedulerHeartbeatFreshness['age_text'] !== '' ? (string)$schedulerHeartbeatFreshness['age_text'] : 'heartbeat unknown';
-
-if (!$schedulerEnabled) {
-    $dashCronMain = 'Scheduler paused — Master OFF';
-    $dashCronDetail = 'Cron heartbeat ' . ((string)$schedulerHeartbeatFreshness['age_text'] !== '' ? (string)$schedulerHeartbeatFreshness['age_text'] : 'unknown');
-    $dashRaceStatus = [
-        'Paused — Master OFF',
-        'Race setting remains ' . ($raceSchedulerEnabled ? 'ON' : 'OFF'),
-    ];
-    $dashRevisionNext = 'Paused — Master OFF';
-    $dashRevisionStatus = [
-        'Paused — Master OFF',
-        'Revision setting remains ' . ($revisionSchedulerEnabled ? 'ON' : 'OFF'),
-    ];
-} else {
-    if (!$raceSchedulerEnabled) {
-        $dashRaceStatus = [
-            'Disabled by operator',
-            'Race switch is OFF',
-        ];
-    }
-
-    if (!$revisionSchedulerEnabled) {
-        $dashRevisionNext = 'Disabled by operator';
-        $dashRevisionStatus = [
-            'Disabled by operator',
-            'Revision switch is OFF',
-        ];
-    }
-}
 ?>
 
 <div class="card snapshot-card">
@@ -3448,7 +3012,7 @@ if (!$schedulerEnabled) {
         </div>
         <div class="snapshot-tile">
             <div class="snapshot-label">Revision Monitor Watching</div>
-            <div class="snapshot-main">Completed races through:</div>
+            <div class="snapshot-main"><?php echo sd_html((string)$dashRevisionWatching['summary']); ?></div>
             <div class="snapshot-detail"><?php echo sd_html((string)$dashRevisionWatching['race']); ?></div>
             <div class="snapshot-impact-line"><span class="badge ok"><?php echo sd_html((string)$dashRevisionWatching['time']); ?></span></div>
         </div>
@@ -3485,23 +3049,6 @@ if (!$schedulerEnabled) {
             : 'not found yet';
         $raceOperationalStatus = rr_dash_race_operational_status($autoDecision, $autoNextRace);
         $raceNextDueSentence = rr_dash_next_run_sentence((string)($autoDecision['next_due_at'] ?? ''), $now);
-        $raceScheduleDisplay = rr_dash_format_interval_label($autoInterval);
-
-        if (!$schedulerEnabled) {
-            $raceOperationalStatus = [
-                'Paused — Master OFF',
-                'Stored Race setting remains ' . ($raceSchedulerEnabled ? 'ON' : 'OFF'),
-            ];
-            $raceNextDueSentence = 'Paused — Master OFF';
-            $raceScheduleDisplay = 'paused';
-        } elseif (!$raceSchedulerEnabled) {
-            $raceOperationalStatus = [
-                'Disabled by operator',
-                'Race switch is OFF',
-            ];
-            $raceNextDueSentence = 'No scheduled run';
-            $raceScheduleDisplay = 'disabled';
-        }
         ?>
         <?php if (empty($raceTask)): ?>
             <p class="msg">No race_results_monitor task found in _scheduler/schedule.json.</p>
@@ -3517,7 +3064,7 @@ if (!$schedulerEnabled) {
                 </div>
                 <div class="summary-box">
                     <div class="label">Schedule</div>
-                    <div class="value"><?php echo sd_html($raceScheduleDisplay); ?></div>
+                    <div class="value"><?php echo sd_html(rr_dash_format_interval_label($autoInterval)); ?></div>
                     <div class="note"><?php echo sd_html($raceNextDueSentence); ?></div>
                 </div>
                 <div class="summary-box">
@@ -3588,23 +3135,6 @@ if (!$schedulerEnabled) {
                     ? rr_dash_format_interval_label((int)$revisionDecision['interval_minutes'])
                     : 'daily times';
                 $revisionNextDueSentence = rr_dash_next_run_sentence((string)($revisionDecision['next_due_at'] ?? ''), $now);
-
-                if (!$schedulerEnabled) {
-                    $revisionOperationalStatus = [
-                        'Paused — Master OFF',
-                        'Stored Revision setting remains ' . ($revisionSchedulerEnabled ? 'ON' : 'OFF'),
-                    ];
-                    $revisionNextDueSentence = 'Paused — Master OFF';
-                    $revisionIntervalText = 'paused';
-                } elseif (!$revisionSchedulerEnabled) {
-                    $revisionOperationalStatus = [
-                        'Disabled by operator',
-                        'Revision switch is OFF',
-                    ];
-                    $revisionNextDueSentence = 'No scheduled run';
-                    $revisionIntervalText = 'disabled';
-                }
-
                 $revisionCounts = rr_dash_revision_scan_counts((string)($revisionTaskState['last_output_tail'] ?? ''));
                 ?>
                 <div class="scheduler-summary">
@@ -3690,18 +3220,6 @@ if (!$schedulerEnabled) {
                     $lastStatus = isset($taskState['last_status']) ? (string)$taskState['last_status'] : '';
                     $lastMessage = isset($taskState['last_message']) ? (string)$taskState['last_message'] : '';
                     $exitCode = array_key_exists('last_exit_code', $taskState) ? (string)$taskState['last_exit_code'] : '';
-
-                    if (!$schedulerEnabled) {
-                        $calc['schedule_text'] = 'Paused by Master';
-                        $calc['due_text'] = 'paused';
-                        $calc['due'] = false;
-                        $calc['next_run'] = '';
-                    } elseif (!$enabled) {
-                        $calc['schedule_text'] = 'Disabled by operator';
-                        $calc['due_text'] = 'disabled';
-                        $calc['due'] = false;
-                        $calc['next_run'] = '';
-                    }
 
                     $dueClass = $calc['due'] ? 'warn' : 'good';
                     $enabledClass = $enabled ? 'good' : 'bad';

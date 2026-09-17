@@ -11,15 +11,10 @@ if (!headers_sent()) {
 /**
  * race_results_dashboard.php
  *
- * VERSION: v025
- * LAST MODIFIED: 9/17/2026 7:06:58 pm
+ * VERSION: v024
+ * LAST MODIFIED: 9/17/2026 6:55:39 pm
  *
  * CHANGELOG:
- *
- * v025 (9/17/2026 7:06:58 pm)
- *   - UI: Restores the original left-side title/subtitle treatment inside the green operator bar.
- *   - CHANGE: Banner title is now MRL Scheduler; subtitle remains the current site host/domain.
- *   - PRESERVE: Master/Race/Revision controls, pause behavior, scheduler logic, and configuration are unchanged.
  *
  * v024 (9/17/2026 6:55:39 pm)
  *   - CHANGE: Master OFF now acts only as a gate; Race and Revision stored ON/OFF settings are preserved.
@@ -116,7 +111,7 @@ if (!headers_sent()) {
  *   - NEW: Added scheduler heartbeat freshness status to separate current cron heartbeat from scheduler/task configuration.
  */
 
-const RACE_RESULTS_DASHBOARD_VERSION = 'v025';
+const RACE_RESULTS_DASHBOARD_VERSION = 'v024';
 
 // visual id of sandbox/test site only
 $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
@@ -3051,7 +3046,6 @@ if ((string)($_GET['rr_run'] ?? '') === 'ok') {
     }
 
     .scheduler-operator-bar {
-        position: relative;
         display: flex;
         align-items: stretch;
         justify-content: center;
@@ -3062,26 +3056,6 @@ if ((string)($_GET['rr_run'] ?? '') === 'ok') {
         border-radius: 14px;
         background: linear-gradient(180deg, rgba(38,63,48,0.82), rgba(28,40,33,0.94));
         box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
-    }
-
-    .scheduler-bar-brand {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        min-width: 220px;
-        text-align: left;
-        pointer-events: none;
-    }
-
-    .scheduler-bar-brand .env-title {
-        font-size: 23px;
-        line-height: 1.05;
-    }
-
-    .scheduler-bar-brand .env-subtitle {
-        margin-top: 2px;
-        font-size: 12px;
     }
 
     .scheduler-control-single,
@@ -3240,12 +3214,6 @@ if ((string)($_GET['rr_run'] ?? '') === 'ok') {
         .scheduler-operator-bar {
             flex-wrap: wrap;
             gap: 8px;
-            padding-top: 52px;
-        }
-
-        .scheduler-bar-brand {
-            top: 10px;
-            transform: none;
         }
 
         .scheduler-control-single {
@@ -3271,11 +3239,6 @@ if ((string)($_GET['rr_run'] ?? '') === 'ok') {
 </div>
 
 <div class="scheduler-operator-bar" aria-label="MRL Scheduler controls">
-    <div class="scheduler-bar-brand">
-        <div class="env-title">MRL Scheduler</div>
-        <div class="env-subtitle"><?php echo sd_html($dashboardEnvironmentHost); ?></div>
-    </div>
-
     <div class="scheduler-control-single">
         <div class="scheduler-nav-control">
             <a class="scheduler-nav-label <?php echo $mainTab === 'scheduler' ? 'active' : ''; ?>"
