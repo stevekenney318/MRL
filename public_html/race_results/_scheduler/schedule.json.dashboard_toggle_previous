@@ -12,7 +12,7 @@
     ],
     "tasks": {
         "race_results_monitor": {
-            "enabled": true,
+            "enabled": false,
             "type": "auto_race_monitor",
             "script": "race_results_monitor.php",
             "args": [
@@ -58,7 +58,7 @@
             "description": "Race-aware monitor schedule driven by _race_results_schedule.json next_race.start_at and _race_results_monitor_state.json lap/final state."
         },
         "race_results_revision_monitor": {
-            "enabled": false,
+            "enabled": true,
             "type": "auto_revision_monitor",
             "script": "race_results_revision_monitor.php",
             "args": [
