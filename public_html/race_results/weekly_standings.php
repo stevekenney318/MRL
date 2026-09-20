@@ -6,6 +6,23 @@ ob_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config_mrl.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions_mrl.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/mrl_team/mrl_theme_helper.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$weeklyStandingsTheme = 'dark';
+
+try {
+    $weeklyThemeUid = (int)($_SESSION['userSession'] ?? 0);
+
+    if (isset($dbo) && $dbo instanceof PDO && $weeklyThemeUid > 0) {
+        $weeklyStandingsTheme = mrl_theme_get($dbo, $weeklyThemeUid);
+    }
+} catch (Throwable $e) {
+    $weeklyStandingsTheme = 'dark';
+}
 
 // disableCaching() defined in functions_mrl.php
 disableCaching();
@@ -28,10 +45,17 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v072
- * LAST MODIFIED: 9/13/2026 3:35:57 pm ET
+ * VERSION: v073
+ * LAST MODIFIED: 9/20/2026 3:28:27 pm ET
  *
  * CHANGELOG:
+ *
+ * v073 (9/20/2026 3:28:27 pm ET)
+ *   - THEME: Weekly Standings now uses the logged-in user's Team theme (Cars, Starry Night, Dark, or Light).
+ *   - THEME: Reuses /mrl_team/mrl_theme_helper.php and /mrl_team/mrl_shared_theme.css; no duplicate theme engine added.
+ *   - READABILITY: Existing light report tables remain light with dark text while page-level text adapts to the selected theme.
+ *   - PRINT: Explicitly restores white/blank print background so Team themes do not alter clean or full PDF output.
+ *   - PRESERVE: Scoring, snapshots, validation, audit, release history, Pending Review, navigation, spreadsheet export, print controls, and report table colors unchanged.
  *
  * v072 (9/13/2026 8:49:41 pm ET)
  *   - FIX: LP/RD overlay rows now preserve userID when the applicable special-pick row is constructed.
@@ -2809,12 +2833,14 @@ if ($exportMode === 'xlsx') {
 
 ?>
 <!DOCTYPE html>
-<html>
+<html class="mrl-theme-<?php echo rrsg_h($weeklyStandingsTheme); ?>">
 <head>
     <meta charset="UTF-8">
     <title>Weekly Standings</title>
+    <link rel="stylesheet" href="/mrl_team/mrl_shared_theme.css?v=001">
     <style>
         html {
+            min-height: 100%;
             scrollbar-gutter: stable;
         }
 
@@ -2823,17 +2849,29 @@ if ($exportMode === 'xlsx') {
             font-size: 16px;
             line-height: 1.3;
             margin: 12px;
-            color: #111;
+            color: var(--mrl-rd-text);
+            background: transparent !important;
         }
 
         body.release-superseded-view {
-            background: rgba(255, 0, 0, 0.10);
+            background: rgba(255, 0, 0, 0.10) !important;
         }
 
         .page-wrap {
             /* max-width: 1750px; */
             max-width: 1400px;
             margin: 0 auto;
+        }
+
+        /* Keep the established report itself light/readable over any Team theme. */
+        table,
+        th,
+        td {
+            color: #111;
+        }
+
+        .historical-note-row {
+            color: var(--mrl-rd-muted) !important;
         }
 
         .top-controls {
@@ -3561,6 +3599,17 @@ if ($exportMode === 'xlsx') {
         }
 
         @media print {
+            html,
+            html.mrl-theme-cars,
+            html.mrl-theme-starry-night,
+            html.mrl-theme-dark,
+            html.mrl-theme-light,
+            body,
+            body.release-superseded-view {
+                background: #ffffff !important;
+                background-image: none !important;
+                color: #111111 !important;
+            }
             @page {
                 size: landscape;
                 margin: 0.25in;
