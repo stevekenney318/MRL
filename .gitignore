@@ -66,6 +66,10 @@ backups/
 *.tgz
 *.gz
 
+# --- cleanup folders ---
+_quarantine
+_installer_backups
+
 # --- Dependency folders you don't want in this repo copy ---
 vendor/
 node_modules/

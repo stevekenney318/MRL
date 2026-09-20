@@ -4,14 +4,33 @@ declare(strict_types=1);
 /**
  * team_chart.php
  *
- * VERSION: v021
- * LAST MODIFIED: 9/9/2026 2:44:18 am ET
+ * VERSION: v024
+ * LAST MODIFIED: 9/20/2026 3:23:48 pm ET
  *
  * DESCRIPTION:
  * Public Team Chart page with PRG flow, print, spreadsheet export,
  * and render-time LP / RD chart annotations.
  *
  * CHANGELOG:
+ *
+ * v024 (9/20/2026 3:23:48 pm ET)
+ * - EXPORT FIX: Applies the note-row border style to all seven cells before merging A:G in the XLSX footer.
+ * - RESULT: Restores the visible bottom border across the full width of the final peach note row in Excel.
+ * - PRESERVE: Pure-PHP XLSX writer, title/header/data colors, notes, widths, frozen rows, print behavior, navigation, themes, LP/RD display, and DB queries unchanged.
+ *
+ * v023 (9/20/2026 1:37:21 pm ET)
+ * - EXPORT: Replaced PhpSpreadsheet/Composer XLSX export with a self-contained pure-PHP XLSX writer based on the proven Weekly Standings approach.
+ * - EXPORT: Preserves Team Chart title/header styling, column colors, borders, column widths, row heights, notes, frozen top rows, and timestamped filenames.
+ * - UI: Added a subtle divider between the Year navigation group and Segment navigation group for clearer visual separation.
+ * - CLEANUP: team_chart.php no longer requires vendor/autoload.php or PhpSpreadsheet. Vendor files are NOT deleted by this installer.
+ * - PRESERVE: Privacy gate, LP/RD display, print behavior, navigation, chart width, themes, and all database queries remain unchanged.
+ *
+ * v022 (9/20/2026 1:02:07 pm ET)
+ * - UI: Standalone Team Chart now uses a wider 85% report width, matching the Team Page chart feel more closely.
+ * - UI: Top controls now follow the flatter Weekly Standings visual language: slimmer selects/buttons, no select shadow, tighter spacing, and matching report-action styling.
+ * - UI: Live is now a blue pill-shaped control with the same enabled/disabled treatment used by Weekly Standings.
+ * - PRINT: Team theme/background image is explicitly removed for print/PDF while chart header/cell colors remain preserved.
+ * - PRESERVE: Existing privacy gate, navigation behavior, LP/RD display, Print filename logic, Spreadsheet export, and PhpSpreadsheet dependency are unchanged in this pass.
  *
  * v021 (9/9/2026 4:08:09 am ET)
  * - UI: Control row now follows approved Live / year / year arrows / segment / segment arrows / report-actions layout.
@@ -444,223 +463,348 @@ function tc_build_chart_context(array $rows, string $year): array
 }
 
 /**
- * Sends a real XLSX file (no warning) using PhpSpreadsheet.
- * If PhpSpreadsheet is not installed, exits with a readable error.
+ * Team Chart pure-PHP XLSX helpers.
+ * Derived from the proven Weekly Standings XLSX packaging approach.
+ * No Composer or vendor/autoload.php dependency.
+ */
+function tc_xlsx_xml(string $value): string
+{
+    return htmlspecialchars($value, ENT_XML1 | ENT_COMPAT, 'UTF-8');
+}
+
+function tc_xlsx_col_letter(int $col): string
+{
+    $col = max(1, $col);
+    $letter = '';
+
+    while ($col > 0) {
+        $mod = ($col - 1) % 26;
+        $letter = chr(65 + $mod) . $letter;
+        $col = (int)(($col - $mod) / 26);
+    }
+
+    return $letter;
+}
+
+function tc_xlsx_cell_xml(string $cellRef, $value, int $styleIndex): string
+{
+    return '<c r="' . tc_xlsx_xml($cellRef) . '" t="inlineStr" s="' . $styleIndex . '"><is><t>'
+        . tc_xlsx_xml((string)$value)
+        . '</t></is></c>';
+}
+
+function tc_zip_dos_parts(?int $timestamp = null): array
+{
+    $timestamp = $timestamp ?? time();
+
+    $year = (int)date('Y', $timestamp);
+    $month = (int)date('n', $timestamp);
+    $day = (int)date('j', $timestamp);
+    $hour = (int)date('G', $timestamp);
+    $minute = (int)date('i', $timestamp);
+    $second = (int)date('s', $timestamp);
+
+    $dosTime = ($hour << 11) | ($minute << 5) | (int)floor($second / 2);
+    $dosDate = (($year - 1980) << 9) | ($month << 5) | $day;
+
+    return [$dosTime, $dosDate];
+}
+
+function tc_zip_from_strings(array $files): string
+{
+    $zipData = '';
+    $centralDirectory = '';
+    $offset = 0;
+
+    [$dosTime, $dosDate] = tc_zip_dos_parts();
+
+    foreach ($files as $name => $data) {
+        $name = str_replace('\\', '/', (string)$name);
+        $data = (string)$data;
+
+        $nameLength = strlen($name);
+        $dataLength = strlen($data);
+        $crc = crc32($data);
+
+        $localHeader = pack(
+            'VvvvvvVVVvv',
+            0x04034b50,
+            20,
+            0,
+            0,
+            $dosTime,
+            $dosDate,
+            $crc,
+            $dataLength,
+            $dataLength,
+            $nameLength,
+            0
+        );
+
+        $zipData .= $localHeader . $name . $data;
+
+        $centralDirectory .= pack(
+            'VvvvvvvVVVvvvvvVV',
+            0x02014b50,
+            20,
+            20,
+            0,
+            0,
+            $dosTime,
+            $dosDate,
+            $crc,
+            $dataLength,
+            $dataLength,
+            $nameLength,
+            0,
+            0,
+            0,
+            0,
+            0,
+            $offset
+        ) . $name;
+
+        $offset += strlen($localHeader) + $nameLength + $dataLength;
+    }
+
+    $centralOffset = strlen($zipData);
+    $centralSize = strlen($centralDirectory);
+    $fileCount = count($files);
+
+    $endOfCentralDirectory = pack(
+        'VvvvvVVv',
+        0x06054b50,
+        0,
+        0,
+        $fileCount,
+        $fileCount,
+        $centralSize,
+        $centralOffset,
+        0
+    );
+
+    return $zipData . $centralDirectory . $endOfCentralDirectory;
+}
+
+/**
+ * Sends a real XLSX file using only built-in PHP string/pack logic.
+ * Preserves Team Chart title/header fills, per-column colors, notes,
+ * borders, widths, row heights, and frozen header rows.
  */
 function send_excel_xlsx(string $filenameBase, array $rows, string $title, array $notes): void
 {
-    $autoloadPath = __DIR__ . '/vendor/autoload.php';
-    if (!file_exists($autoloadPath)) {
-        header('Content-Type: text/plain; charset=UTF-8');
-        echo "Spreadsheet export requires PhpSpreadsheet.\n\n";
-        echo "Missing: " . $autoloadPath . "\n\n";
-        echo "Fix:\n";
-        echo "Option A (server): composer require phpoffice/phpspreadsheet\n";
-        echo "Option B (local): run composer locally and upload the /vendor folder next to team_chart.php\n";
-        exit;
+    $safeBase = preg_replace('/[^A-Za-z0-9_\-]/', '_', $filenameBase);
+
+    if ($safeBase === '') {
+        $safeBase = 'team_chart';
     }
-    require_once $autoloadPath;
 
-    try {
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Team Chart');
+    $filename = $safeBase . '.xlsx';
 
-        $safeBase = preg_replace('/[^A-Za-z0-9_\-]/', '_', $filenameBase);
-        $filename = $safeBase . '.xlsx';
+    $cellsByRow = [];
+    $mergeRanges = [];
 
-        $cHeader = 'FABF8F';
-        $cTeam   = 'B7DEE8';
-        $cA      = 'D9D9D9';
-        $cB      = 'C4BD97';
-        $cC      = 'B8CCE4';
-        $cD      = 'D8E4BC';
+    // Style IDs:
+    // 1 title, 2 header, 3 team/owner/time, 4 A, 5 B, 6 C, 7 D, 8 note
+    $cellsByRow[1][] = tc_xlsx_cell_xml('A1', $title, 1);
+    $mergeRanges[] = 'A1:G1';
 
-        $headers = ['Team','Owner','Group A','Group B','Group C','Group D','Submission Time'];
+    $headers = ['Team','Owner','Group A','Group B','Group C','Group D','Submission Time'];
+    foreach ($headers as $idx => $header) {
+        $cellsByRow[2][] = tc_xlsx_cell_xml(tc_xlsx_col_letter($idx + 1) . '2', $header, 2);
+    }
 
-        $sheet->setCellValue('A1', $title);
-        $sheet->mergeCells('A1:G1');
-        $sheet->fromArray($headers, null, 'A2');
+    $rowNum = 3;
 
-        $r = 3;
+    if (empty($rows)) {
+        $cellsByRow[$rowNum][] = tc_xlsx_cell_xml('A' . $rowNum, 'No picks found for this year / segment.', 3);
+        $mergeRanges[] = 'A' . $rowNum . ':G' . $rowNum;
+        $rowNum++;
+    } else {
         foreach ($rows as $row) {
-            $sheet->setCellValue("A{$r}", (string)($row['teamName'] ?? ''));
-            $sheet->setCellValue("B{$r}", (string)($row['userName'] ?? ''));
-            $sheet->setCellValue("C{$r}", (string)($row['driverA'] ?? ''));
-            $sheet->setCellValue("D{$r}", (string)($row['driverB'] ?? ''));
-            $sheet->setCellValue("E{$r}", (string)($row['driverC'] ?? ''));
-            $sheet->setCellValue("F{$r}", (string)($row['driverD'] ?? ''));
-            $sheet->setCellValueExplicit(
-                "G{$r}",
+            $values = [
+                (string)($row['teamName'] ?? ''),
+                (string)($row['userName'] ?? ''),
+                (string)($row['driverA'] ?? ''),
+                (string)($row['driverB'] ?? ''),
+                (string)($row['driverC'] ?? ''),
+                (string)($row['driverD'] ?? ''),
                 (string)($row['entryDate'] ?? ''),
-                \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING
-            );
-            $r++;
-        }
+            ];
 
-        if ($r === 3) {
-            $sheet->setCellValue('A3', 'No picks found for this year / segment.');
-            $sheet->mergeCells('A3:G3');
-            $r = 4;
-        }
+            $styles = [3, 3, 4, 5, 6, 7, 3];
 
-        $dataLastRow = $r - 1;
-
-        if (!empty($notes)) {
-            foreach ($notes as $note) {
-                $sheet->setCellValue(
-                    "A{$r}",
-                    (string)(($note['marker'] ?? '') . ' ' . ($note['text'] ?? ''))
-                );
-                $sheet->mergeCells("A{$r}:G{$r}");
-                $sheet->getStyle("A{$r}:G{$r}")->applyFromArray([
-                    'font' => ['name' => 'Arial', 'size' => 10],
-                    'alignment' => [
-                        'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
-                        'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-                    ],
-                    'fill' => [
-                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => $cHeader],
-                    ],
-                ]);
-                $r++;
+            foreach ($values as $idx => $value) {
+                $ref = tc_xlsx_col_letter($idx + 1) . $rowNum;
+                $cellsByRow[$rowNum][] = tc_xlsx_cell_xml($ref, $value, $styles[$idx]);
             }
+
+            $rowNum++;
         }
-
-        $lastRow    = $r - 1;
-        $rangeAll   = "A1:G{$lastRow}";
-        $rangeTitle = "A1:G1";
-        $rangeHdr   = "A2:G2";
-        $rangeData  = ($dataLastRow >= 3) ? "A3:G{$dataLastRow}" : "";
-
-        $sheet->getStyle($rangeAll)->getFont()->setName('Arial')->setSize(13);
-
-        $sheet->getStyle($rangeTitle)->applyFromArray([
-            'font' => ['bold' => true, 'size' => 16],
-            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
-            'fill' => [
-                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                'startColor' => ['rgb' => $cHeader],
-            ],
-        ]);
-
-        $sheet->getStyle($rangeHdr)->applyFromArray([
-            'font' => ['bold' => true, 'size' => 13],
-            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
-            'fill' => [
-                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                'startColor' => ['rgb' => $cHeader],
-            ],
-        ]);
-
-        if ($rangeData !== '') {
-            $sheet->getStyle("A3:B{$lastRow}")->getFill()
-                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                ->getStartColor()->setRgb($cTeam);
-
-            $sheet->getStyle("G3:G{$lastRow}")->getFill()
-                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                ->getStartColor()->setRgb($cTeam);
-
-            $sheet->getStyle("C3:C{$lastRow}")->getFill()
-                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                ->getStartColor()->setRgb($cA);
-
-            $sheet->getStyle("D3:D{$lastRow}")->getFill()
-                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                ->getStartColor()->setRgb($cB);
-
-            $sheet->getStyle("E3:E{$lastRow}")->getFill()
-                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                ->getStartColor()->setRgb($cC);
-
-            $sheet->getStyle("F3:F{$lastRow}")->getFill()
-                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                ->getStartColor()->setRgb($cD);
-        }
-
-        $sheet->getStyle($rangeAll)->applyFromArray([
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                    'color' => ['rgb' => '000000'],
-                ],
-            ],
-        ]);
-
-        $sheet->getStyle($rangeAll)->getAlignment()
-            ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
-
-        if ($rangeData !== '') {
-            $sheet->getStyle($rangeData)->getAlignment()
-                ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
-        }
-
-        $sheet->getStyle($rangeAll)->getAlignment()->setWrapText(false);
-        $sheet->freezePane('A3');
-
-        $sheet->getColumnDimension('A')->setWidth(28);
-        $sheet->getColumnDimension('B')->setWidth(22);
-        $sheet->getColumnDimension('C')->setWidth(18);
-        $sheet->getColumnDimension('D')->setWidth(18);
-        $sheet->getColumnDimension('E')->setWidth(18);
-        $sheet->getColumnDimension('F')->setWidth(18);
-        $sheet->getColumnDimension('G')->setWidth(22);
-
-        $sheet->getRowDimension(1)->setRowHeight(24);
-        $sheet->getRowDimension(2)->setRowHeight(20);
-        if ($lastRow >= 3) {
-            for ($i = 3; $i <= $lastRow; $i++) {
-                $sheet->getRowDimension($i)->setRowHeight(18);
-            }
-        }
-
-        if (!empty($notes)) {
-            $noteStartRow = $dataLastRow + 1;
-            for ($noteRow = $noteStartRow; $noteRow <= $lastRow; $noteRow++) {
-                $sheet->getStyle("A{$noteRow}:G{$noteRow}")->applyFromArray([
-                    'font' => [
-                        'name' => 'Arial',
-                        'size' => 9,
-                        'bold' => false,
-                        'color' => ['rgb' => '000000'],
-                    ],
-                    'alignment' => [
-                        'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
-                        'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-                    ],
-                    'fill' => [
-                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => $cHeader],
-                    ],
-                ]);
-                $sheet->getRowDimension($noteRow)->setRowHeight(16);
-            }
-        }
-
-        while (ob_get_level() > 0) {
-            ob_end_clean();
-        }
-
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
-        header('Pragma: public');
-
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        $writer->save('php://output');
-        exit;
-
-    } catch (Throwable $e) {
-        while (ob_get_level() > 0) {
-            ob_end_clean();
-        }
-        header('Content-Type: text/plain; charset=UTF-8');
-        echo "Spreadsheet export failed.\n\n";
-        echo $e->getMessage();
-        exit;
     }
+
+    $dataLastRow = $rowNum - 1;
+
+    foreach ($notes as $note) {
+        $text = (string)(($note['marker'] ?? '') . ' ' . ($note['text'] ?? ''));
+
+        // Keep A as the visible merged-cell value, but also create styled
+        // blank cells B:G before merging so Excel has the border style
+        // across the entire perimeter of the merged footer row.
+        $cellsByRow[$rowNum][] = tc_xlsx_cell_xml('A' . $rowNum, $text, 8);
+
+        for ($col = 2; $col <= 7; $col++) {
+            $cellsByRow[$rowNum][] = tc_xlsx_cell_xml(
+                tc_xlsx_col_letter($col) . $rowNum,
+                '',
+                8
+            );
+        }
+
+        $mergeRanges[] = 'A' . $rowNum . ':G' . $rowNum;
+        $rowNum++;
+    }
+
+    ksort($cellsByRow, SORT_NUMERIC);
+
+    $sheetRows = '';
+    foreach ($cellsByRow as $r => $parts) {
+        $height = ($r === 1) ? '24' : (($r === 2) ? '20' : (($r > $dataLastRow) ? '16' : '18'));
+        $sheetRows .= '<row r="' . (int)$r . '" ht="' . $height . '" customHeight="1">'
+            . implode('', $parts)
+            . '</row>';
+    }
+
+    $mergeXml = '';
+    if (!empty($mergeRanges)) {
+        $mergeXml = '<mergeCells count="' . count($mergeRanges) . '">';
+
+        foreach ($mergeRanges as $range) {
+            $mergeXml .= '<mergeCell ref="' . tc_xlsx_xml($range) . '"/>';
+        }
+
+        $mergeXml .= '</mergeCells>';
+    }
+
+    $worksheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        . '<sheetViews><sheetView workbookViewId="0"><pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+        . '<sheetFormatPr defaultRowHeight="18"/>'
+        . '<cols>'
+        . '<col min="1" max="1" width="28" customWidth="1"/>'
+        . '<col min="2" max="2" width="22" customWidth="1"/>'
+        . '<col min="3" max="6" width="18" customWidth="1"/>'
+        . '<col min="7" max="7" width="22" customWidth="1"/>'
+        . '</cols>'
+        . '<sheetData>' . $sheetRows . '</sheetData>'
+        . $mergeXml
+        . '<pageMargins left="0.25" right="0.25" top="0.25" bottom="0.25" header="0.3" footer="0.3"/>'
+        . '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>'
+        . '</worksheet>';
+
+    $stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        . '<fonts count="3">'
+        . '<font><sz val="13"/><name val="Arial"/></font>'
+        . '<font><b/><sz val="13"/><name val="Arial"/></font>'
+        . '<font><sz val="9"/><name val="Arial"/></font>'
+        . '</fonts>'
+        . '<fills count="8">'
+        . '<fill><patternFill patternType="none"/></fill>'
+        . '<fill><patternFill patternType="gray125"/></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFFABF8F"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFB7DEE8"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFD9D9D9"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFC4BD97"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFB8CCE4"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFD8E4BC"/><bgColor indexed="64"/></patternFill></fill>'
+        . '</fills>'
+        . '<borders count="2">'
+        . '<border><left/><right/><top/><bottom/><diagonal/></border>'
+        . '<border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom><diagonal/></border>'
+        . '</borders>'
+        . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+        . '<cellXfs count="9">'
+        . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+        . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="7" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+        . '</cellXfs>'
+        . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+        . '</styleSheet>';
+
+    $workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        . '<sheets><sheet name="Team Chart" sheetId="1" r:id="rId1"/></sheets>'
+        . '</workbook>';
+
+    $workbookRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+        . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+        . '</Relationships>';
+
+    $rootRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+        . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>'
+        . '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>'
+        . '</Relationships>';
+
+    $contentTypesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        . '<Default Extension="xml" ContentType="application/xml"/>'
+        . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        . '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+        . '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
+        . '</Types>';
+
+    $created = gmdate('Y-m-d\TH:i:s\Z');
+
+    $coreXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+        . '<dc:creator>Manlius Racing League</dc:creator>'
+        . '<cp:lastModifiedBy>Manlius Racing League</cp:lastModifiedBy>'
+        . '<dcterms:created xsi:type="dcterms:W3CDTF">' . $created . '</dcterms:created>'
+        . '<dcterms:modified xsi:type="dcterms:W3CDTF">' . $created . '</dcterms:modified>'
+        . '</cp:coreProperties>';
+
+    $appXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
+        . '<Application>Manlius Racing League</Application>'
+        . '</Properties>';
+
+    $xlsxBinary = tc_zip_from_strings([
+        '[Content_Types].xml' => $contentTypesXml,
+        '_rels/.rels' => $rootRelsXml,
+        'docProps/core.xml' => $coreXml,
+        'docProps/app.xml' => $appXml,
+        'xl/workbook.xml' => $workbookXml,
+        'xl/_rels/workbook.xml.rels' => $workbookRelsXml,
+        'xl/styles.xml' => $stylesXml,
+        'xl/worksheets/sheet1.xml' => $worksheetXml,
+    ]);
+
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: max-age=0');
+    header('Pragma: public');
+    header('Content-Length: ' . strlen($xlsxBinary));
+
+    echo $xlsxBinary;
+    exit;
 }
 
 // ---------- load years + segments from DB ----------
@@ -1014,7 +1158,170 @@ if ($isExcelPost) {
         .teamchart-note-line + .teamchart-note-line {
             margin-top: 4px;
         }
-    </style>
+
+        /* =========================================================
+           v022 — Team Chart report-control unification
+           Visual baseline: Weekly Standings.
+           ========================================================= */
+
+        .teamchart-container {
+            width: 85% !important;
+            max-width: 1600px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        .teamchart-form {
+            margin: 4px 0 6px 0 !important;
+        }
+
+        .teamchart-row {
+            gap: 6px 10px !important;
+        }
+
+        .teamchart-select {
+            width: 120px !important;
+            height: 28px !important;
+            box-sizing: border-box !important;
+            font: 16px/1.2 Arial, Helvetica, sans-serif !important;
+            padding: 1px 8px !important;
+            border: 1px solid #999 !important;
+            border-radius: 3px !important;
+            background: #f2f2f2 !important;
+            color: #111 !important;
+            box-shadow: none !important;
+        }
+
+        .teamchart-actionbtn {
+            min-height: 28px !important;
+            height: 28px !important;
+            box-sizing: border-box !important;
+            font: 16px/1.2 Arial, Helvetica, sans-serif !important;
+            padding: 1px 8px !important;
+            border: 1px solid #999 !important;
+            border-radius: 3px !important;
+            background: #f2f2f2 !important;
+            color: #111 !important;
+            box-shadow: none !important;
+        }
+
+        .teamchart-actionbtn:hover:not(:disabled) {
+            filter: brightness(0.96);
+        }
+
+        .teamchart-navpair {
+            gap: 4px !important;
+        }
+        .teamchart-group-divider {
+            display: inline-block;
+            width: 1px;
+            height: 26px;
+            margin: 0 3px 0 5px;
+            background: rgba(220, 220, 220, 0.72);
+            align-self: center;
+        }
+
+        .teamchart-navpair .teamchart-actionbtn {
+            min-width: 34px !important;
+            padding-left: 6px !important;
+            padding-right: 6px !important;
+        }
+
+        .teamchart-actions {
+            gap: 6px 10px !important;
+        }
+
+        .teamchart-actions .teamchart-actionbtn {
+            min-width: 92px !important;
+            border: 2px solid #777 !important;
+        }
+
+        #btnLive {
+            min-width: 66px !important;
+            height: 30px !important;
+            padding: 1px 10px !important;
+            font-weight: bold !important;
+            border-radius: 18px !important;
+            background: #d9ecff !important;
+            color: #084298 !important;
+            border: 3px solid #7db7ff !important;
+        }
+
+        #btnLive:hover:not(:disabled) {
+            filter: brightness(0.97);
+        }
+
+        #btnLive:disabled {
+            cursor: default !important;
+            opacity: 0.5 !important;
+            color: #5f6f82 !important;
+            background: #eef5fb !important;
+            border-color: #c5d7e7 !important;
+            filter: none !important;
+        }
+
+        .teamchart-actionbtn:disabled {
+            cursor: default !important;
+            opacity: 0.5 !important;
+            color: #666 !important;
+            background: #f3f3f3 !important;
+            filter: none !important;
+        }
+
+        .teamchart-table {
+            width: 100% !important;
+            display: table !important;
+        }
+
+        @media print {
+            @page {
+                size: landscape;
+                margin: 0.5in;
+            }
+
+            html,
+            html.mrl-theme-cars,
+            html.mrl-theme-starry-night,
+            html.mrl-theme-dark,
+            html.mrl-theme-light,
+            body,
+            html.mrl-theme-cars body,
+            html.mrl-theme-starry-night body,
+            html.mrl-theme-dark body,
+            html.mrl-theme-light body {
+                background: #ffffff !important;
+                background-image: none !important;
+                color: #000000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .teamchart-no-print,
+            .admin-status {
+                display: none !important;
+            }
+
+            .teamchart-container {
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+            }
+
+            .teamchart-scroll {
+                overflow: visible !important;
+            }
+
+            .teamchart-table {
+                width: 100% !important;
+                margin: 0 auto !important;
+                display: table !important;
+            }
+        }    </style>
 </head>
 <body>
 
@@ -1047,6 +1354,8 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
                 <button type="button" id="btnPrevYear" class="teamchart-actionbtn" title="Previous year">&lt;&lt;</button>
                 <button type="button" id="btnNextYear" class="teamchart-actionbtn" title="Next year">&gt;&gt;</button>
             </span>
+
+            <span class="teamchart-group-divider" aria-hidden="true"></span>
 
             <select id="segment" name="segment" class="teamchart-select" aria-label="Segment" required>
                 <?php foreach ($segmentsStr as $sStr): ?>

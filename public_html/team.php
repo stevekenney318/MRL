@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v053
- * LAST MODIFIED: 9/15/2026 1:13:23 pm ET
+ * VERSION: v056
+ * LAST MODIFIED: 9/20/2026 3:14:57 pm ET
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,6 +13,25 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
+ *
+ * v056 (9/20/2026 3:14:57 pm ET)
+ * - PRINT: Team-page Team Chart print cells now use white-space: nowrap to match standalone team_chart.php behavior.
+ * - PRINT: Print page margin changed from 0.35in to 0.5in to match standalone Team Chart.
+ * - GOAL: Keep the current Team Chart on one landscape page at Chrome Default scale when content fits the standalone chart.
+ * - PRESERVE: v055 print-only clone, Print/Spreadsheet buttons, spreadsheet export, chart data, themes, picks, LP/RD, scoring, scheduler, and DB behavior unchanged.
+ *
+ * v055 (9/20/2026 3:03:57 pm ET)
+ * - FIX: Team-page Team Chart print now uses a temporary print-only clone instead of visibility:hidden on the full Team page.
+ * - FIX: Hidden Team-page content no longer reserves blank print pages or causes header-only output.
+ * - PRINT: Forces landscape layout, white background, preserved chart colors, and keeps the chart together when practical.
+ * - PRESERVE: v054 Print/Spreadsheet buttons, spreadsheet export, current_segment_chart.php, themes, picks, LP/RD, scoring, scheduler, and DB behavior unchanged.
+ *
+ * v054 (9/20/2026 2:46:05 pm ET)
+ * - NEW: Adds Print and Spreadsheet controls directly above the current segment Team Chart on the Team page.
+ * - UI: Controls match the standalone Team Chart action-button theme and align to the chart's right edge.
+ * - PRINT: Prints only the current segment chart on a white/blank background while preserving chart colors and timestamped filename behavior.
+ * - EXPORT: Spreadsheet button reuses team_chart.php's current pure-PHP XLSX export for the active year/segment.
+ * - PRESERVE: Pick forms, LP/RD logic, scoring, themes, menus, scheduler, database behavior, and current_segment_chart.php remain unchanged.
  *
  * v052 (9/15/2026 1:13:23 pm ET)
  * - UI: Reverses Manage Team Page Content pill colors so the default state is solid green with white text and hover is light green with dark green text.
@@ -1305,6 +1324,90 @@ function teampage_render_announcement_text(string $text): void
             color:var(--mrl-rd-text);
         }
 
+        .mrl-current-chart-actions{
+            display:flex;
+            justify-content:flex-end;
+            align-items:center;
+            gap:10px;
+            margin:0 0 8px 0;
+            width:100%;
+        }
+
+        .mrl-current-chart-actionbtn{
+            min-width:92px;
+            height:28px;
+            padding:1px 8px;
+            border:2px solid #777;
+            border-radius:3px;
+            background:#f2f2f2;
+            color:#111!important;
+            box-shadow:none!important;
+            font:16px/1.1 Arial,Helvetica,sans-serif;
+            cursor:pointer;
+        }
+
+        .mrl-current-chart-actionbtn:hover{
+            background:#ffffff;
+        }
+
+        @media print{
+            @page{
+                size:landscape;
+                margin:0.5in;
+            }
+
+            html,
+            html.mrl-theme-cars,
+            html.mrl-theme-starry-night,
+            html.mrl-theme-dark,
+            html.mrl-theme-light,
+            body,
+            html.mrl-theme-cars body,
+            html.mrl-theme-starry-night body,
+            html.mrl-theme-dark body,
+            html.mrl-theme-light body{
+                background:#fff!important;
+                background-image:none!important;
+            }
+
+            body.mrl-print-current-chart > *:not(.mrl-current-chart-print-clone){
+                display:none!important;
+            }
+
+            body.mrl-print-current-chart .mrl-current-chart-print-clone{
+                display:block!important;
+                position:static!important;
+                width:100%!important;
+                max-width:none!important;
+                margin:0!important;
+                padding:0!important;
+                background:#fff!important;
+            }
+
+            body.mrl-print-current-chart .mrl-current-chart-print-clone .mrl-current-chart-no-print{
+                display:none!important;
+            }
+
+            body.mrl-print-current-chart .mrl-current-chart-print-clone table{
+                width:100%!important;
+                page-break-inside:avoid!important;
+                break-inside:avoid-page!important;
+                -webkit-print-color-adjust:exact!important;
+                print-color-adjust:exact!important;
+            }
+
+            body.mrl-print-current-chart .mrl-current-chart-print-clone tr,
+            body.mrl-print-current-chart .mrl-current-chart-print-clone td,
+            body.mrl-print-current-chart .mrl-current-chart-print-clone th{
+                -webkit-print-color-adjust:exact!important;
+                print-color-adjust:exact!important;
+            }
+
+            body.mrl-print-current-chart .mrl-current-chart-print-clone th,
+            body.mrl-print-current-chart .mrl-current-chart-print-clone td{
+                white-space:nowrap!important;
+            }
+        }
         .mrl-rd-shell,
         .mrl-rd-top,
         .mrl-rd-chart-shell{
@@ -2019,7 +2122,29 @@ function teampage_render_announcement_text(string $text): void
                         }
 
                         echo "</div>";
-                        include 'current_segment_chart.php';
+                        ?>
+                        <div id="mrl-current-segment-chart-print"
+                             class="mrl-current-segment-chart-print"
+                             data-year="<?php echo teampage_h((string)$raceYear); ?>"
+                             data-segment="<?php echo teampage_h((string)$segment); ?>">
+                            <div class="mrl-current-chart-actions mrl-current-chart-no-print">
+                                <button type="button" id="mrlCurrentChartPrint" class="mrl-current-chart-actionbtn">Print</button>
+                                <button type="button" id="mrlCurrentChartSpreadsheet" class="mrl-current-chart-actionbtn">Spreadsheet</button>
+                            </div>
+
+                            <form id="mrlCurrentChartExcelForm"
+                                  method="post"
+                                  action="/team_chart.php"
+                                  target="_blank"
+                                  style="display:none;">
+                                <input type="hidden" name="action" value="excel">
+                                <input type="hidden" name="year" value="<?php echo teampage_h((string)$raceYear); ?>">
+                                <input type="hidden" name="segment" value="<?php echo teampage_h((string)$segment); ?>">
+                            </form>
+
+                            <?php include 'current_segment_chart.php'; ?>
+                        </div>
+                        <?php
                     }
                 }
 
@@ -2069,6 +2194,92 @@ function teampage_render_announcement_text(string $text): void
 <script>
 (function () {
     'use strict';
+
+    var printWrap = document.getElementById('mrl-current-segment-chart-print');
+    var printButton = document.getElementById('mrlCurrentChartPrint');
+    var spreadsheetButton = document.getElementById('mrlCurrentChartSpreadsheet');
+    var excelForm = document.getElementById('mrlCurrentChartExcelForm');
+
+    function mrlPad(value, width) {
+        var s = String(value);
+        while (s.length < width) s = '0' + s;
+        return s;
+    }
+
+    function mrlGenerationStamp() {
+        var now = new Date();
+        var parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).formatToParts(now);
+
+        var values = {};
+        parts.forEach(function (part) {
+            if (part.type !== 'literal') values[part.type] = part.value;
+        });
+
+        var hour = values.hour === '24' ? '00' : values.hour;
+
+        return values.year + values.month + values.day + '_' +
+            hour + values.minute + values.second +
+            mrlPad(now.getMilliseconds(), 3);
+    }
+
+    if (spreadsheetButton && excelForm) {
+        spreadsheetButton.addEventListener('click', function () {
+            excelForm.submit();
+        });
+    }
+
+    if (printButton && printWrap) {
+        printButton.addEventListener('click', function () {
+            var oldTitle = document.title;
+            var year = printWrap.getAttribute('data-year') || '';
+            var segment = printWrap.getAttribute('data-segment') || '';
+
+            var printClone = printWrap.cloneNode(true);
+            printClone.removeAttribute('id');
+            printClone.classList.add('mrl-current-chart-print-clone');
+
+            var cloneControls = printClone.querySelectorAll('.mrl-current-chart-no-print, form');
+            Array.prototype.forEach.call(cloneControls, function (node) {
+                if (node && node.parentNode) {
+                    node.parentNode.removeChild(node);
+                }
+            });
+
+            document.body.appendChild(printClone);
+            document.title = 'Team_Chart_' + year + '_' + segment + '_' + mrlGenerationStamp();
+            document.body.classList.add('mrl-print-current-chart');
+
+            var cleaned = false;
+
+            var cleanup = function () {
+                if (cleaned) return;
+                cleaned = true;
+
+                document.body.classList.remove('mrl-print-current-chart');
+                document.title = oldTitle;
+
+                if (printClone && printClone.parentNode) {
+                    printClone.parentNode.removeChild(printClone);
+                }
+
+                window.removeEventListener('afterprint', cleanup);
+            };
+
+            window.addEventListener('afterprint', cleanup);
+            window.print();
+
+            window.setTimeout(cleanup, 1500);
+        });
+    }
 
     var user = document.getElementById('mrl-rd-user');
     var button = document.getElementById('mrl-rd-user-button');

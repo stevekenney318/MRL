@@ -1,5 +1,5 @@
 {
-    "enabled": true,
+    "enabled": false,
     "timezone": "America/New_York",
     "year": 2026,
     "dry_run": false,
@@ -12,7 +12,7 @@
     ],
     "tasks": {
         "race_results_monitor": {
-            "enabled": false,
+            "enabled": true,
             "type": "auto_race_monitor",
             "script": "race_results_monitor.php",
             "args": [
