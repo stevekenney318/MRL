@@ -45,10 +45,16 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v073
- * LAST MODIFIED: 9/20/2026 3:28:27 pm ET
+ * VERSION: v074
+ * LAST MODIFIED: 9/20/2026 5:42:10 pm ET
  *
  * CHANGELOG:
+ *
+ * v074 (9/20/2026 5:42:10 pm ET)
+ *   - THEME POLISH: LP/RD/tie footnotes, snapshot timestamp, and footer text now use the shared theme muted-text color.
+ *   - READABILITY: Dark, Cars, and Starry Night no longer leave auxiliary report text too dark against the page background.
+ *   - PRINT: Clean/full print restores dark auxiliary text on the white print page.
+ *   - PRESERVE: Validation, Audit, Pending Review, expanded driver details, tables, scoring colors, spreadsheet export, navigation, release history, and scoring logic unchanged.
  *
  * v073 (9/20/2026 3:28:27 pm ET)
  *   - THEME: Weekly Standings now uses the logged-in user's Team theme (Cars, Starry Night, Dark, or Light).
@@ -3535,7 +3541,7 @@ if ($exportMode === 'xlsx') {
             margin-top: 4px;
             margin-left: 10px;
             font-size: 16px;
-            color: #444;
+            color: var(--mrl-rd-muted);
             font-style: italic;
         }
 
@@ -3544,7 +3550,7 @@ if ($exportMode === 'xlsx') {
             margin-left: 10px;
             font-size: 13px;
             line-height: 1.35;
-            color: #444;
+            color: var(--mrl-rd-muted);
             font-style: italic;
             font-weight: 500;
             text-align: left;
@@ -3570,16 +3576,20 @@ if ($exportMode === 'xlsx') {
             margin-top: 4px;
             margin-left: 10px;
             font-size: 16px;
-            color: #444;
+            color: var(--mrl-rd-muted);
             font-style: italic;
         }
 
         .snapshot-footnote {
             margin-left: 6px;
             font-size: 0.82em;
-            color: #777;
+            color: var(--mrl-rd-muted);
             font-style: normal;
             white-space: nowrap;
+        }
+
+        footer > div {
+            color: var(--mrl-rd-muted) !important;
         }
 
         /* ── Weekly Winners segment background colors ───────────────────────
@@ -3609,6 +3619,15 @@ if ($exportMode === 'xlsx') {
                 background: #ffffff !important;
                 background-image: none !important;
                 color: #111111 !important;
+            }
+
+            .table-footnote,
+            .footnote-block,
+            .winner-footnote,
+            .snapshot-footnote,
+            .historical-note-row,
+            footer > div {
+                color: #444444 !important;
             }
             @page {
                 size: landscape;
