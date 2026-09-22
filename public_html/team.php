@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * team.php
  *
- * VERSION: v056
- * LAST MODIFIED: 9/20/2026 3:14:57 pm ET
+ * VERSION: v059
+ * LAST MODIFIED: 9/22/2026 5:20:52 pm ET
  *
  * DESCRIPTION:
  * Main universal team landing page for MRL / testphp8.
@@ -13,6 +13,17 @@ declare(strict_types=1);
  * normal picks now and LP / RD form routing later.
  *
  * CHANGELOG:
+ *
+ * v059 (9/22/2026 5:20:52 pm ET)
+ * - FIX: Restores $uid to integer form immediately after current_user_team_chart.php returns.
+ * - FIX: Prevents the legacy included chart from changing typed Team Name / pick-routing calls from int userID to string userID.
+ * - PRESERVE: v057 Team Name prerequisite gate, LP/RD logic, pick-window behavior, chart output, themes, print/export, and DB write behavior unchanged.
+ *
+ * v057 (9/22/2026 1:42:20 pm ET)
+ * - FIX: Current-year Team Name is now a prerequisite gate before NORMAL, LP, SPECIAL_AUTH, RD, or closed-window routing.
+ * - FIX: Brand-new accounts with no user_teams row can no longer fall directly into Late Pick after the normal segment deadline.
+ * - UI: Users without a Team Name are always shown the existing Team Name form first, regardless of pick-window state.
+ * - PRESERVE: Existing Team Name save handler/form, LP/RD eligibility, deadlines, pick forms, charts, themes, print/export, scoring, and DB write behavior unchanged.
  *
  * v056 (9/20/2026 3:14:57 pm ET)
  * - PRINT: Team-page Team Chart print cells now use white-space: nowrap to match standalone team_chart.php behavior.
@@ -2042,6 +2053,15 @@ function teampage_render_announcement_text(string $text): void
     <?php include 'current_user_team_chart.php'; ?>
 </section>
 
+<?php
+/*
+ * current_user_team_chart.php is a legacy include and executes in this scope.
+ * It reloads $uid from the session without the integer cast used by team.php.
+ * Restore the controller's canonical type before any typed routing/helper call.
+ */
+$uid = (int)($_SESSION['userSession'] ?? 0);
+?>
+
 <section class="mrl-rd-chart-shell mrl-rd-pick-section">
     <div style="color:#dfcca8; font-size:16.0pt; line-height:120%; font-family:'Century Gothic',sans-serif;">
         <div class="mrl-pick-panel">
@@ -2053,42 +2073,26 @@ function teampage_render_announcement_text(string $text): void
             : ($end_ts !== false && $end_ts > $user_ts);
 
         if ($formLocked === 'no') {
-            if ($normalPickWindowOpen) {
+            /*
+             * Team Name is the outer prerequisite for every current-year pick path.
+             * A brand-new account must establish its team identity before NORMAL,
+             * LP, SPECIAL_AUTH, RD, or closed-window routing can be considered.
+             */
+            if ($currentUserTeamName === '') {
 
-                $teamName = '';
-
-                if (isset($dbconnect)) {
-                    $teamCheck = mysqli_query(
-                        $dbconnect,
-                        "SELECT teamName
-                         FROM user_teams
-                         WHERE userID = $uid
-                           AND raceYear = $raceYear
-                         LIMIT 1"
-                    );
-                    if ($teamCheck) {
-                        $teamRow = mysqli_fetch_assoc($teamCheck);
-                        $teamName = trim((string)($teamRow['teamName'] ?? ''));
-                    }
-                }
-
-                if ($teamName === '') {
-
-                    if (!isset($dbconnect)) {
-                        echo "<div style='color:red; font-weight:bold; font-size:14pt; text-align:center;'>Database connection not available.</div>";
-                    } else {
-                        mrl_teamname_render_form($dbconnect, (string)$raceYear, $uid, (string)$teamNameMessage);
-                    }
-
+                if (!isset($dbconnect)) {
+                    echo "<div style='color:red; font-weight:bold; font-size:14pt; text-align:center;'>Database connection not available.</div>";
                 } else {
-
-                    include $currentForm;
-                    teampage_render_pick_success($pickSubmissionSuccess);
-                    echo "<div class='mrl-rd-notice-panel mrl-rd-submission-panel'>";
-                    include 'submitted_teams_count.php';
-                    echo "</div>";
-
+                    mrl_teamname_render_form($dbconnect, (string)$raceYear, $uid, (string)$teamNameMessage);
                 }
+
+            } elseif ($normalPickWindowOpen) {
+
+                include $currentForm;
+                teampage_render_pick_success($pickSubmissionSuccess);
+                echo "<div class='mrl-rd-notice-panel mrl-rd-submission-panel'>";
+                include 'submitted_teams_count.php';
+                echo "</div>";
 
             } else {
 
