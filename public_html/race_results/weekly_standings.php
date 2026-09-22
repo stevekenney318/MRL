@@ -45,10 +45,21 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v077
- * LAST MODIFIED: 9/21/2026 11:31:31 pm ET
+ * VERSION: v079
+ * LAST MODIFIED: 9/22/2026 12:21:58 am ET
  *
  * CHANGELOG:
+ *
+ * v079 (9/22/2026 12:21:58 am ET)
+ *   - UI: Replaces root scrollbar-gutter reservation with measured body-side reserve space only when the page does not need a vertical scrollbar.
+ *   - UI: Picture themes now keep their background visible to the right edge while preserving a constant report width between short and tall race pages.
+ *   - UI: Removes the ineffective v078 WebKit transparent-track workaround.
+ *   - PRESERVE: v077 cross-document view transition, mobile layout, nav behavior, report buttons, scoring, themes, print/PDF, spreadsheet export, validation, audit, and release history unchanged.
+ *
+ * v078 (9/21/2026 11:55:10 pm ET)
+ *   - UI: Keeps scrollbar-gutter: stable so short/long race pages do not shift horizontally.
+ *   - UI: Makes the Chrome/Edge scrollbar track transparent so the reserved gutter is visually unobtrusive when scrolling is not needed.
+ *   - PRESERVE: v077 view transition, mobile layout, nav behavior, report buttons, scoring, themes, print/PDF, spreadsheet export, validation, audit, and release history unchanged.
  *
  * v077 (9/21/2026 11:31:31 pm ET)
  *   - UI: Added cross-document view transition (@view-transition) so supported browsers crossfade between race pages instead of flashing blank.
@@ -2920,7 +2931,13 @@ if ($exportMode === 'xlsx') {
 
         html {
             min-height: 100%;
-            scrollbar-gutter: stable;
+        }
+
+        /* v079: keep layout width stable without exposing a root gutter on picture themes. */
+        @media screen {
+            body.mrl-reserve-vscroll-space {
+                padding-right: var(--mrl-vscroll-width, 0px);
+            }
         }
 
         body {
@@ -5263,6 +5280,55 @@ document.addEventListener('DOMContentLoaded', function () {
 window.addEventListener('resize', rrsgAlignReleaseVersionRowSoon);
 window.addEventListener('beforeprint', rrsgPreparePrintTitle);
 window.addEventListener('afterprint', rrsgAfterPrintCleanup);
+</script>
+
+<script>
+(function () {
+    'use strict';
+
+    const root = document.documentElement;
+    const body = document.body;
+
+    if (!root || !body) return;
+
+    function measureClassicScrollbarWidth() {
+        const probe = document.createElement('div');
+        probe.style.position = 'absolute';
+        probe.style.top = '-9999px';
+        probe.style.left = '-9999px';
+        probe.style.width = '100px';
+        probe.style.height = '100px';
+        probe.style.overflow = 'scroll';
+        probe.style.visibility = 'hidden';
+
+        body.appendChild(probe);
+        const width = probe.offsetWidth - probe.clientWidth;
+        probe.remove();
+
+        return Math.max(0, width);
+    }
+
+    const scrollbarWidth = measureClassicScrollbarWidth();
+    root.style.setProperty('--mrl-vscroll-width', scrollbarWidth + 'px');
+
+    function syncScrollbarReserve() {
+        const hasVerticalScroll = root.scrollHeight > root.clientHeight + 1;
+
+        body.classList.toggle(
+            'mrl-reserve-vscroll-space',
+            scrollbarWidth > 0 && !hasVerticalScroll
+        );
+    }
+
+    syncScrollbarReserve();
+    window.addEventListener('load', syncScrollbarReserve);
+    window.addEventListener('resize', syncScrollbarReserve);
+
+    if (typeof ResizeObserver === 'function') {
+        const observer = new ResizeObserver(syncScrollbarReserve);
+        observer.observe(body);
+    }
+})();
 </script>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/footer-light.php'; ?>
 </body>
