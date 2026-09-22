@@ -45,10 +45,14 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v076
- * LAST MODIFIED: 9/21/2026 8:21:27 pm ET
+ * VERSION: v077
+ * LAST MODIFIED: 9/21/2026 11:31:31 pm ET
  *
  * CHANGELOG:
+ *
+ * v077 (9/21/2026 11:31:31 pm ET)
+ *   - UI: Added cross-document view transition (@view-transition) so supported browsers crossfade between race pages instead of flashing blank.
+ *   - PRESERVE: v076 mobile layout, nav behavior, report buttons, scoring, themes, print/PDF, spreadsheet export, validation, audit, and release history unchanged.
  *
  * v076 (9/21/2026 8:21:27 pm ET)
  *   - MOBILE: Adds viewport metadata so phones use the real device width and the existing <=760px one-column layout actually activates.
@@ -2909,6 +2913,11 @@ if ($exportMode === 'xlsx') {
     <title>Weekly Standings</title>
     <link rel="stylesheet" href="/mrl_team/mrl_shared_theme.css?v=001">
     <style>
+        /* v077: crossfade between page loads in supporting browsers */
+        @view-transition {
+            navigation: auto;
+        }
+
         html {
             min-height: 100%;
             scrollbar-gutter: stable;
