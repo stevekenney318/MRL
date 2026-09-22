@@ -4,14 +4,19 @@ declare(strict_types=1);
 /**
  * team_chart.php
  *
- * VERSION: v026
- * LAST MODIFIED: 9/21/2026 8:20:16 pm ET
+ * VERSION: v027
+ * LAST MODIFIED: 9/21/2026 11:08:45 pm ET
  *
  * DESCRIPTION:
  * Public Team Chart page with PRG flow, print, spreadsheet export,
  * and render-time LP / RD chart annotations.
  *
  * CHANGELOG:
+ *
+ * v027 (9/21/2026 11:08:45 pm ET)
+ * - UI: Print/Spreadsheet controls are no longer hidden during year/segment navigation; they stay in place until the new page loads.
+ * - UI: Added cross-document view transition (@view-transition) so supported browsers crossfade between pages instead of flashing blank.
+ * - PRESERVE: v026 layout, responsive chart fit, nav styling, print/PDF, XLSX export, themes, LP/RD display, and database behavior unchanged.
  *
  * v026 (9/21/2026 8:20:16 pm ET)
  * - UI: Print/Spreadsheet controls now use visibility:hidden during year/segment navigation instead of display:none.
@@ -1096,6 +1101,11 @@ if ($isExcelPost) {
     <link rel="stylesheet" href="/mrl_team/mrl_shared_theme.css?v=001">
 
     <style>
+        /* v027: crossfade between page loads (Chrome/Edge/Safari); ignored by other browsers */
+        @view-transition {
+            navigation: auto;
+        }
+
         .teamchart-row {
             display: flex;
             align-items: center;
@@ -1562,7 +1572,6 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
     const yearSel = document.getElementById('year');
     const segSel  = document.getElementById('segment');
 
-    const actionsWrap = document.getElementById('chartActions');
     const btnPrint = document.getElementById('btnPrint');
     const btnExcel = document.getElementById('btnExcel');
     const btnPrevYear = document.getElementById('btnPrevYear');
@@ -1576,13 +1585,8 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
     const excelYear = document.getElementById('excelYear');
     const excelSeg  = document.getElementById('excelSegment');
 
-    function hideActionsWhenChanged() {
-        if (actionsWrap) actionsWrap.style.visibility = 'hidden';
-    }
-
     function submitSelection() {
         if (!teamchartForm) return;
-        hideActionsWhenChanged();
 
         if (typeof teamchartForm.requestSubmit === 'function') {
             teamchartForm.requestSubmit();
