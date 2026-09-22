@@ -45,10 +45,18 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v075
- * LAST MODIFIED: 9/21/2026 5:34:23 pm ET
+ * VERSION: v076
+ * LAST MODIFIED: 9/21/2026 8:21:27 pm ET
  *
  * CHANGELOG:
+ *
+ * v076 (9/21/2026 8:21:27 pm ET)
+ *   - MOBILE: Adds viewport metadata so phones use the real device width and the existing <=760px one-column layout actually activates.
+ *   - MOBILE: Raises narrow-screen body/table text to 15px and control text to 13px for easier reading.
+ *   - NAV: Wraps ◀ / ▶ race controls as a 4px-gap pair, matching Team Chart spacing while preserving surrounding control spacing.
+ *   - XLSX: Rank/week columns are now stored as real numeric cells, removing Excel's green 'number stored as text' indicators.
+ *   - XLSX: Weekly Winners rows now carry the same S1 blue / S2 tan / S3 peach / S4 green segment fills as the web report.
+ *   - PRESERVE: Scoring, snapshots, validation, audit, release history, themes, print/PDF, and all report data unchanged.
  *
  * v075 (9/21/2026 5:34:23 pm ET)
  *   - NAV: Race previous/next controls now use ◀ / ▶ with directional half-pill rounding while preserving current spacing.
@@ -575,15 +583,45 @@ function rrsg_send_weekly_standings_xlsx(string $filenameBase, array $tables, st
             foreach ($rows as $dataRow) {
                 $values = $dataRow['values'] ?? [];
                 $isEvenStripe = (($rowNum - 3) % 2 === 1);
+
+                $winnerSegment = '';
+                if ($idx === 3 && isset($values[0]) && is_numeric($values[0])) {
+                    $winnerWeek = (int)$values[0];
+                    if ($winnerWeek >= 1 && $winnerWeek <= 8) {
+                        $winnerSegment = 'S1';
+                    } elseif ($winnerWeek <= 17) {
+                        $winnerSegment = 'S2';
+                    } elseif ($winnerWeek <= 26) {
+                        $winnerSegment = 'S3';
+                    } else {
+                        $winnerSegment = 'S4';
+                    }
+                }
+
                 for ($c = 0; $c < 3; $c++) {
                     $colIndex = $startCol + $c;
                     $cellRef = rrsg_xlsx_col_letter($colIndex) . $rowNum;
                     $value = $values[$c] ?? '';
                     $isTeamColumn = ($c === 1);
-                    $isNumeric = ($c === 2 && is_numeric($value));
+                    $isNumeric = (($c === 0 || $c === 2) && is_numeric($value));
                     $boldThisCell = (($c === 0 && !empty($dataRow['boldFirst'])) || ($c === 1 && !empty($dataRow['boldTeam'])));
 
-                    if ($isTeamColumn) {
+                    if ($idx === 3 && $winnerSegment !== '') {
+                        $winnerStyles = [
+                            'S1' => ['center' => 12, 'centerBold' => 13, 'left' => 14],
+                            'S2' => ['center' => 15, 'centerBold' => 16, 'left' => 17],
+                            'S3' => ['center' => 18, 'centerBold' => 19, 'left' => 20],
+                            'S4' => ['center' => 21, 'centerBold' => 22, 'left' => 23],
+                        ];
+
+                        if ($isTeamColumn) {
+                            $styleIndex = $winnerStyles[$winnerSegment]['left'];
+                        } else {
+                            $styleIndex = $boldThisCell
+                                ? $winnerStyles[$winnerSegment]['centerBold']
+                                : $winnerStyles[$winnerSegment]['center'];
+                        }
+                    } elseif ($isTeamColumn) {
                         $styleIndex = $isEvenStripe ? ($boldThisCell ? 11 : 9) : ($boldThisCell ? 10 : 8);
                     } else {
                         $styleIndex = $isEvenStripe ? ($boldThisCell ? 7 : 4) : ($boldThisCell ? 6 : 3);
@@ -641,19 +679,23 @@ function rrsg_send_weekly_standings_xlsx(string $filenameBase, array $tables, st
         . '<font><sz val="9"/><color rgb="FF666666"/><name val="Arial"/></font>'
         . '<font><b/><sz val="11"/><name val="Arial"/></font>'
         . '</fonts>'
-        . '<fills count="5">'
+        . '<fills count="9">'
         . '<fill><patternFill patternType="none"/></fill>'
         . '<fill><patternFill patternType="gray125"/></fill>'
         . '<fill><patternFill patternType="solid"><fgColor rgb="FFFBFF00"/><bgColor indexed="64"/></patternFill></fill>'
         . '<fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/><bgColor indexed="64"/></patternFill></fill>'
         . '<fill><patternFill patternType="solid"><fgColor rgb="FFD2E5F7"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFC5D9F1"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFC4BD97"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFFCD5B4"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFC4D79B"/><bgColor indexed="64"/></patternFill></fill>'
         . '</fills>'
         . '<borders count="2">'
         . '<border><left/><right/><top/><bottom/><diagonal/></border>'
         . '<border><left style="thin"><color rgb="FF151313"/></left><right style="thin"><color rgb="FF151313"/></right><top style="thin"><color rgb="FF151313"/></top><bottom style="thin"><color rgb="FF151313"/></bottom><diagonal/></border>'
         . '</borders>'
         . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-        . '<cellXfs count="12">'
+        . '<cellXfs count="24">'
         . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
         . '<xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
         . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
@@ -666,6 +708,22 @@ function rrsg_send_weekly_standings_xlsx(string $filenameBase, array $tables, st
         . '<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
         . '<xf numFmtId="0" fontId="3" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
         . '<xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+
+        . '<xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="3" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+
+        . '<xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="3" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+
+        . '<xf numFmtId="0" fontId="0" fillId="7" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="3" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="7" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+
+        . '<xf numFmtId="0" fontId="0" fillId="8" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="3" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="8" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
         . '</cellXfs>'
         . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
         . '</styleSheet>';
@@ -2847,6 +2905,7 @@ if ($exportMode === 'xlsx') {
 <html class="mrl-theme-<?php echo rrsg_h($weeklyStandingsTheme); ?>">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Weekly Standings</title>
     <link rel="stylesheet" href="/mrl_team/mrl_shared_theme.css?v=001">
     <style>
@@ -2988,6 +3047,12 @@ if ($exportMode === 'xlsx') {
 
         #navPrevBtn { border-radius: 14px 3px 3px 14px; }
         #navNextBtn { border-radius: 3px 14px 14px 3px; }
+
+        .nav-pair {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
 
         .nav-button[disabled] {
             cursor: default;
@@ -3895,7 +3960,7 @@ if ($exportMode === 'xlsx') {
         @media (max-width: 760px) {
             body {
                 margin: 8px;
-                font-size: 14px;
+                font-size: 15px;
             }
 
             .top-controls {
@@ -3916,7 +3981,7 @@ if ($exportMode === 'xlsx') {
 
             .top-controls select,
             .top-controls button {
-                font-size: 12px;
+                font-size: 13px;
                 padding: 2px 6px;
             }
 
@@ -3987,7 +4052,7 @@ if ($exportMode === 'xlsx') {
             }
 
             table {
-                font-size: 14px;
+                font-size: 15px;
             }
 
             th, td {
@@ -4035,8 +4100,10 @@ if ($exportMode === 'xlsx') {
                 <?php endforeach; ?>
             </select>
 
-            <button type="button" class="nav-button" id="navPrevBtn" onclick="navigateRace(-1)" title="Previous Race" aria-label="Previous Race">◀</button>
-            <button type="button" class="nav-button" id="navNextBtn" onclick="navigateRace(1)" title="Next Race" aria-label="Next Race">▶</button>
+            <span class="nav-pair">
+                <button type="button" class="nav-button" id="navPrevBtn" onclick="navigateRace(-1)" title="Previous Race" aria-label="Previous Race">◀</button>
+                <button type="button" class="nav-button" id="navNextBtn" onclick="navigateRace(1)" title="Next Race" aria-label="Next Race">▶</button>
+            </span>
         </div>
 
         <div class="top-controls-right">

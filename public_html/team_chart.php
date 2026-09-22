@@ -4,14 +4,19 @@ declare(strict_types=1);
 /**
  * team_chart.php
  *
- * VERSION: v025
- * LAST MODIFIED: 9/21/2026 5:33:46 pm ET
+ * VERSION: v026
+ * LAST MODIFIED: 9/21/2026 8:20:16 pm ET
  *
  * DESCRIPTION:
  * Public Team Chart page with PRG flow, print, spreadsheet export,
  * and render-time LP / RD chart annotations.
  *
  * CHANGELOG:
+ *
+ * v026 (9/21/2026 8:20:16 pm ET)
+ * - UI: Print/Spreadsheet controls now use visibility:hidden during year/segment navigation instead of display:none.
+ * - RESULT: The action area keeps its dimensions during reload, preventing the mobile control row from jumping up/down.
+ * - PRESERVE: v025 responsive chart fit, nav styling, print/PDF, XLSX export, themes, LP/RD display, and database behavior unchanged.
  *
  * v025 (9/21/2026 5:33:46 pm ET)
  * - RESPONSIVE: Team Chart now fits the available screen width instead of defaulting to a horizontal-scroll viewport.
@@ -1572,7 +1577,7 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
     const excelSeg  = document.getElementById('excelSegment');
 
     function hideActionsWhenChanged() {
-        if (actionsWrap) actionsWrap.style.display = 'none';
+        if (actionsWrap) actionsWrap.style.visibility = 'hidden';
     }
 
     function submitSelection() {
