@@ -45,10 +45,15 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v074
- * LAST MODIFIED: 9/20/2026 5:42:10 pm ET
+ * VERSION: v075
+ * LAST MODIFIED: 9/21/2026 5:34:23 pm ET
  *
  * CHANGELOG:
+ *
+ * v075 (9/21/2026 5:34:23 pm ET)
+ *   - NAV: Race previous/next controls now use ◀ / ▶ with directional half-pill rounding while preserving current spacing.
+ *   - MOBILE: Narrow-screen body/table text is increased for readability; report panels still stack one per row.
+ *   - PRESERVE: Theme, scoring, validation, audit, release history, print/PDF, spreadsheet export, and desktop layout unchanged.
  *
  * v074 (9/20/2026 5:42:10 pm ET)
  *   - THEME POLISH: LP/RD/tie footnotes, snapshot timestamp, and footer text now use the shared theme muted-text color.
@@ -2981,6 +2986,9 @@ if ($exportMode === 'xlsx') {
             padding-right: 6px;
         }
 
+        #navPrevBtn { border-radius: 14px 3px 3px 14px; }
+        #navNextBtn { border-radius: 3px 14px 14px 3px; }
+
         .nav-button[disabled] {
             cursor: default;
             opacity: 0.5;
@@ -3887,7 +3895,7 @@ if ($exportMode === 'xlsx') {
         @media (max-width: 760px) {
             body {
                 margin: 8px;
-                font-size: 13px;
+                font-size: 14px;
             }
 
             .top-controls {
@@ -3979,7 +3987,7 @@ if ($exportMode === 'xlsx') {
             }
 
             table {
-                font-size: 12px;
+                font-size: 14px;
             }
 
             th, td {
@@ -4027,8 +4035,8 @@ if ($exportMode === 'xlsx') {
                 <?php endforeach; ?>
             </select>
 
-            <button type="button" class="nav-button" id="navPrevBtn" onclick="navigateRace(-1)" title="Previous Race">&lt;&lt;</button>
-            <button type="button" class="nav-button" id="navNextBtn" onclick="navigateRace(1)" title="Next Race">&gt;&gt;</button>
+            <button type="button" class="nav-button" id="navPrevBtn" onclick="navigateRace(-1)" title="Previous Race" aria-label="Previous Race">◀</button>
+            <button type="button" class="nav-button" id="navNextBtn" onclick="navigateRace(1)" title="Next Race" aria-label="Next Race">▶</button>
         </div>
 
         <div class="top-controls-right">

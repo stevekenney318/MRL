@@ -4,14 +4,20 @@ declare(strict_types=1);
 /**
  * team_chart.php
  *
- * VERSION: v024
- * LAST MODIFIED: 9/20/2026 3:23:48 pm ET
+ * VERSION: v025
+ * LAST MODIFIED: 9/21/2026 5:33:46 pm ET
  *
  * DESCRIPTION:
  * Public Team Chart page with PRG flow, print, spreadsheet export,
  * and render-time LP / RD chart annotations.
  *
  * CHANGELOG:
+ *
+ * v025 (9/21/2026 5:33:46 pm ET)
+ * - RESPONSIVE: Team Chart now fits the available screen width instead of defaulting to a horizontal-scroll viewport.
+ * - MOBILE: Narrow screens allow cell wrapping so the full seven-column chart remains visible and can be pinch-zoomed naturally.
+ * - NAV: Previous/next controls now use ◀ / ▶ with directional half-pill rounding while preserving the existing gap between buttons.
+ * - PRINT: Existing landscape print/PDF behavior remains unchanged.
  *
  * v024 (9/20/2026 3:23:48 pm ET)
  * - EXPORT FIX: Applies the note-row border style to all seven cells before merging A:G in the XLSX footer.
@@ -1079,6 +1085,7 @@ if ($isExcelPost) {
 <html class="mrl-theme-<?php echo h($teamChartTheme); ?>">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Team Chart</title>
     <link rel="stylesheet" href="/mrl-styles.css?v=20260123_prg1">
     <link rel="stylesheet" href="/mrl_team/mrl_shared_theme.css?v=001">
@@ -1227,6 +1234,18 @@ if ($isExcelPost) {
             padding-right: 6px !important;
         }
 
+        .teamchart-navpair .teamchart-actionbtn:first-child { border-radius: 14px 3px 3px 14px !important; }
+        .teamchart-navpair .teamchart-actionbtn:last-child { border-radius: 3px 14px 14px 3px !important; }
+        .teamchart-scroll { overflow-x: visible !important; width: 100% !important; }
+        .teamchart-table { width: 100% !important; display: table !important; table-layout: auto !important; }
+        @media screen and (max-width: 900px) {
+            .teamchart-container { width: 100% !important; max-width: none !important; }
+            .teamchart-row { flex-wrap: wrap !important; }
+            .teamchart-table, .teamchart-table th, .teamchart-table td { font-size: 11px !important; line-height: 1.2 !important; }
+            .teamchart-table th, .teamchart-table td { white-space: normal !important; padding: 2px 3px !important; overflow-wrap: anywhere; }
+            .teamchart-table td.teamchart-notes-row, .teamchart-table td.teamchart-notes-row .teamchart-note-line { font-size: 10px !important; }
+        }
+
         .teamchart-actions {
             gap: 6px 10px !important;
         }
@@ -1351,8 +1370,8 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
                 <?php endforeach; ?>
             </select>
             <span class="teamchart-navpair">
-                <button type="button" id="btnPrevYear" class="teamchart-actionbtn" title="Previous year">&lt;&lt;</button>
-                <button type="button" id="btnNextYear" class="teamchart-actionbtn" title="Next year">&gt;&gt;</button>
+                <button type="button" id="btnPrevYear" class="teamchart-actionbtn" title="Previous year" aria-label="Previous year">◀</button>
+                <button type="button" id="btnNextYear" class="teamchart-actionbtn" title="Next year" aria-label="Next year">▶</button>
             </span>
 
             <span class="teamchart-group-divider" aria-hidden="true"></span>
@@ -1365,8 +1384,8 @@ $chartDisplayed = ($hasSelection && !$showSubmittedInsteadOfChart && $dbError ==
                 <?php endforeach; ?>
             </select>
             <span class="teamchart-navpair">
-                <button type="button" id="btnPrevSegment" class="teamchart-actionbtn" title="Previous segment">&lt;&lt;</button>
-                <button type="button" id="btnNextSegment" class="teamchart-actionbtn" title="Next segment">&gt;&gt;</button>
+                <button type="button" id="btnPrevSegment" class="teamchart-actionbtn" title="Previous segment" aria-label="Previous segment">◀</button>
+                <button type="button" id="btnNextSegment" class="teamchart-actionbtn" title="Next segment" aria-label="Next segment">▶</button>
             </span>
 
             <?php if ($chartDisplayed): ?>
