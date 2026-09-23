@@ -1,0 +1,64 @@
+{
+    "tool_version": "v003",
+    "created_at": "2026-09-23 04:08:25",
+    "userID": 998,
+    "raceYear": "2026",
+    "user_picks": [
+        {
+            "pickID": 2461,
+            "userID": 998,
+            "teamName": "MRL guest team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Chris Buescher",
+            "driverB": "AJ Allmendinger",
+            "driverC": "Michael McDowell",
+            "driverD": "Zane Smith",
+            "entryDate": "2026-09-23 04:07:46",
+            "submission_id": "sub_20260923_040722_043ae58c",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "LP",
+            "effective_race": 30,
+            "supersedes_pickID": null
+        }
+    ],
+    "user_picks_history": [
+        {
+            "pickID": 1141,
+            "userID": 998,
+            "teamName": "MRL guest team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "John Hunter Nemechek",
+            "driverB": "Carson Hocevar",
+            "driverC": "Ty Gibbs",
+            "driverD": "Alex Bowman",
+            "entryDate": "2026-09-23 04:07:34",
+            "submission_id": "sub_20260923_040722_043ae58c",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "LP",
+            "effective_race": 30,
+            "supersedes_pickID": null
+        },
+        {
+            "pickID": 1142,
+            "userID": 998,
+            "teamName": "MRL guest team",
+            "raceYear": 2026,
+            "segment": "S4",
+            "driverA": "Chris Buescher",
+            "driverB": "AJ Allmendinger",
+            "driverC": "Michael McDowell",
+            "driverD": "Zane Smith",
+            "entryDate": "2026-09-23 04:07:46",
+            "submission_id": "sub_20260923_040722_043ae58c",
+            "ip": "96.249.37.154",
+            "formID": "form-team-picks.php",
+            "pick_type": "LP",
+            "effective_race": 30,
+            "supersedes_pickID": null
+        }
+    ]
+}

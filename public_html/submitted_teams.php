@@ -2,11 +2,17 @@
 /**
  * submitted_teams.php
  *
- * VERSION: v002
- * LAST MODIFIED: 9/9/2026 2:44:18 am ET
+ * VERSION: v003
+ * LAST MODIFIED: 9/23/2026 3:31:15 am ET
  *
  * DESCRIPTION:
  * Lists teams that have submitted picks for the active year/segment.
+ *
+ * v003 (9/23/2026 3:31:15 am ET)
+ * - SAFETY: Submitted-team output explicitly excludes test accounts userID 0, 998, and 999 plus MRL test-team rows.
+ * - PARTICIPATION: Already-submitted legitimate picks remain visible even if that regular user later becomes userActive='N'.
+ * - EXPECTATION: The Missing Picks list requires users.userActive='Y', so inactive/dropout users are no longer expected to submit future picks.
+ * - PRESERVE: LP markers/footnotes, counts, segment comparison, and display formatting unchanged.
  *
  * CHANGELOG:
  * v002 (9/9/2026 3:11:07 am ET)
@@ -96,7 +102,7 @@ function st_short_race_name(string $year, int $raceNumber): string
     }
 }
 
-$sql_submitted = "SELECT * FROM `user_picks` WHERE `raceYear` = '$raceYear' AND `userID` NOT IN (0, 999) AND `segment` = '$segment' ORDER BY `entryDate` ASC";
+$sql_submitted = "SELECT up.* FROM `user_picks` up WHERE up.`raceYear` = '$raceYear' AND up.`userID` NOT IN (0, 998, 999) AND up.`segment` = '$segment' AND LOWER(TRIM(up.teamName)) <> 'mrl test team' ORDER BY up.`entryDate` ASC";
 
 echo "Teams submitted for $raceYear $segment :<br><br>";
 $result_submitted = mysqli_query($dbconnect, $sql_submitted);
@@ -145,7 +151,7 @@ echo "<br>As of $currentTimeIs, " . mysqli_num_rows($result_submitted) . " teams
 // list of Teams not yet submitted for current year & current segment
 if ($segment != 'S1') {
     echo "<br><br><br>Missing picks from the following teams for $raceYear $segment:<br><br>";
-    $notSubmitted = "SELECT `teamName` FROM `user_picks` WHERE `raceYear` = '$raceYear' AND `segment` = '$compareSegment' AND `userID` NOT IN (0, 999) AND `teamName` NOT IN ( SELECT `teamName` FROM `user_picks` WHERE `raceYear` = '$raceYear' AND `segment` = '$segment' )";
+    $notSubmitted = "SELECT DISTINCT up_prev.teamName FROM `user_picks` up_prev INNER JOIN `users` u_prev ON u_prev.userID = up_prev.userID WHERE up_prev.`raceYear` = '$raceYear' AND up_prev.`segment` = '$compareSegment' AND up_prev.`userID` NOT IN (0, 998, 999) AND COALESCE(u_prev.userActive, 'N') = 'Y' AND LOWER(TRIM(up_prev.teamName)) <> 'mrl test team' AND up_prev.teamName NOT IN ( SELECT up_cur.teamName FROM `user_picks` up_cur WHERE up_cur.`raceYear` = '$raceYear' AND up_cur.`segment` = '$segment' AND up_cur.`userID` NOT IN (0, 998, 999) AND LOWER(TRIM(up_cur.teamName)) <> 'mrl test team' ) ORDER BY up_prev.teamName ASC";
     $result_notSubmitted = mysqli_query($dbconnect, $notSubmitted);
     while ($row = mysqli_fetch_assoc($result_notSubmitted)) {
         echo "{$row['teamName']}<br>";

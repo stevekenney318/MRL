@@ -45,8 +45,14 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v079
- * LAST MODIFIED: 9/22/2026 12:21:58 am ET
+ * VERSION: v080
+ * LAST MODIFIED: 9/23/2026 3:31:15 am ET
+ *
+ * v080 (9/23/2026 3:31:15 am ET)
+ *   - SAFETY: Adds guest/test userID 998 to the existing noncompetitive test-account exclusions alongside userID 0 and 999.
+ *   - PARTICIPATION: userActive is NOT used to erase legitimate recorded picks, points, or standings when a regular user becomes inactive midseason.
+ *   - ROSTER: Competitive yearly roster continues to require actual user_picks participation, while explicitly excluding 0/998/999 and MRL test team.
+ *   - PRESERVE: LP/RD effective-race behavior, legitimate missing-pick 0-point rows, scoring, snapshots, validation, audit, release history, exports, print, and UI unchanged.
  *
  * CHANGELOG:
  *
@@ -1337,9 +1343,10 @@ function rrsg_is_noncompetitive_test_team(array $team): bool
     $userId = $hasUserId ? (int)$team['userID'] : null;
     $teamName = strtolower(trim((string)($team['teamName'] ?? '')));
 
-    // userID 0 is the current legacy test account; 999 is its planned positive-ID replacement.
+    // Explicit noncompetitive/test accounts. 998 is the guest onboarding/test account;
+    // 999 is the positive-ID MRL test account; 0 is the legacy test account.
     // A row with no userID field is not automatically a test row.
-    if ($hasUserId && ($userId === 0 || $userId === 999)) {
+    if ($hasUserId && in_array($userId, [0, 998, 999], true)) {
         return true;
     }
 
@@ -1406,14 +1413,14 @@ function rrsg_get_year_team_roster(string $raceYear, $dbo): array
         FROM user_teams ut
         LEFT JOIN users u ON u.userID = ut.userID
         WHERE ut.raceYear = :raceYear
-          AND ut.userID NOT IN (0, 999)
+          AND ut.userID NOT IN (0, 998, 999)
           AND LOWER(TRIM(ut.teamName)) <> 'mrl test team'
           AND EXISTS (
               SELECT 1
               FROM user_picks up_active
               WHERE up_active.raceYear = ut.raceYear
                 AND up_active.userID = ut.userID
-                AND up_active.userID NOT IN (0, 999)
+                AND up_active.userID NOT IN (0, 998, 999)
           )
         ORDER BY ut.teamName ASC, ut.userID ASC
     ";

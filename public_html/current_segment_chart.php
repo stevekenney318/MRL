@@ -4,13 +4,18 @@ declare(strict_types=1);
 /**
  * current_segment_chart.php
  *
- * VERSION: v009
- * LAST MODIFIED: 9/9/2026 2:44:18 am ET
+ * VERSION: v010
+ * LAST MODIFIED: 9/23/2026 3:31:15 am ET
  *
  * DESCRIPTION:
  * Current segment team chart shown on team.php after the normal deadline.
  * Matches the public Team Chart LP/RD display pattern, including merged
  * two-row RD blocks, team-name markers, and stacked footnotes.
+ *
+ * v010 (9/23/2026 3:31:15 am ET)
+ * - SAFETY: Explicitly excludes test accounts userID 0, 998, and 999 plus MRL test-team rows.
+ * - PARTICIPATION: userActive is NOT used to remove already-recorded current-season picks.
+ * - PRESERVE: LP/RD display, colors, chart layout, effective-race notes, and Team page behavior unchanged.
  *
  * CHANGELOG:
  *
@@ -258,6 +263,8 @@ $sql = "
     WHERE up.raceYear = '$raceYear'
       AND up.segment = '$segment'
       AND COALESCE(u.userName, '') != 'MRL'
+      AND up.userID NOT IN (0, 998, 999)
+      AND LOWER(TRIM(up.teamName)) <> 'mrl test team'
     ORDER BY up.userID ASC, up.entryDate ASC, up.pickID ASC
 ";
 

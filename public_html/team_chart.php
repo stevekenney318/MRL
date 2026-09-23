@@ -4,12 +4,18 @@ declare(strict_types=1);
 /**
  * team_chart.php
  *
- * VERSION: v027
- * LAST MODIFIED: 9/21/2026 11:08:45 pm ET
+ * VERSION: v028
+ * LAST MODIFIED: 9/23/2026 3:31:15 am ET
  *
  * DESCRIPTION:
  * Public Team Chart page with PRG flow, print, spreadsheet export,
  * and render-time LP / RD chart annotations.
+ *
+ * v028 (9/23/2026 3:31:15 am ET)
+ * - SAFETY: Explicitly excludes test accounts userID 0, 998, and 999 plus MRL test-team rows from Team Chart output.
+ * - PARTICIPATION: userActive is NOT used to remove already-recorded picks; a regular user who becomes inactive remains visible where picks exist.
+ * - HISTORY: Prior-season Team Charts remain based on recorded historical picks.
+ * - PRESERVE: Privacy gate, LP/RD display, print/PDF, XLSX export, navigation, themes, and all legitimate team data unchanged.
  *
  * CHANGELOG:
  *
@@ -1007,6 +1013,8 @@ if ($needsChartData) {
                 WHERE up.raceYear = :year
                   AND up.segment = :segment
                   AND COALESCE(u.userName, '') != 'MRL'
+                  AND up.userID NOT IN (0, 998, 999)
+                  AND LOWER(TRIM(up.teamName)) <> 'mrl test team'
                 ORDER BY up.userID ASC, up.entryDate ASC, up.pickID ASC
             ";
 
@@ -1039,6 +1047,8 @@ if ($needsChartData) {
                 WHERE up.raceYear = ?
                   AND up.segment = ?
                   AND COALESCE(u.userName, '') != 'MRL'
+                  AND up.userID NOT IN (0, 998, 999)
+                  AND LOWER(TRIM(up.teamName)) <> 'mrl test team'
                 ORDER BY up.userID ASC, up.entryDate ASC, up.pickID ASC
             ";
 
