@@ -1,8 +1,8 @@
 <!--
   race_countdown.html
 
-  VERSION: v004
-  LAST MODIFIED: 7/21/2026 2:19:13 am
+  VERSION: v008
+  LAST MODIFIED: 10/22/2026 3:45:15 pm
 
   Purpose:
   - Dynamically reads /race_results/_race_results_schedule.json
@@ -14,6 +14,21 @@
   fetch('/race_countdown.html', { cache: 'no-store' })
 
   CHANGELOG:
+  v008 (10/22/2026)
+  - NEW: After the final scheduled race has aged out, shows a dynamic See you in [next year] offseason message.
+  - SAFE: Derives the next year from the final scheduled race date; nothing is hard-coded to 2027.
+
+  v007 (10/22/2026)
+  - FIX: Keeps the end-of-season label on one line in the WordPress side panel.
+
+  v006 (10/22/2026)
+  - CHANGE: Segment headings now derive the season year from the displayed race date instead of hard-coding 2026.
+  - SAFE: Preserves the existing schedule-driven race names, dates, times, countdowns, and segment boundaries.
+
+  v005 (10/22/2026)
+  - CHANGE: When Segment 4 ends, shows End of [season year] Season instead of End of Segment 4.
+  - SAFE: Derives the season year from the actual last visible race date so the file remains reusable year to year.
+
   v004 (7/21/2026)
   - FIX: Keeps each countdown box horizontally centered when the file is opened standalone.
   - SAFE: Preserves the existing WordPress side-panel layout by only changing the box's horizontal margin from 0 to auto.
@@ -64,11 +79,12 @@
     return '';
   }
 
-  function segmentLabel(segment) {
-    if (segment === 'S1') return '2026 Segment 1';
-    if (segment === 'S2') return '2026 Segment 2';
-    if (segment === 'S3') return '2026 Segment 3';
-    if (segment === 'S4') return '2026 Segment 4';
+  function segmentLabel(segment, race) {
+    const seasonYear = seasonYearFromRace(race);
+    if (segment === 'S1') return (seasonYear ? seasonYear + ' ' : '') + 'Segment 1';
+    if (segment === 'S2') return (seasonYear ? seasonYear + ' ' : '') + 'Segment 2';
+    if (segment === 'S3') return (seasonYear ? seasonYear + ' ' : '') + 'Segment 3';
+    if (segment === 'S4') return (seasonYear ? seasonYear + ' ' : '') + 'Segment 4';
     return 'Upcoming Races';
   }
 
@@ -78,6 +94,29 @@
     if (segment === 'S3') return 26;
     if (segment === 'S4') return 36;
     return 0;
+  }
+
+  function seasonYearFromRace(race) {
+    const date = parseStartDate(race);
+    if (date && !isNaN(date.getTime())) {
+      return String(date.getFullYear());
+    }
+
+    const rn = raceNumber(race);
+    if (rn > 0) {
+      return String(new Date().getFullYear());
+    }
+
+    return '';
+  }
+
+  function segmentEndLabel(segment, race) {
+    if (segment === 'S4') {
+      const seasonYear = seasonYearFromRace(race);
+      return seasonYear ? 'End of ' + seasonYear + ' Season' : 'End of Season';
+    }
+
+    return 'End of Segment ' + segment.replace('S', '');
   }
 
   function parseStartDate(race) {
@@ -168,6 +207,16 @@
     }).slice(0, 5);
 
     if (!visibleRaces.length) {
+      if (races.length) {
+        const lastRace = races[races.length - 1];
+        const lastRaceDate = parseStartDate(lastRace);
+        if (lastRaceDate && !isNaN(lastRaceDate.getTime()) && !shouldShowRace(lastRaceDate)) {
+          const nextSeasonYear = lastRaceDate.getFullYear() + 1;
+          return '<p class="mrl-empty">No upcoming races found.</p>' +
+                 '<p class="mrl-offseason">See you in ' + htmlEscape(nextSeasonYear) + '</p>';
+        }
+      }
+
       return '<p class="mrl-empty">No upcoming races found.</p>';
     }
 
@@ -183,12 +232,12 @@
           const prevRace = visibleRaces[visibleRaces.indexOf(race) - 1];
           const prevRaceNumber = raceNumber(prevRace);
           if (prevRaceNumber === segmentEndRaceNumber(currentSegment)) {
-            html += `<h2 class="mrl-segment-title mrl-segment-end">End of Segment ${currentSegment.replace('S', '')}</h2><div class="mrl-segment-divider" aria-hidden="true"></div>`;
+            html += `<h2 class="mrl-segment-title mrl-segment-end">${htmlEscape(segmentEndLabel(currentSegment, prevRace))}</h2><div class="mrl-segment-divider" aria-hidden="true"></div>`;
           }
           html += `</div>`;
         }
         currentSegment = segment;
-        html += `<div class="mrl-segment-group"><h2 class="mrl-segment-title">${htmlEscape(segmentLabel(segment))}</h2>`;
+        html += `<div class="mrl-segment-group"><h2 class="mrl-segment-title">${htmlEscape(segmentLabel(segment, race))}</h2>`;
       }
 
       html += buildRaceHtml(race);
@@ -198,7 +247,7 @@
       const lastRace = visibleRaces[visibleRaces.length - 1];
       const lastRaceNumber = raceNumber(lastRace);
       if (lastRaceNumber === segmentEndRaceNumber(currentSegment)) {
-        html += `<h2 class="mrl-segment-title mrl-segment-end">End of Segment ${currentSegment.replace('S', '')}</h2>`;
+        html += `<h2 class="mrl-segment-title mrl-segment-end">${htmlEscape(segmentEndLabel(currentSegment, lastRace))}</h2>`;
       }
       html += `</div>`;
     }
@@ -307,6 +356,15 @@
   margin:20px 0;
 }
 
+.mrl-offseason{
+  text-align:center;
+  font-size:30px;
+  font-weight:bold;
+  color:#222;
+  margin:28px 0 10px 0;
+  white-space:nowrap;
+}
+
 .mrl-box{
   border:none;
   background:transparent;
@@ -399,6 +457,7 @@
 
 .mrl-segment-end{
   margin-top:28px;
+  white-space:nowrap;
 }
 
 .mrl-segment-divider{

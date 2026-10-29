@@ -1,0 +1,127 @@
+{
+    "version": 1,
+    "updated_at": "2026-10-29 03:14:40",
+    "years": {
+        "2026": {
+            "year": "2026",
+            "public": true,
+            "official": false,
+            "weekly_high_point": 10,
+            "segments": {
+                "S1": [
+                    40,
+                    20
+                ],
+                "S2": [
+                    40,
+                    20
+                ],
+                "S3": [
+                    40,
+                    20
+                ],
+                "S4": [
+                    40,
+                    10,
+                    10
+                ]
+            },
+            "yearly": [
+                60,
+                50,
+                40
+            ]
+        },
+        "2025": {
+            "year": "2025",
+            "public": false,
+            "official": false,
+            "weekly_high_point": 10,
+            "segments": {
+                "S1": [
+                    40,
+                    20
+                ],
+                "S2": [
+                    40,
+                    20
+                ],
+                "S3": [
+                    40,
+                    20
+                ],
+                "S4": [
+                    40,
+                    10,
+                    10
+                ]
+            },
+            "yearly": [
+                60,
+                50,
+                40
+            ]
+        },
+        "2022": {
+            "year": "2022",
+            "public": false,
+            "official": false,
+            "weekly_high_point": 10,
+            "segments": {
+                "S1": [
+                    40,
+                    20
+                ],
+                "S2": [
+                    40,
+                    20
+                ],
+                "S3": [
+                    40,
+                    20
+                ],
+                "S4": [
+                    40,
+                    10,
+                    10
+                ]
+            },
+            "yearly": [
+                60,
+                50,
+                40
+            ]
+        },
+        "2017": {
+            "year": "2017",
+            "public": true,
+            "official": false,
+            "weekly_high_point": 10,
+            "segments": {
+                "S1": [
+                    40,
+                    20
+                ],
+                "S2": [
+                    40,
+                    20
+                ],
+                "S3": [
+                    40,
+                    20
+                ],
+                "S4": [
+                    40,
+                    10,
+                    10
+                ]
+            },
+            "yearly": [
+                60,
+                50,
+                40
+            ]
+        }
+    },
+    "updated_by": 1
+}
