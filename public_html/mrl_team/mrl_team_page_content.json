@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-09-16 10:43:12",
+    "updated_at": "2026-11-03 14:46:12",
     "custom_html_block": {
         "enabled": false,
         "position": "below",
@@ -14,6 +14,12 @@
     "admin_league_panel": {
         "title": "League & Team",
         "items": [
+            {
+                "label": "\ud83d\udcb0\ud83d\udcb2 Payouts",
+                "url": "/race_results/payouts.php",
+                "enabled": true,
+                "new_tab": true
+            },
             {
                 "label": "\ud83d\udccbAuto Scoring / Weekly Standings  - Beta",
                 "url": "/race_results/weekly_standings.php",
