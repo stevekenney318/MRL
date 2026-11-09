@@ -7,6 +7,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config_mrl.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions_mrl.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/mrl_team/mrl_theme_helper.php';
+require_once __DIR__ . '/manual_snapshot_override_helper.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -45,8 +46,16 @@ if ($isTestSite) {
 /**
  * weekly_standings.php
  *
- * VERSION: v080
- * LAST MODIFIED: 9/23/2026 3:31:15 am ET
+ * VERSION: v081
+ * LAST MODIFIED: 11/9/2026 4:30:00 pm ET
+ *
+ * v081 (11/9/2026 4:30:00 pm ET)
+ *   - NEW: Supports active manual scoring snapshots stored outside the ESPN canonical snapshot chain.
+ *   - NEW: Manual versions appear in the selected race version dropdown as MANUAL while the real release-history JSON remains untouched.
+ *   - NEW: Active earlier-race manual overrides automatically flow through later Week / Segment / Season calculations.
+ *   - VALIDATION: Clearly identifies every active manual override contributing to the selected standings calculation.
+ *   - SAFETY: ESPN canonical snapshots, final_table_hash.txt, revision metadata, and revision-monitor discovery remain unchanged.
+ *   - PRESERVE: Existing scoring formulas, picks, LP/RD behavior, exports, print, themes, audit, and normal ESPN release/version behavior.
  *
  * v080 (9/23/2026 3:31:15 am ET)
  *   - SAFETY: Adds guest/test userID 998 to the existing noncompetitive test-account exclusions alongside userID 0 and 999.
@@ -1034,7 +1043,7 @@ function rrsg_find_latest_available_view(array $availableYears, string $baseDir)
 function rrsg_format_snapshot_timestamp(string $snapshotFile): string
 {
     $base = basename($snapshotFile);
-    if (!preg_match('/^snapshot_(\d{8})_(\d{6})\d*\.html$/', $base, $m)) {
+    if (!preg_match('/^(?:manual_)?snapshot_(\d{8})_(\d{6})\d*\.html$/', $base, $m)) {
         return '';
     }
 
@@ -1049,7 +1058,7 @@ function rrsg_format_snapshot_timestamp(string $snapshotFile): string
 function rrsg_snapshot_id_from_file(string $snapshotFile): string
 {
     $base = basename($snapshotFile);
-    if (!preg_match('/^snapshot_(\d{8}_\d{6}\d*)\.html$/', $base, $m)) {
+    if (!preg_match('/^(?:manual_)?snapshot_(\d{8}_\d{6}\d*)\.html$/', $base, $m)) {
         return '';
     }
 
@@ -1229,6 +1238,10 @@ function rrsg_audit_release_type_label(array $meta): string
 {
     $releaseType = strtolower(trim((string)($meta['release_type'] ?? '')));
     $sourceType = strtolower(trim((string)($meta['source_type'] ?? '')));
+
+    if ($releaseType === 'manual' || $sourceType === 'manual_override') {
+        return 'Manual scoring release';
+    }
 
     if ($releaseType === 'revised' || $releaseType === 'updated' || $sourceType === 'indirect_revision' || $sourceType === 'direct_revision') {
         return 'Updated release';
@@ -2301,11 +2314,22 @@ function rrsg_select_release_row(array $rows, string $releaseId): array
         $id = rrsg_release_id_for_ui($row);
         if ($releaseId !== '' && $id === $releaseId) return $row;
     }
+    if ($releaseId === '') {
+        foreach ($rows as $row) {
+            if (is_array($row) && !empty($row['manual_override_active'])) return $row;
+        }
+    }
     return $rows[count($rows) - 1];
 }
 
 function rrsg_release_snapshot_path_for_race(string $raceFolder, array $release): string
 {
+    $rel = trim((string)($release['snapshot_rel_path'] ?? ''), '/\\');
+    if ($rel !== '') {
+        $path = rtrim($raceFolder, '/\\') . '/' . str_replace('\\', '/', $rel);
+        return is_file($path) ? $path : '';
+    }
+
     $base = basename((string)($release['snapshot_file'] ?? $release['current_snapshot'] ?? ''));
     if ($base === '') {
         $snapshotId = (string)($release['snapshot_id'] ?? '');
@@ -2319,6 +2343,7 @@ function rrsg_release_snapshot_path_for_race(string $raceFolder, array $release)
 function rrsg_release_status_for_ui(array $selected, array $rows): array
 {
     if (empty($selected)) return ['label' => '', 'class' => 'none'];
+    if (!empty($selected['manual_override_active'])) return ['label' => 'Current', 'class' => 'current'];
     $id = rrsg_release_id_for_ui($selected);
     $latest = !empty($rows) ? $rows[count($rows) - 1] : [];
     $latestId = rrsg_release_id_for_ui($latest);
@@ -2400,6 +2425,7 @@ $selectedRace = ($selectedRaceIndex >= 0 && isset($pointRaces[$selectedRaceIndex
 
 $selectedReleaseId = isset($_GET['release']) ? trim((string)$_GET['release']) : '';
 $weeklyReleaseHistory = rrsg_load_weekly_release_history($yearFolder);
+$weeklyReleaseHistory = mrlm_append_active_manual_release($weeklyReleaseHistory, $yearFolder, $selectedRaceCode);
 $selectedVersionReleaseRows = rrsg_release_history_rows_for_race($weeklyReleaseHistory, $selectedRaceCode);
 $selectedVersionRelease = rrsg_select_release_row($selectedVersionReleaseRows, $selectedReleaseId);
 $selectedReleaseId = !empty($selectedVersionRelease) ? rrsg_release_id_for_ui($selectedVersionRelease) : '';
@@ -2481,6 +2507,10 @@ if ($selectedRace !== null) {
         $raceTeamRows = rrsg_append_missing_competitive_team_rows($raceTeamRows, $competitiveRoster);
 
         $snapshotFile = rrsg_find_snapshot_file($raceFolder);
+        $activeManualSnapshot = mrlm_active_snapshot_path($yearFolder, $raceCode, $raceFolder);
+        if ($activeManualSnapshot !== '') {
+            $snapshotFile = $activeManualSnapshot;
+        }
         if ($raceCode === $selectedRaceCode && !empty($selectedVersionRelease)) {
             $versionSnapshotFile = rrsg_release_snapshot_path_for_race($raceFolder, $selectedVersionRelease);
             if ($versionSnapshotFile !== '') {
@@ -2575,6 +2605,13 @@ if ($selectedRace === null) {
     rrsg_add_validation($validation, 'pass', 'Select a race to view validation.');
 } else {
     rrsg_add_validation($validation, 'pass', 'Selected race found: ' . $selectedRaceCode);
+
+    $activeManualInScope = mrlm_active_records_through_race($yearFolder, $selectedRaceNumber);
+    foreach ($activeManualInScope as $manualRecord) {
+        $manualLabel = (string)($manualRecord['race_code'] ?? '') . ' ' . (string)($manualRecord['display_version'] ?? '') . ' MANUAL';
+        $manualEffective = (string)($manualRecord['effective_at'] ?? '');
+        rrsg_add_validation($validation, 'warn', 'Manual scoring override active: ' . trim($manualLabel) . ($manualEffective !== '' ? ' / Effective ' . $manualEffective . ' ET' : ''));
+    }
 
     if ($selectedRaceMeta['snapshotFile'] !== '') {
         rrsg_add_validation($validation, 'pass', 'Snapshot found for selected race.');
