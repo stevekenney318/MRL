@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * payouts.php
  *
- * VERSION: v007
- * LAST MODIFIED: 11/10/2026 1:15:00 am ET
+ * VERSION: v008
+ * LAST MODIFIED: 11/10/2026 1:53:00 am ET
  *
  * PURPOSE:
  * - Public MRL payout page built from the same race-result snapshots and scoring rules as Weekly Standings.
@@ -14,6 +14,11 @@ declare(strict_types=1);
  * - Includes public Team Payouts views plus Main Chart and Everything Excel/PDF/Print export options.
  *
  * CHANGELOG:
+ * v008 (11/10/2026 1:53:00 am ET)
+ * - LAYOUT: Treats the year/Weekly Standings controls, UNOFFICIAL badge, and export actions as one top-aligned row.
+ * - LAYOUT: Uses the export block's current vertical position as the shared reference so all three groups begin on the same line.
+ * - PRESERVE: v007 status behavior, conditional Team Payouts note, export filenames, payout calculations, winners, ties, colors, widths, admin/config/scoring/data sources unchanged.
+ *
  * v007 (11/10/2026 1:15:00 am ET)
  * - STATUS: When a payout year is marked official, the UNOFFICIAL notice disappears; no OFFICIAL replacement badge is shown.
  * - TEAM PAYOUTS: The explanatory future-awards note is shown only while at least one planned payout row still has no winner.
@@ -373,9 +378,9 @@ $selectYears=$publicYears;if($isAdminPreview&&!in_array($requested,$selectYears,
 <link rel="stylesheet" href="/mrl_team/mrl_shared_theme.css?v=001">
 <style>
 @view-transition{navigation:auto}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;color:var(--mrl-rd-text,#111)}
-.page-wrap{width:96%;max-width:900px;margin:14px auto 30px}.badge{display:inline-block;border:3px solid #c00000;color:#c00000;background:#fff;border-radius:999px;padding:5px 18px;font-size:20px;font-weight:800;letter-spacing:.4px;white-space:nowrap}.badge.official{border-color:#2e8b57;color:#116b36}.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:nowrap;margin-bottom:8px}.top-status{display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.page-wrap{width:96%;max-width:900px;margin:14px auto 30px}.badge{display:inline-block;border:3px solid #c00000;color:#c00000;background:#fff;border-radius:999px;padding:5px 18px;font-size:20px;font-weight:800;letter-spacing:.4px;white-space:nowrap}.badge.official{border-color:#2e8b57;color:#116b36}.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:nowrap;margin-bottom:8px}.controls,.top-status,.export-actions{position:relative;top:3px}.top-status{display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.controls select,.btn{height:32px;border:1px solid #7a7a7a;border-radius:9px;background:#f6f6f6;color:#111;padding:0 10px;font:600 14px Arial;text-decoration:none;display:inline-flex;align-items:center;cursor:pointer}
-.export-actions{display:grid;grid-template-columns:max-content max-content;gap:7px;position:relative;top:3px}.title-row h1{margin:3px 0 8px;font-size:28px;color:var(--mrl-rd-text,#fff)}
+.export-actions{display:grid;grid-template-columns:max-content max-content;gap:7px}.title-row h1{margin:3px 0 8px;font-size:28px;color:var(--mrl-rd-text,#fff)}
 .report{background:#fff;color:#111;border:1px solid #555;border-radius:4px;overflow:hidden}.year-label{font-size:20px;font-weight:700;padding:8px 10px 4px;background:#fff}
 table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:16px}col.prize{width:37%}col.winner{width:25%}col.owner{width:27%}col.amount{width:11%}
 th,td{border:1px solid #333;padding:4px 7px;line-height:1.16;vertical-align:middle}th{background:#ffff00;font-size:17px;font-weight:700;text-align:center}.amount{text-align:right;white-space:nowrap}
