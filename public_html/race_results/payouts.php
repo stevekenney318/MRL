@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * payouts.php
  *
- * VERSION: v006
- * LAST MODIFIED: 11/5/2026 4:00:00 pm ET
+ * VERSION: v007
+ * LAST MODIFIED: 11/10/2026 1:15:00 am ET
  *
  * PURPOSE:
  * - Public MRL payout page built from the same race-result snapshots and scoring rules as Weekly Standings.
@@ -14,6 +14,14 @@ declare(strict_types=1);
  * - Includes public Team Payouts views plus Main Chart and Everything Excel/PDF/Print export options.
  *
  * CHANGELOG:
+ * v007 (11/10/2026 1:15:00 am ET)
+ * - STATUS: When a payout year is marked official, the UNOFFICIAL notice disappears; no OFFICIAL replacement badge is shown.
+ * - TEAM PAYOUTS: The explanatory future-awards note is shown only while at least one planned payout row still has no winner.
+ * - EXPORT: Main Chart and Everything Excel filenames use the standard timestamp form YYYYMMDD_hhmmssam/pm.
+ * - EXPORT: Print/PDF views use timestamped document titles so Save as PDF receives a timestamped suggested filename.
+ * - LAYOUT: Drops the export button block slightly for cleaner alignment with the year/Weekly Standings/status row.
+ * - PRESERVE: Payout calculations, winners, tie allocation, colors, widths, year visibility, admin/config/scoring/data sources unchanged.
+ *
  * v006 (11/5/2026 4:00:00 pm ET)
  * - LAYOUT: Moves OFFICIAL/UNOFFICIAL into the same top control row as the year, Weekly Standings, and export buttons.
  * - LABELS: Enforces High Point Total R## for all weekly payout labels, including tie-suffixed labels such as High Point Total R13 (Tie).
@@ -99,6 +107,19 @@ function pp_through_race(array $model): int
         }
     }
     return $max;
+}
+
+function pp_has_unresolved_payouts(array $model): bool
+{
+    foreach(['S1','S2','S3','S4'] as $seg){
+        foreach(($model['sections'][$seg]??[]) as $row){
+            if(trim((string)($row['winner']??''))==='')return true;
+        }
+    }
+    foreach(($model['yearly']??[]) as $row){
+        if(trim((string)($row['winner']??''))==='')return true;
+    }
+    return false;
 }
 
 function pp_team_payouts(array $model): array
@@ -199,7 +220,7 @@ function pp_send_main_chart_xlsx(string $year,array $model,array $yearCfg): void
 {
     $rows=[];$r=1;
     $rows[]='<row r="'.$r.'" ht="26" customHeight="1">'.pp_xlsx_cell('A'.$r,$year.' MRL Payouts',1).'</row>';$r++;
-    $status=!empty($yearCfg['official'])?'OFFICIAL':'UNOFFICIAL';
+    $status=!empty($yearCfg['official'])?'':'UNOFFICIAL';
     $rows[]='<row r="'.$r.'">'.pp_xlsx_cell('A'.$r,$status,2).'</row>';$r++;
     foreach(['S1','S2','S3','S4'] as $seg){
         $rows[]='<row r="'.$r.'">'.pp_xlsx_cell('A'.$r,'Prize',3).pp_xlsx_cell('B'.$r,'Winner',3).pp_xlsx_cell('C'.$r,'Team Owner',3).pp_xlsx_cell('D'.$r,'Amount',3).'</row>';$r++;
@@ -253,7 +274,7 @@ function pp_send_main_chart_xlsx(string $year,array $model,array $yearCfg): void
         'xl/worksheets/sheet1.xml'=>$sheet,
         'xl/styles.xml'=>pp_chart_xlsx_styles(),
     ];
-    $filename='MRL_Payouts_'.$year.'_Main_Chart_'.date('Ymd_His').'.xlsx';
+    $filename='MRL_Payouts_'.$year.'_Main_Chart_'.date('Ymd_hisa').'.xlsx';
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="'.$filename.'"');
     header('Cache-Control: no-store');
@@ -279,7 +300,7 @@ function pp_send_everything_xlsx(string $year,array $model,array $yearCfg,array 
     // Sheet 1: Main Chart
     $rows=[];$r=1;
     $rows[]='<row r="'.$r.'" ht="26" customHeight="1">'.pp_xlsx_cell('A'.$r,$year.' MRL Payouts',1).'</row>';$r++;
-    $rows[]='<row r="'.$r.'">'.pp_xlsx_cell('A'.$r,!empty($yearCfg['official'])?'OFFICIAL':'UNOFFICIAL',2).'</row>';$r++;
+    $rows[]='<row r="'.$r.'">'.pp_xlsx_cell('A'.$r,!empty($yearCfg['official'])?'':'UNOFFICIAL',2).'</row>';$r++;
     foreach(['S1','S2','S3','S4'] as $seg){
         $rows[]='<row r="'.$r.'">'.pp_xlsx_cell('A'.$r,'Prize',3).pp_xlsx_cell('B'.$r,'Winner',3).pp_xlsx_cell('C'.$r,'Team Owner',3).pp_xlsx_cell('D'.$r,'Amount',3).'</row>';$r++;
         $lastPrize='';
@@ -325,31 +346,36 @@ function pp_send_everything_xlsx(string $year,array $model,array $yearCfg,array 
     $files['xl/workbook.xml']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'.implode('',$sheetTags).'</sheets></workbook>';
     $files['xl/_rels/workbook.xml.rels']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'.implode('',$rels).'</Relationships>';
     $files['xl/styles.xml']=pp_chart_xlsx_styles();
-    $filename='MRL_Payouts_'.$year.'_Everything_'.date('Ymd_His').'.xlsx';
+    $filename='MRL_Payouts_'.$year.'_Everything_'.date('Ymd_hisa').'.xlsx';
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');header('Content-Disposition: attachment; filename="'.$filename.'"');header('Cache-Control: no-store');echo mrlp_zip_strings($files);exit;
 }
 
 $teamPayouts=pp_team_payouts($model);
 $throughRace=pp_through_race($model);
 $grandTotalLabel=$throughRace>0?'Grand Total — Through R'.$throughRace:'Grand Total';
+$hasUnresolvedPayouts=pp_has_unresolved_payouts($model);
 if(($_GET['export']??'')==='main_excel')pp_send_main_chart_xlsx($requested,$model,$yearCfg);
 if(($_GET['export']??'')==='everything_excel')pp_send_everything_xlsx($requested,$model,$yearCfg,$teamPayouts,$throughRace);
 $printMode=(string)($_GET['print']??'');
 $printChart=($printMode==='chart');
 $printEverything=($printMode==='everything');
+$printStamp=date('Ymd_hisa');
+$printFilenameBase=$printChart
+    ? 'MRL_Payouts_'.$requested.'_Main_Chart_'.$printStamp
+    : ($printEverything ? 'MRL_Payouts_'.$requested.'_Everything_'.$printStamp : 'MRL Payouts');
 $selectYears=$publicYears;if($isAdminPreview&&!in_array($requested,$selectYears,true))$selectYears[]=$requested;rsort($selectYears,SORT_STRING);
 ?>
 <!doctype html>
 <html class="mrl-theme-<?php echo mrlp_h($theme); ?>">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MRL Payouts</title>
+<title><?php echo mrlp_h($printFilenameBase); ?></title>
 <link rel="stylesheet" href="/mrl_team/mrl_shared_theme.css?v=001">
 <style>
 @view-transition{navigation:auto}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;color:var(--mrl-rd-text,#111)}
 .page-wrap{width:96%;max-width:900px;margin:14px auto 30px}.badge{display:inline-block;border:3px solid #c00000;color:#c00000;background:#fff;border-radius:999px;padding:5px 18px;font-size:20px;font-weight:800;letter-spacing:.4px;white-space:nowrap}.badge.official{border-color:#2e8b57;color:#116b36}.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:nowrap;margin-bottom:8px}.top-status{display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.controls select,.btn{height:32px;border:1px solid #7a7a7a;border-radius:9px;background:#f6f6f6;color:#111;padding:0 10px;font:600 14px Arial;text-decoration:none;display:inline-flex;align-items:center;cursor:pointer}
-.export-actions{display:grid;grid-template-columns:max-content max-content;gap:7px}.title-row h1{margin:3px 0 8px;font-size:28px;color:var(--mrl-rd-text,#fff)}
+.export-actions{display:grid;grid-template-columns:max-content max-content;gap:7px;position:relative;top:3px}.title-row h1{margin:3px 0 8px;font-size:28px;color:var(--mrl-rd-text,#fff)}
 .report{background:#fff;color:#111;border:1px solid #555;border-radius:4px;overflow:hidden}.year-label{font-size:20px;font-weight:700;padding:8px 10px 4px;background:#fff}
 table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:16px}col.prize{width:37%}col.winner{width:25%}col.owner{width:27%}col.amount{width:11%}
 th,td{border:1px solid #333;padding:4px 7px;line-height:1.16;vertical-align:middle}th{background:#ffff00;font-size:17px;font-weight:700;text-align:center}.amount{text-align:right;white-space:nowrap}
@@ -359,7 +385,7 @@ th,td{border:1px solid #333;padding:4px 7px;line-height:1.16;vertical-align:midd
 @media print{html,body{background:#fff!important;background-image:none!important;color:#111!important}.controls,.export-actions,.print-note{display:none!important}.print-main .team-payouts{display:none!important}.page-wrap{width:100%;max-width:none;margin:0}.report{border:0}.badge,.team-payout-card th,.team-payout-card td{-webkit-print-color-adjust:exact;print-color-adjust:exact}.seg-S1 td,.seg-S2 td,.seg-S3 td,.seg-S4 td,.segment-prize td,.yearly td,th,.planned-total td{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head>
 <body class="<?php echo $printChart?'print-main':($printEverything?'print-everything':''); ?>"><div class="page-wrap">
-<div class="topbar"><div class="controls"><?php if(!$printChart&&!$printEverything): ?><form method="get"><select name="year" onchange="this.form.submit()"><?php foreach($selectYears as $y): ?><option value="<?php echo mrlp_h($y); ?>" <?php echo $y===$requested?'selected':''; ?>><?php echo mrlp_h($y); ?></option><?php endforeach; ?></select><?php if($isAdminPreview): ?><input type="hidden" name="preview" value="1"><?php endif; ?></form><a class="btn" href="weekly_standings.php?year=<?php echo mrlp_h($requested); ?>">Weekly Standings</a><?php else: ?><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>">Back to Payouts</a><?php endif; ?></div><div class="top-status"><span class="badge <?php echo !empty($yearCfg['official'])?'official':''; ?>"><?php echo !empty($yearCfg['official'])?'OFFICIAL':'UNOFFICIAL'; ?></span></div><?php if(!$printChart&&!$printEverything): ?><div class="export-actions"><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>&export=main_excel">Excel — Main Chart</a><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>&print=chart&autoprint=1">PDF / Print — Main Chart</a><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>&export=everything_excel">Excel — Everything</a><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>&print=everything&autoprint=1">PDF / Print — Everything</a></div><?php endif; ?></div>
+<div class="topbar"><div class="controls"><?php if(!$printChart&&!$printEverything): ?><form method="get"><select name="year" onchange="this.form.submit()"><?php foreach($selectYears as $y): ?><option value="<?php echo mrlp_h($y); ?>" <?php echo $y===$requested?'selected':''; ?>><?php echo mrlp_h($y); ?></option><?php endforeach; ?></select><?php if($isAdminPreview): ?><input type="hidden" name="preview" value="1"><?php endif; ?></form><a class="btn" href="weekly_standings.php?year=<?php echo mrlp_h($requested); ?>">Weekly Standings</a><?php else: ?><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>">Back to Payouts</a><?php endif; ?></div><?php if(empty($yearCfg['official'])): ?><div class="top-status"><span class="badge">UNOFFICIAL</span></div><?php endif; ?><?php if(!$printChart&&!$printEverything): ?><div class="export-actions"><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>&export=main_excel">Excel — Main Chart</a><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>&print=chart&autoprint=1">PDF / Print — Main Chart</a><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>&export=everything_excel">Excel — Everything</a><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?'&preview=1':''; ?>&print=everything&autoprint=1">PDF / Print — Everything</a></div><?php endif; ?></div>
 <div class="title-row"><h1><?php echo mrlp_h($requested); ?> MRL Payouts</h1></div>
 <div class="report"><div class="year-label"><?php echo mrlp_h($requested); ?></div><table><colgroup><col class="prize"><col class="winner"><col class="owner"><col class="amount"></colgroup>
 <?php foreach(['S1','S2','S3','S4'] as $seg): ?><thead class="section-head"><tr><th>Prize</th><th>Winner</th><th>Team Owner</th><th>Amount</th></tr></thead><tbody>
@@ -368,7 +394,7 @@ th,td{border:1px solid #333;padding:4px 7px;line-height:1.16;vertical-align:midd
 <?php $lastPrize=(string)$row['prize']; endforeach; ?></tbody><?php endforeach; ?>
 <thead class="section-head"><tr><th>Prize</th><th>Winner</th><th>Team Owner</th><th>Amount</th></tr></thead><tbody><?php $lastPrize=''; $yearlyRows=$model['yearly']; foreach($yearlyRows as $rowIndex=>$row): $tf=!empty($row['tie'])&&$lastPrize===(string)$row['prize']; $nextRow=$yearlyRows[$rowIndex+1]??null; $tl=!empty($row['tie'])&&is_array($nextRow)&&!empty($nextRow['tie'])&&(string)($nextRow['prize']??'')===(string)$row['prize']; ?><tr class="yearly <?php echo !empty($row['future'])?'future ':''; ?><?php echo $tl?'tie-lead ':''; ?><?php echo $tf?'tie-follow':''; ?>"><td><?php echo mrlp_h(pp_display_prize((string)$row['prize'])); ?></td><td><?php echo mrlp_h($row['winner']); ?></td><td><?php echo mrlp_h($row['owner']); ?></td><td class="amount"><?php echo pp_money($row['amount']); ?></td></tr><?php $lastPrize=(string)$row['prize']; endforeach; ?>
 <tr class="planned-total"><td colspan="3">Planned Season Payout Total</td><td class="amount"><?php echo pp_money($model['planned_total']); ?></td></tr></tbody></table></div>
-<?php if(!$printChart): ?><div class="team-payouts"><h2>Team Payouts</h2><div class="note">These views include only awards whose winners are currently known. Future payout rows remain visible in the main chart above.</div>
+<?php if(!$printChart): ?><div class="team-payouts"><h2>Team Payouts</h2><?php if($hasUnresolvedPayouts): ?><div class="note">These views include only awards whose winners are currently known. Future payout rows remain visible in the main chart above.</div><?php endif; ?>
 
 <div class="team-payout-card"><h3 class="team-payout-title">Team &amp; Team Owner — Sorted by Team</h3><table><thead><tr><th>Team</th><th>Team Owner</th><th>Payout</th></tr></thead><tbody><?php foreach($teamPayouts['by_team'] as $tr): ?><tr><td class="team-name"><?php echo mrlp_h($tr['team']); ?></td><td><?php echo mrlp_h($tr['owner']); ?></td><td class="amount"><?php echo pp_money($tr['payout']); ?></td></tr><?php endforeach; ?><tr class="grand-total"><td colspan="2"><?php echo mrlp_h($grandTotalLabel); ?></td><td class="amount"><?php echo pp_progress($model['awarded_total'],$model['planned_total']); ?></td></tr></tbody></table></div>
 

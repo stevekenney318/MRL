@@ -1,0 +1,70 @@
+<?php
+declare(strict_types=1);
+date_default_timezone_set('America/New_York');
+session_start();
+$docRoot=dirname(__DIR__);$target=$docRoot.'/race_results/payouts.php';$backupRoot=$docRoot.'/_installer_backups';$sessionFile=$backupRoot.'/install_payouts_finish_polish_v007_last.json';$expectedBeforeSha='d314ff2f01de93395d2cfd88848641a76f5cd6dece64120076289e6732461b62';
+function ih($v):string{return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');}function ij(array $v):string{return (string)json_encode($v,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);}function isha(string $p):string{return is_file($p)?(string)hash_file('sha256',$p):'';}function ilint(string $p):array{$o=shell_exec('php -l '.escapeshellarg($p).' 2>&1');$o=is_string($o)?trim($o):'';return ['ok'=>strpos($o,'No syntax errors detected')!==false,'detail'=>$o];}function iatomic(string $p,string $c):bool{$t=$p.'.tmp_'.getmypid().'_'.date('Ymd_His');if(file_put_contents($t,$c,LOCK_EX)===false)return false;@chmod($t,0644);if(!@rename($t,$p)){@unlink($t);return false;}@chmod($p,0644);return true;}function icheck(array &$c,string $l,bool $ok,bool $r,string $d=''):void{$c[]=['label'=>$l,'status'=>$ok?'PASS':'FAIL','required'=>$r,'detail'=>$d];}
+function ipatches():array{return [
+        ['label'=>'version','old'=>' * VERSION: v006
+ * LAST MODIFIED: 11/5/2026 4:00:00 pm ET','new'=>' * VERSION: v007
+ * LAST MODIFIED: 11/10/2026 1:15:00 am ET'],
+        ['label'=>'changelog','old'=>' * CHANGELOG:
+ * v006 (11/5/2026 4:00:00 pm ET)','new'=>' * CHANGELOG:
+ * v007 (11/10/2026 1:15:00 am ET)
+ * - STATUS: When a payout year is marked official, the UNOFFICIAL notice disappears; no OFFICIAL replacement badge is shown.
+ * - TEAM PAYOUTS: The explanatory future-awards note is shown only while at least one planned payout row still has no winner.
+ * - EXPORT: Main Chart and Everything Excel filenames use the standard timestamp form YYYYMMDD_hhmmssam/pm.
+ * - EXPORT: Print/PDF views use timestamped document titles so Save as PDF receives a timestamped suggested filename.
+ * - LAYOUT: Drops the export button block slightly for cleaner alignment with the year/Weekly Standings/status row.
+ * - PRESERVE: Payout calculations, winners, tie allocation, colors, widths, year visibility, admin/config/scoring/data sources unchanged.
+ *
+ * v006 (11/5/2026 4:00:00 pm ET)'],
+        ['label'=>'unresolved helper','old'=>'function pp_team_payouts(array $model): array
+{','new'=>'function pp_has_unresolved_payouts(array $model): bool
+{
+    foreach([\'S1\',\'S2\',\'S3\',\'S4\'] as $seg){
+        foreach(($model[\'sections\'][$seg]??[]) as $row){
+            if(trim((string)($row[\'winner\']??\'\'))===\'\')return true;
+        }
+    }
+    foreach(($model[\'yearly\']??[]) as $row){
+        if(trim((string)($row[\'winner\']??\'\'))===\'\')return true;
+    }
+    return false;
+}
+
+function pp_team_payouts(array $model): array
+{'],
+        ['label'=>'main xlsx status','old'=>'    $status=!empty($yearCfg[\'official\'])?\'OFFICIAL\':\'UNOFFICIAL\';','new'=>'    $status=!empty($yearCfg[\'official\'])?\'\':\'UNOFFICIAL\';'],
+        ['label'=>'main xlsx timestamp','old'=>'    $filename=\'MRL_Payouts_\'.$year.\'_Main_Chart_\'.date(\'Ymd_His\').\'.xlsx\';','new'=>'    $filename=\'MRL_Payouts_\'.$year.\'_Main_Chart_\'.date(\'Ymd_hisa\').\'.xlsx\';'],
+        ['label'=>'everything xlsx status','old'=>'    $rows[]=\'<row r="\'.$r.\'">\'.pp_xlsx_cell(\'A\'.$r,!empty($yearCfg[\'official\'])?\'OFFICIAL\':\'UNOFFICIAL\',2).\'</row>\';$r++;','new'=>'    $rows[]=\'<row r="\'.$r.\'">\'.pp_xlsx_cell(\'A\'.$r,!empty($yearCfg[\'official\'])?\'\':\'UNOFFICIAL\',2).\'</row>\';$r++;'],
+        ['label'=>'everything xlsx timestamp','old'=>'    $filename=\'MRL_Payouts_\'.$year.\'_Everything_\'.date(\'Ymd_His\').\'.xlsx\';','new'=>'    $filename=\'MRL_Payouts_\'.$year.\'_Everything_\'.date(\'Ymd_hisa\').\'.xlsx\';'],
+        ['label'=>'unresolved state','old'=>'$grandTotalLabel=$throughRace>0?\'Grand Total — Through R\'.$throughRace:\'Grand Total\';
+if(($_GET[\'export\']??\'\')===\'main_excel\')','new'=>'$grandTotalLabel=$throughRace>0?\'Grand Total — Through R\'.$throughRace:\'Grand Total\';
+$hasUnresolvedPayouts=pp_has_unresolved_payouts($model);
+if(($_GET[\'export\']??\'\')===\'main_excel\')'],
+        ['label'=>'print filename','old'=>'$printEverything=($printMode===\'everything\');
+$selectYears=$publicYears;','new'=>'$printEverything=($printMode===\'everything\');
+$printStamp=date(\'Ymd_hisa\');
+$printFilenameBase=$printChart
+    ? \'MRL_Payouts_\'.$requested.\'_Main_Chart_\'.$printStamp
+    : ($printEverything ? \'MRL_Payouts_\'.$requested.\'_Everything_\'.$printStamp : \'MRL Payouts\');
+$selectYears=$publicYears;'],
+        ['label'=>'title','old'=>'<title>MRL Payouts</title>','new'=>'<title><?php echo mrlp_h($printFilenameBase); ?></title>'],
+        ['label'=>'export alignment','old'=>'.export-actions{display:grid;grid-template-columns:max-content max-content;gap:7px}.title-row h1','new'=>'.export-actions{display:grid;grid-template-columns:max-content max-content;gap:7px;position:relative;top:3px}.title-row h1'],
+        ['label'=>'official badge','old'=>'<div class="topbar"><div class="controls"><?php if(!$printChart&&!$printEverything): ?><form method="get"><select name="year" onchange="this.form.submit()"><?php foreach($selectYears as $y): ?><option value="<?php echo mrlp_h($y); ?>" <?php echo $y===$requested?\'selected\':\'\'; ?>><?php echo mrlp_h($y); ?></option><?php endforeach; ?></select><?php if($isAdminPreview): ?><input type="hidden" name="preview" value="1"><?php endif; ?></form><a class="btn" href="weekly_standings.php?year=<?php echo mrlp_h($requested); ?>">Weekly Standings</a><?php else: ?><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?\'&preview=1\':\'\'; ?>">Back to Payouts</a><?php endif; ?></div><div class="top-status"><span class="badge <?php echo !empty($yearCfg[\'official\'])?\'official\':\'\'; ?>"><?php echo !empty($yearCfg[\'official\'])?\'OFFICIAL\':\'UNOFFICIAL\'; ?></span></div><?php if(!$printChart&&!$printEverything): ?>','new'=>'<div class="topbar"><div class="controls"><?php if(!$printChart&&!$printEverything): ?><form method="get"><select name="year" onchange="this.form.submit()"><?php foreach($selectYears as $y): ?><option value="<?php echo mrlp_h($y); ?>" <?php echo $y===$requested?\'selected\':\'\'; ?>><?php echo mrlp_h($y); ?></option><?php endforeach; ?></select><?php if($isAdminPreview): ?><input type="hidden" name="preview" value="1"><?php endif; ?></form><a class="btn" href="weekly_standings.php?year=<?php echo mrlp_h($requested); ?>">Weekly Standings</a><?php else: ?><a class="btn" href="?year=<?php echo mrlp_h($requested); ?><?php echo $isAdminPreview?\'&preview=1\':\'\'; ?>">Back to Payouts</a><?php endif; ?></div><?php if(empty($yearCfg[\'official\'])): ?><div class="top-status"><span class="badge">UNOFFICIAL</span></div><?php endif; ?><?php if(!$printChart&&!$printEverything): ?>'],
+        ['label'=>'conditional note','old'=>'<?php if(!$printChart): ?><div class="team-payouts"><h2>Team Payouts</h2><div class="note">These views include only awards whose winners are currently known. Future payout rows remain visible in the main chart above.</div>
+
+<div class="team-payout-card">','new'=>'<?php if(!$printChart): ?><div class="team-payouts"><h2>Team Payouts</h2><?php if($hasUnresolvedPayouts): ?><div class="note">These views include only awards whose winners are currently known. Future payout rows remain visible in the main chart above.</div><?php endif; ?>
+
+<div class="team-payout-card">'],
+    ];}
+function icandidate(string $src,array &$checks):string{foreach(ipatches() as $p){$n=substr_count($src,$p['old']);icheck($checks,'Patch anchor: '.$p['label'],$n===1,true,'matches='.$n);if($n!==1)return '';$src=str_replace($p['old'],$p['new'],$src,$r);if($r!==1)return '';}return $src;}
+function ipre(string $target,string $sha):array{$c=[];$okDir=(basename(__DIR__)==='_installers'&&basename(dirname(__DIR__))==='public_html');icheck($c,'Installer running from /public_html/_installers',$okDir,true,__DIR__);icheck($c,'Target exists: race_results/payouts.php',is_file($target),true,$target);$before=isha($target);icheck($c,'Current payouts.php SHA-256 matches expected v006',$before===$sha,true,$before);icheck($c,'race_results folder writable',is_writable(dirname($target)),true,dirname($target));$cand='';if(is_file($target)){$src=(string)file_get_contents($target);$cand=icandidate($src,$c);if($cand!==''){$tmp=tempnam(sys_get_temp_dir(),'mrlpo_');file_put_contents($tmp,$cand);$l=ilint($tmp);icheck($c,'Patched payouts.php php -l',$l['ok'],true,$l['detail']);@unlink($tmp);icheck($c,'Candidate payouts.php SHA-256',true,false,hash('sha256',$cand));}}$ok=true;foreach($c as $x)if($x['required']&&$x['status']!=='PASS'){$ok=false;break;}return ['ok'=>$ok,'checks'=>$c,'candidate'=>$cand,'sha_before'=>$before];}
+function iapply(string $target,string $backupRoot,string $sessionFile,string $sha):array{$pre=ipre($target,$sha);if(!$pre['ok'])return ['ok'=>false,'stage'=>'PRECHECK','checks'=>$pre['checks']];$stamp=date('Ymd_His');$bd=$backupRoot.'/install_payouts_finish_polish_v007_'.$stamp;$bp=$bd.'/race_results/payouts.php';if(!is_dir(dirname($bp))&&!mkdir(dirname($bp),0775,true))return ['ok'=>false,'stage'=>'APPLY','message'=>'Could not create backup directory.'];if(!copy($target,$bp))return ['ok'=>false,'stage'=>'APPLY','message'=>'Could not create backup.'];if(!iatomic($target,$pre['candidate']))return ['ok'=>false,'stage'=>'APPLY','message'=>'Could not write patched payouts.php.'];$after=isha($target);$l=ilint($target);$s=['installer'=>'install_payouts_finish_polish_v007','applied_at'=>date('c'),'backup_dir'=>$bd,'backup_path'=>$bp,'target'=>$target,'sha_before'=>$pre['sha_before'],'sha_after'=>$after];if(!is_dir($backupRoot))@mkdir($backupRoot,0775,true);iatomic($sessionFile,ij($s)."
+");$c=[];icheck($c,'Installed payouts.php exists',is_file($target),true,$target);icheck($c,'Installed payouts.php SHA changed',$after!==''&&$after!==$sha,true,$after);icheck($c,'Installed payouts.php php -l',$l['ok'],true,$l['detail']);icheck($c,'Backup exists',is_file($bp),true,$bp);$ok=true;foreach($c as $x)if($x['required']&&$x['status']!=='PASS'){$ok=false;break;}return ['ok'=>$ok,'stage'=>'POSTCHECK','checks'=>$c,'modified_files'=>['race_results/payouts.php'],'new_files'=>[],'session'=>$s];}
+function irollback(string $sessionFile):array{$c=[];if(!is_file($sessionFile)){icheck($c,'Rollback session available',false,true,'No last installer session found.');return ['ok'=>false,'stage'=>'ROLLBACK','checks'=>$c];}$s=json_decode((string)file_get_contents($sessionFile),true);if(!is_array($s))$s=[];$bp=(string)($s['backup_path']??'');$t=(string)($s['target']??'');icheck($c,'Rollback backup exists',is_file($bp),true,$bp);icheck($c,'Rollback target path valid',$t!==''&&basename($t)==='payouts.php',true,$t);if(is_file($bp)&&$t!==''){$w=iatomic($t,(string)file_get_contents($bp));icheck($c,'Original payouts.php restored',$w,true,isha($t));$l=ilint($t);icheck($c,'Restored payouts.php php -l',$l['ok'],true,$l['detail']);}$ok=true;foreach($c as $x)if($x['required']&&$x['status']!=='PASS'){$ok=false;break;}return ['ok'=>$ok,'stage'=>'ROLLBACK','checks'=>$c];}
+$a=(string)($_POST['action']??'');if($a==='apply')$result=iapply($target,$backupRoot,$sessionFile,$expectedBeforeSha);elseif($a==='rollback')$result=irollback($sessionFile);else{$pre=ipre($target,$expectedBeforeSha);$result=['ok'=>$pre['ok'],'stage'=>'PRECHECK','checks'=>$pre['checks'],'modified_files'=>['race_results/payouts.php'],'new_files'=>[]];}
+$report=['installer'=>'install_payouts_finish_polish_v007','installer_version'=>'v007','report_stage'=>$result['stage']??'PRECHECK','report_generated_et'=>date('c'),'scope'=>['changes'=>['patch race_results/payouts.php only','hide UNOFFICIAL when year is official; do not show OFFICIAL','hide Team Payouts note when all payout winners are known','timestamp Excel and Print/PDF suggested filenames','slightly align export buttons'],'does_not_change'=>['payout calculations or amounts','payouts_helper.php','admin_payouts.php','weekly_standings.php','database','cron/scheduler','race snapshots']],'result'=>$result];$status=!empty($result['ok'])?'PASS':'FAIL';$banner=($result['stage']??'PRECHECK').': '.$status;
+?>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MRL Payouts v007 Installer</title><style>body{margin:0;background:#0f0f0f;color:#eee;font:18px Arial;padding:28px}h1{font-size:34px}code{color:#ffd34d}.box{border:1px solid #444;background:#191919;padding:18px;border-radius:12px;margin:14px 0}button,a.btn{border:1px solid #777;border-radius:9px;padding:10px 18px;color:#fff;font-size:18px;text-decoration:none;margin-right:12px;cursor:pointer}.apply{background:#138a3d}.rollback{background:#b63838}.open{background:#2868b2}pre{white-space:pre-wrap;background:#050505;border:1px solid #444;padding:14px;max-height:580px;overflow:auto;font-size:13px}.pass{color:#77e59c}.fail{color:#ff7777}</style></head><body><h1>MRL Payouts v007 Installer</h1><p>Upload/run from <code>/public_html/_installers/</code>.</p><div class="box"><form method="post" style="display:inline"><input type="hidden" name="action" value="apply"><button class="apply">Apply</button></form><form method="post" style="display:inline"><input type="hidden" name="action" value="rollback"><button class="rollback">Rollback</button></form><a class="btn open" href="/race_results/payouts.php" target="_blank">Open Payouts</a><h2 class="<?php echo $status==='PASS'?'pass':'fail'; ?>"><?php echo ih($banner); ?></h2></div><div class="box"><button onclick="navigator.clipboard.writeText(document.getElementById('rep').innerText)">Copy Report</button><pre id="rep"><?php echo ih(ij($report)); ?></pre></div></body></html>
