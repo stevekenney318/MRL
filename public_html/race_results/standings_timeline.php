@@ -25,10 +25,19 @@ if ($isTestSite) {
 /**
  * standings_timeline.php
  *
- * VERSION: v006
- * LAST MODIFIED: 6/27/2026 1:12:11 am
+ * VERSION: v007
+ * LAST MODIFIED: 11/10/2026 12:40:03 pm ET
  *
  * CHANGELOG:
+ *
+ * v007 (11/10/2026 12:40:03 pm ET)
+ *   - NEW: Timeline now recognizes manual snapshot releases stored in _manual_snapshot_overrides.json.
+ *   - NEW: Manual releases appear as first-class timeline snapshots using their effective timestamp and stored MANUAL version label.
+ *   - FIX: Selecting a manual release substitutes the manual snapshot for that race while earlier races continue using the latest canonical ESPN snapshot available at or before the manual effective time.
+ *   - FIX: Races that did not yet exist at the manual effective time remain unavailable in that as-of timeline.
+ *   - SAFETY: Invalid snapshot IDs no longer silently fall back to the newest snapshot; they stop with a clear Snapshot not found response.
+ *   - PRESERVE: ESPN canonical version numbering remains independent; manual releases do not renumber later ESPN v1/v2/v3 labels.
+ *   - PRESERVE: Revision monitor, canonical snapshot chain, Weekly Standings scoring logic, database, scheduler, and manual activation state are unchanged.
  *
  * v006 (6/27/2026 1:12:11 am)
  *   - CHANGE: Refined the audit-style page colors to a light blue background with stronger blue borders.
@@ -90,6 +99,7 @@ if ($isTestSite) {
 require_once __DIR__ . '/race_results_team_helper.php';
 require_once __DIR__ . '/race_results_snapshot_helper.php';
 require_once __DIR__ . '/race_results_engine.php';
+require_once __DIR__ . '/manual_snapshot_override_helper.php';
 
 function st_h($value): string
 {
@@ -226,7 +236,7 @@ function st_short_race_label(string $raceName): string
 function st_snapshot_key_from_file(string $path): string
 {
     $base = basename($path);
-    if (!preg_match('/^snapshot_(\d{8}_\d{6}\d*)\.html$/', $base, $m)) {
+    if (!preg_match('/^(?:manual_)?snapshot_(\d{8}_\d{6}\d*)\.html$/', $base, $m)) {
         return '';
     }
     return (string)$m[1];
@@ -301,6 +311,97 @@ function st_collect_snapshots(array $races): array
     return $items;
 }
 
+
+function st_collect_manual_snapshots(string $yearFolder, array $races): array
+{
+    if (!function_exists('mrlm_load_manifest') || !function_exists('mrlm_record_snapshot_path')) {
+        return [];
+    }
+
+    $manifest = mrlm_load_manifest($yearFolder);
+    $records = isset($manifest['records']) && is_array($manifest['records']) ? $manifest['records'] : [];
+    if (empty($records)) {
+        return [];
+    }
+
+    $raceByCode = [];
+    foreach ($races as $race) {
+        $code = (string)($race['race_code'] ?? '');
+        if ($code !== '') {
+            $raceByCode[$code] = $race;
+        }
+    }
+
+    $items = [];
+
+    foreach ($records as $record) {
+        if (!is_array($record)) {
+            continue;
+        }
+
+        $manualId = trim((string)($record['manual_id'] ?? ''));
+        $raceCode = trim((string)($record['race_code'] ?? ''));
+        $snapshotKey = trim((string)($record['effective_stamp'] ?? ''));
+
+        if ($manualId === '' || $raceCode === '' || !isset($raceByCode[$raceCode])) {
+            continue;
+        }
+
+        if (preg_match('/^\d{8}_\d{6}\d*$/', $snapshotKey) !== 1) {
+            continue;
+        }
+
+        $file = mrlm_record_snapshot_path($yearFolder, $record);
+        if ($file === '' || !is_file($file)) {
+            continue;
+        }
+
+        $race = $raceByCode[$raceCode];
+        $storedVersion = trim((string)($record['display_version'] ?? ''));
+        $activeId = (string)($manifest['active_by_race'][$raceCode] ?? '');
+
+        $items[] = [
+            'value' => $manualId,
+            'snapshot_key' => $snapshotKey,
+            'seconds_key' => st_snapshot_seconds_key($snapshotKey),
+            'race_code' => $raceCode,
+            'race_number' => (int)($race['number'] ?? 0),
+            'race_label' => st_short_race_label((string)($race['race_name'] ?? '')),
+            'file' => $file,
+            'display_time' => st_snapshot_display($snapshotKey),
+            'is_manual' => true,
+            'manual_display_version' => $storedVersion,
+            'manual_active' => ($activeId !== '' && $activeId === $manualId),
+            'audit' => [
+                'release' => 'Manual scoring release',
+                'status' => 'Manual scoring override',
+                'mrl_impact' => 'YES',
+                'change' => 'Manual scoring override',
+            ],
+        ];
+    }
+
+    return $items;
+}
+
+function st_sort_snapshot_items_desc(array $items): array
+{
+    usort($items, function ($a, $b): int {
+        $cmp = strcmp((string)($b['snapshot_key'] ?? ''), (string)($a['snapshot_key'] ?? ''));
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        $cmp = ((int)($b['race_number'] ?? 0)) <=> ((int)($a['race_number'] ?? 0));
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        return strcmp((string)($b['value'] ?? ''), (string)($a['value'] ?? ''));
+    });
+
+    return $items;
+}
 
 function st_recursive_audit_records(array $node): array
 {
@@ -446,24 +547,48 @@ function st_enrich_snapshot_items(array $items, array $auditContextByReleaseId):
     $countsByRace = [];
 
     foreach ($ascending as $item) {
+        if (!empty($item['is_manual'])) {
+            continue;
+        }
+
         $raceCode = (string)($item['race_code'] ?? '');
         $value = (string)($item['value'] ?? '');
         if ($raceCode === '' || $value === '') {
             continue;
         }
+
         if (!isset($countsByRace[$raceCode])) {
             $countsByRace[$raceCode] = 0;
         }
+
         $countsByRace[$raceCode]++;
         $versionByValue[$value] = $countsByRace[$raceCode];
     }
 
     foreach ($items as $idx => $item) {
         $value = (string)($item['value'] ?? '');
+        $existingAudit = isset($item['audit']) && is_array($item['audit']) ? $item['audit'] : [];
+
+        if (!empty($item['is_manual'])) {
+            $storedVersion = trim((string)($item['manual_display_version'] ?? ''));
+            $versionNumber = 0;
+
+            if (preg_match('/^v(\d+)$/i', $storedVersion, $m) === 1) {
+                $versionNumber = (int)$m[1];
+            }
+
+            $items[$idx]['version_number'] = $versionNumber;
+            $items[$idx]['version_label'] = $storedVersion !== '' ? ($storedVersion . ' MANUAL') : 'MANUAL';
+            $items[$idx]['audit'] = $existingAudit;
+            continue;
+        }
+
         $versionNumber = (int)($versionByValue[$value] ?? 0);
         $items[$idx]['version_number'] = $versionNumber;
         $items[$idx]['version_label'] = $versionNumber > 0 ? ('v' . $versionNumber) : '';
-        $items[$idx]['audit'] = isset($auditContextByReleaseId[$value]) && is_array($auditContextByReleaseId[$value]) ? $auditContextByReleaseId[$value] : [];
+        $items[$idx]['audit'] = isset($auditContextByReleaseId[$value]) && is_array($auditContextByReleaseId[$value])
+            ? $auditContextByReleaseId[$value]
+            : $existingAudit;
     }
 
     return $items;
@@ -548,7 +673,7 @@ function st_find_snapshot_item(array $items, string $value): array
             return $item;
         }
     }
-    return !empty($items) ? $items[0] : [];
+    return [];
 }
 
 function st_latest_snapshot_for_race_asof(string $raceFolder, string $selectedSnapshotKey): string
@@ -919,10 +1044,25 @@ $yearFolder = $baseDir . '/' . $selectedYear;
 $yearIndex = st_load_json($yearFolder . '/_year_index.json');
 $pointRaces = st_points_races_from_index($yearIndex, $yearFolder);
 $auditContextByReleaseId = st_audit_context_by_release_id($yearFolder);
-$snapshotItems = st_enrich_snapshot_items(st_collect_snapshots($pointRaces), $auditContextByReleaseId);
+$canonicalSnapshotItems = st_collect_snapshots($pointRaces);
+$manualSnapshotItems = st_collect_manual_snapshots($yearFolder, $pointRaces);
+$snapshotItems = st_sort_snapshot_items_desc(array_merge($canonicalSnapshotItems, $manualSnapshotItems));
+$snapshotItems = st_enrich_snapshot_items($snapshotItems, $auditContextByReleaseId);
 
-$selectedSnapshotValue = isset($_GET['snapshot']) ? trim((string)$_GET['snapshot']) : '';
-$selectedSnapshot = st_find_snapshot_item($snapshotItems, $selectedSnapshotValue);
+$requestedSnapshotValue = isset($_GET['snapshot']) ? trim((string)$_GET['snapshot']) : '';
+if ($requestedSnapshotValue === '') {
+    $selectedSnapshot = !empty($snapshotItems) ? $snapshotItems[0] : [];
+} else {
+    $selectedSnapshot = st_find_snapshot_item($snapshotItems, $requestedSnapshotValue);
+    if (empty($selectedSnapshot)) {
+        http_response_code(404);
+        echo '<!doctype html><html><head><meta charset="utf-8"><title>MRL Snapshot Not Found</title></head><body style="font-family:Arial,sans-serif;padding:24px">';
+        echo '<h1>Snapshot not found</h1>';
+        echo '<p>The requested standings snapshot could not be found: <code>' . st_h($requestedSnapshotValue) . '</code></p>';
+        echo '</body></html>';
+        exit;
+    }
+}
 $selectedSnapshotValue = (string)($selectedSnapshot['value'] ?? '');
 $selectedSnapshotKey = (string)($selectedSnapshot['snapshot_key'] ?? '');
 $asOfRaceNumber = (int)($selectedSnapshot['race_number'] ?? 0);
@@ -959,6 +1099,17 @@ foreach ($pointRaces as $race) {
     }
 
     $snapshotFile = st_latest_snapshot_for_race_asof((string)($race['race_folder'] ?? ''), $selectedSnapshotKey);
+
+    if (
+        !empty($selectedSnapshot['is_manual'])
+        && (string)($race['race_code'] ?? '') === (string)($selectedSnapshot['race_code'] ?? '')
+    ) {
+        $manualFile = (string)($selectedSnapshot['file'] ?? '');
+        if ($manualFile !== '' && is_file($manualFile)) {
+            $snapshotFile = $manualFile;
+        }
+    }
+
     if ($snapshotFile === '') {
         continue;
     }
