@@ -1,11 +1,11 @@
 {
     "version": 1,
-    "updated_at": "2026-11-10 02:00:11",
+    "updated_at": "2026-11-11 14:05:20",
     "years": {
         "2026": {
             "year": "2026",
             "public": true,
-            "official": false,
+            "official": true,
             "weekly_high_point": 10,
             "segments": {
                 "S1": [
