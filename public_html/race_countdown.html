@@ -1,8 +1,8 @@
 <!--
   race_countdown.html
 
-  VERSION: v008
-  LAST MODIFIED: 10/22/2026 3:45:15 pm
+  VERSION: v009
+  LAST MODIFIED: 11/12/2026 2:21:00 pm
 
   Purpose:
   - Dynamically reads /race_results/_race_results_schedule.json
@@ -14,6 +14,11 @@
   fetch('/race_countdown.html', { cache: 'no-store' })
 
   CHANGELOG:
+  v009 (11/12/2026)
+  - CHANGE: After the final scheduled race has aged out, show only No upcoming races found.
+  - REMOVE: Removed the offseason See you in [next year] message.
+  - SAFE: Preserves all schedule-driven countdown, segment, race, date, and time behavior.
+
   v008 (10/22/2026)
   - NEW: After the final scheduled race has aged out, shows a dynamic See you in [next year] offseason message.
   - SAFE: Derives the next year from the final scheduled race date; nothing is hard-coded to 2027.
@@ -207,16 +212,6 @@
     }).slice(0, 5);
 
     if (!visibleRaces.length) {
-      if (races.length) {
-        const lastRace = races[races.length - 1];
-        const lastRaceDate = parseStartDate(lastRace);
-        if (lastRaceDate && !isNaN(lastRaceDate.getTime()) && !shouldShowRace(lastRaceDate)) {
-          const nextSeasonYear = lastRaceDate.getFullYear() + 1;
-          return '<p class="mrl-empty">No upcoming races found.</p>' +
-                 '<p class="mrl-offseason">See you in ' + htmlEscape(nextSeasonYear) + '</p>';
-        }
-      }
-
       return '<p class="mrl-empty">No upcoming races found.</p>';
     }
 
@@ -356,14 +351,6 @@
   margin:20px 0;
 }
 
-.mrl-offseason{
-  text-align:center;
-  font-size:30px;
-  font-weight:bold;
-  color:#222;
-  margin:28px 0 10px 0;
-  white-space:nowrap;
-}
 
 .mrl-box{
   border:none;
