@@ -1,91 +1,574 @@
 <?php
 declare(strict_types=1);
+
 /**
  * admin_paid_payouts_helper.php
- * VERSION: v002
- * LAST MODIFIED: 11/15/2026 8:18:22 pm ET
- * PURPOSE: Data/helper layer for root-level admin_paid_payouts.php.
+ *
+ * VERSION: v003
+ * LAST MODIFIED: 11/16/2026 4:23 pm ET
+ *
+ * PURPOSE:
+ * - Helper/data layer for admin_paid_payouts.php.
+ * - Preserves legacy Financial/user_teams payment data as an opening amount.
+ * - Adds transaction-based payments, payouts, and year-to-year rollovers.
+ * - Keeps payout winnings calculated from race_results/payouts_helper.php.
+ *
  * PHP: 7.3 compatible.
  */
 
 date_default_timezone_set('America/New_York');
 
-function app_h($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
-function app_money($v): string { return '$'.number_format((float)$v, 2); }
-function app_money_value($v): float {
-    $s=str_replace(['$',','],'',trim((string)$v));
-    return is_numeric($s) ? round((float)$s,2) : 0.0;
+function app_h($v): string
+{
+    return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 }
-function app_date_or_null($v) {
-    $s=trim((string)$v);
-    if($s==='') return null;
-    $d=DateTime::createFromFormat('Y-m-d',$s);
-    return ($d && $d->format('Y-m-d')===$s) ? $s : null;
+
+function app_money($v): string
+{
+    return '$'.number_format((float)$v, 2);
 }
-function app_years(PDO $dbo, array $payoutYears, string $raceYear): array {
-    $years=[];
-    foreach($payoutYears as $y){ if(preg_match('/^\d{4}$/',(string)$y)) $years[(string)$y]=true; }
-    try{
-        $q=$dbo->query("SELECT year FROM years WHERE year > 0 ORDER BY year DESC");
-        foreach($q as $r){$y=(string)($r['year']??'');if(preg_match('/^\d{4}$/',$y))$years[$y]=true;}
-    }catch(Throwable $e){}
-    if(preg_match('/^\d{4}$/',$raceYear))$years[$raceYear]=true;
-    if(empty($years))$years[date('Y')]=true;
-    $out=array_keys($years);rsort($out,SORT_STRING);return $out;
+
+function app_money_value($v): float
+{
+    $s = str_replace(['$', ','], '', trim((string)$v));
+    return is_numeric($s) ? round((float)$s, 2) : 0.0;
 }
-function app_current_fee(PDO $dbo, string $year): array {
-    try{
-        $s=$dbo->prepare("SELECT * FROM mrl_financial_fee_history WHERE raceYear=:y ORDER BY effective_date DESC,id DESC LIMIT 1");
-        $s->execute([':y'=>(int)$year]);$r=$s->fetch(PDO::FETCH_ASSOC);
-        if(is_array($r))return $r;
-    }catch(Throwable $e){}
-    return ['annual_fee'=>0.00,'effective_date'=>'','reason'=>'','changed_by'=>0];
-}
-function app_fee_history(PDO $dbo,string $year):array{
-    try{$s=$dbo->prepare("SELECT * FROM mrl_financial_fee_history WHERE raceYear=:y ORDER BY effective_date DESC,id DESC");$s->execute([':y'=>(int)$year]);$r=$s->fetchAll(PDO::FETCH_ASSOC);return is_array($r)?$r:[];}catch(Throwable $e){return [];}
-}
-function app_add_fee(PDO $dbo,string $year,float $fee,string $date,string $reason,int $uid):bool{
-    $s=$dbo->prepare("INSERT INTO mrl_financial_fee_history (raceYear,annual_fee,effective_date,reason,changed_by,created_at) VALUES (:y,:f,:d,:r,:u,NOW())");
-    return $s->execute([':y'=>(int)$year,':f'=>$fee,':d'=>$date,':r'=>$reason,':u'=>$uid]);
-}
-function app_team_rows(PDO $dbo,string $year):array{
-    $rows=[];
-    if(function_exists('mrlp_year_roster')){
-        try{$r=mrlp_year_roster($year,$dbo);foreach($r as $team=>$x){$rows[(int)($x['userID']??0)]=['userID'=>(int)($x['userID']??0),'teamName'=>(string)($x['teamName']??$team),'userName'=>(string)($x['userName']??'')];}}catch(Throwable $e){}
+
+function app_years(PDO $dbo, array $payoutYears, string $raceYear): array
+{
+    $years = [];
+
+    foreach ($payoutYears as $y) {
+        if (preg_match('/^\d{4}$/', (string)$y)) {
+            $years[(string)$y] = true;
+        }
     }
-    try{
-        $s=$dbo->prepare("SELECT userID,teamName,COALESCE(userName,'') userName FROM Financial WHERE raceYear=:y AND userID NOT IN (0,998,999)");$s->execute([':y'=>(int)$year]);
-        foreach($s->fetchAll(PDO::FETCH_ASSOC) as $x){$uid=(int)($x['userID']??0);if($uid>0&&!isset($rows[$uid]))$rows[$uid]=['userID'=>$uid,'teamName'=>(string)($x['teamName']??''),'userName'=>(string)($x['userName']??'')];}
-    }catch(Throwable $e){}
-    uasort($rows,function($a,$b){return strnatcasecmp((string)$a['teamName'],(string)$b['teamName']);});
-    return array_values($rows);
-}
-function app_load_team_finance(PDO $dbo,string $year,int $uid):array{
-    try{$s=$dbo->prepare("SELECT * FROM mrl_financial_team_year WHERE raceYear=:y AND userID=:u LIMIT 1");$s->execute([':y'=>(int)$year,':u'=>$uid]);$r=$s->fetch(PDO::FETCH_ASSOC);if(is_array($r)){$r['_source']='new';return $r;}}catch(Throwable $e){}
-    try{$s=$dbo->prepare("SELECT * FROM Financial WHERE raceYear=:y AND userID=:u LIMIT 1");$s->execute([':y'=>(int)$year,':u'=>$uid]);$r=$s->fetch(PDO::FETCH_ASSOC);if(is_array($r))return [
-        'raceYear'=>(int)$year,'userID'=>$uid,'teamName'=>(string)($r['teamName']??''),'userName'=>(string)($r['userName']??''),
-        'amount_paid'=>(float)($r['paidAmount']??0),'paid_method'=>(string)($r['paidHow']??''),'paid_date'=>null,
-        'manual_adjustment'=>0,'adjustment_reason'=>'','notes'=>(string)($r['paidComment']??''),
-        'payout_paid'=>0,'payout_method'=>'','payout_date'=>null,'payout_source'=>'','recipient_url'=>'','payoff_notes'=>'','_source'=>'legacy'
-    ];}catch(Throwable $e){}
-    return ['raceYear'=>(int)$year,'userID'=>$uid,'amount_paid'=>0,'paid_method'=>'','paid_date'=>null,'manual_adjustment'=>0,'adjustment_reason'=>'','notes'=>'','payout_paid'=>0,'payout_method'=>'','payout_date'=>null,'payout_source'=>'','recipient_url'=>'','payoff_notes'=>'','_source'=>'blank'];
-}
-function app_save_team_finance(PDO $dbo,array $d,int $adminUid):bool{
-    $sql="INSERT INTO mrl_financial_team_year
-      (raceYear,userID,teamName,userName,amount_paid,paid_method,paid_date,manual_adjustment,adjustment_reason,notes,payout_paid,payout_method,payout_date,payout_source,recipient_url,payoff_notes,updated_by,created_at,updated_at)
-      VALUES (:y,:u,:t,:n,:ap,:pm,:pd,:ma,:ar,:no,:po,:pom,:pod,:ps,:ru,:pn,:ub,NOW(),NOW())
-      ON DUPLICATE KEY UPDATE teamName=VALUES(teamName),userName=VALUES(userName),amount_paid=VALUES(amount_paid),paid_method=VALUES(paid_method),paid_date=VALUES(paid_date),manual_adjustment=VALUES(manual_adjustment),adjustment_reason=VALUES(adjustment_reason),notes=VALUES(notes),payout_paid=VALUES(payout_paid),payout_method=VALUES(payout_method),payout_date=VALUES(payout_date),payout_source=VALUES(payout_source),recipient_url=VALUES(recipient_url),payoff_notes=VALUES(payoff_notes),updated_by=VALUES(updated_by),updated_at=NOW()";
-    $s=$dbo->prepare($sql);
-    return $s->execute([':y'=>(int)$d['raceYear'],':u'=>(int)$d['userID'],':t'=>(string)$d['teamName'],':n'=>(string)$d['userName'],':ap'=>(float)$d['amount_paid'],':pm'=>(string)$d['paid_method'],':pd'=>$d['paid_date'],':ma'=>(float)$d['manual_adjustment'],':ar'=>(string)$d['adjustment_reason'],':no'=>(string)$d['notes'],':po'=>(float)$d['payout_paid'],':pom'=>(string)$d['payout_method'],':pod'=>$d['payout_date'],':ps'=>(string)$d['payout_source'],':ru'=>(string)$d['recipient_url'],':pn'=>(string)$d['payoff_notes'],':ub'=>$adminUid]);
-}
-function app_prizes_by_team(array $model):array{
-    $out=[];
-    foreach(['S1','S2','S3','S4'] as $seg){foreach(($model['sections'][$seg]??[]) as $r){if(!empty($r['future']))continue;$team=trim((string)($r['winner']??''));if($team==='')continue;if(!isset($out[$team]))$out[$team]=0.0;$out[$team]+=round((float)($r['amount']??0),2);}}
-    foreach(($model['yearly']??[]) as $r){if(!empty($r['future']))continue;$team=trim((string)($r['winner']??''));if($team==='')continue;if(!isset($out[$team]))$out[$team]=0.0;$out[$team]+=round((float)($r['amount']??0),2);}
+
+    try {
+        $q = $dbo->query("SELECT year FROM years WHERE year > 0 ORDER BY year DESC");
+        foreach ($q as $r) {
+            $y = (string)($r['year'] ?? '');
+            if (preg_match('/^\d{4}$/', $y)) {
+                $years[$y] = true;
+            }
+        }
+    } catch (Throwable $e) {
+    }
+
+    foreach (['mrl_financial_fee_history', 'mrl_financial_team_year', 'mrl_financial_transactions'] as $table) {
+        try {
+            $q = $dbo->query("SELECT DISTINCT raceYear FROM {$table} WHERE raceYear > 0");
+            foreach ($q as $r) {
+                $y = (string)($r['raceYear'] ?? '');
+                if (preg_match('/^\d{4}$/', $y)) {
+                    $years[$y] = true;
+                }
+            }
+        } catch (Throwable $e) {
+        }
+    }
+
+    if (preg_match('/^\d{4}$/', $raceYear)) {
+        $years[$raceYear] = true;
+    }
+
+    if (empty($years)) {
+        $years[date('Y')] = true;
+    }
+
+    $out = array_keys($years);
+    rsort($out, SORT_STRING);
     return $out;
 }
-function app_calc(float $fee,float $paid,float $prize,float $adjust,float $paidOut):array{
-    $due=max(0.0,round($fee-$paid,2));$remaining=round($prize-$due+$adjust-$paidOut,2);
-    $status=$fee<=0?'No Fee':($paid+0.005>=$fee?'Paid':($paid>0?'Partial':'Unpaid'));
-    return ['fee_due'=>$due,'remaining'=>$remaining,'status'=>$status];
+
+function app_current_fee(PDO $dbo, string $year): array
+{
+    try {
+        $s = $dbo->prepare(
+            "SELECT * FROM mrl_financial_fee_history
+             WHERE raceYear=:y
+             ORDER BY effective_date DESC, id DESC
+             LIMIT 1"
+        );
+        $s->execute([':y' => (int)$year]);
+        $r = $s->fetch(PDO::FETCH_ASSOC);
+        if (is_array($r)) {
+            return $r;
+        }
+    } catch (Throwable $e) {
+    }
+
+    return [
+        'annual_fee' => 0.00,
+        'effective_date' => '',
+        'reason' => '',
+        'changed_by' => 0,
+    ];
+}
+
+function app_fee_history(PDO $dbo, string $year): array
+{
+    try {
+        $s = $dbo->prepare(
+            "SELECT * FROM mrl_financial_fee_history
+             WHERE raceYear=:y
+             ORDER BY effective_date DESC, id DESC"
+        );
+        $s->execute([':y' => (int)$year]);
+        $r = $s->fetchAll(PDO::FETCH_ASSOC);
+        return is_array($r) ? $r : [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function app_add_fee(PDO $dbo, string $year, float $fee, string $date, string $reason, int $uid): bool
+{
+    $s = $dbo->prepare(
+        "INSERT INTO mrl_financial_fee_history
+         (raceYear, annual_fee, effective_date, reason, changed_by, created_at)
+         VALUES (:y, :f, :d, :r, :u, NOW())"
+    );
+
+    return $s->execute([
+        ':y' => (int)$year,
+        ':f' => $fee,
+        ':d' => $date,
+        ':r' => $reason,
+        ':u' => $uid,
+    ]);
+}
+
+function app_team_rows(PDO $dbo, string $year): array
+{
+    $rows = [];
+
+    if (function_exists('mrlp_year_roster')) {
+        try {
+            $r = mrlp_year_roster($year, $dbo);
+            foreach ($r as $team => $x) {
+                $uid = (int)($x['userID'] ?? 0);
+                if ($uid <= 0 || in_array($uid, [998, 999], true)) {
+                    continue;
+                }
+                $rows[$uid] = [
+                    'userID' => $uid,
+                    'teamName' => (string)($x['teamName'] ?? $team),
+                    'userName' => (string)($x['userName'] ?? ''),
+                ];
+            }
+        } catch (Throwable $e) {
+        }
+    }
+
+    try {
+        $s = $dbo->prepare(
+            "SELECT userID, teamName, COALESCE(userName,'') AS userName
+             FROM Financial
+             WHERE raceYear=:y AND userID NOT IN (0,998,999)"
+        );
+        $s->execute([':y' => (int)$year]);
+
+        foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $x) {
+            $uid = (int)($x['userID'] ?? 0);
+            if ($uid > 0 && !isset($rows[$uid])) {
+                $rows[$uid] = [
+                    'userID' => $uid,
+                    'teamName' => (string)($x['teamName'] ?? ''),
+                    'userName' => (string)($x['userName'] ?? ''),
+                ];
+            }
+        }
+    } catch (Throwable $e) {
+    }
+
+    uasort($rows, function ($a, $b) {
+        return strnatcasecmp((string)$a['teamName'], (string)$b['teamName']);
+    });
+
+    return array_values($rows);
+}
+
+function app_legacy_finance(PDO $dbo, string $year, int $uid): array
+{
+    try {
+        $s = $dbo->prepare(
+            "SELECT *
+             FROM Financial
+             WHERE raceYear=:y AND userID=:u
+             LIMIT 1"
+        );
+        $s->execute([
+            ':y' => (int)$year,
+            ':u' => $uid,
+        ]);
+        $r = $s->fetch(PDO::FETCH_ASSOC);
+
+        if (is_array($r)) {
+            return [
+                'amount_paid' => (float)($r['paidAmount'] ?? 0),
+                'paid_status' => (string)($r['paidStatus'] ?? ''),
+                'paid_method' => (string)($r['paidHow'] ?? ''),
+                'paid_comment' => (string)($r['paidComment'] ?? ''),
+            ];
+        }
+    } catch (Throwable $e) {
+    }
+
+    return [
+        'amount_paid' => 0.0,
+        'paid_status' => '',
+        'paid_method' => '',
+        'paid_comment' => '',
+    ];
+}
+
+function app_load_team_summary(PDO $dbo, string $year, int $uid): array
+{
+    try {
+        $s = $dbo->prepare(
+            "SELECT *
+             FROM mrl_financial_team_year
+             WHERE raceYear=:y AND userID=:u
+             LIMIT 1"
+        );
+        $s->execute([
+            ':y' => (int)$year,
+            ':u' => $uid,
+        ]);
+        $r = $s->fetch(PDO::FETCH_ASSOC);
+
+        if (is_array($r)) {
+            return [
+                'manual_adjustment' => (float)($r['manual_adjustment'] ?? 0),
+                'adjustment_reason' => (string)($r['adjustment_reason'] ?? ''),
+                'notes' => (string)($r['notes'] ?? ''),
+                'recipient_url' => (string)($r['recipient_url'] ?? ''),
+                'payoff_notes' => (string)($r['payoff_notes'] ?? ''),
+            ];
+        }
+    } catch (Throwable $e) {
+    }
+
+    return [
+        'manual_adjustment' => 0.0,
+        'adjustment_reason' => '',
+        'notes' => '',
+        'recipient_url' => '',
+        'payoff_notes' => '',
+    ];
+}
+
+function app_save_team_summary(PDO $dbo, array $d, int $adminUid): bool
+{
+    $sql =
+        "INSERT INTO mrl_financial_team_year
+         (raceYear, userID, teamName, userName, manual_adjustment, adjustment_reason,
+          notes, recipient_url, payoff_notes, updated_by, created_at, updated_at)
+         VALUES
+         (:y, :u, :t, :n, :ma, :ar, :no, :ru, :pn, :ub, NOW(), NOW())
+         ON DUPLICATE KEY UPDATE
+            teamName=VALUES(teamName),
+            userName=VALUES(userName),
+            manual_adjustment=VALUES(manual_adjustment),
+            adjustment_reason=VALUES(adjustment_reason),
+            notes=VALUES(notes),
+            recipient_url=VALUES(recipient_url),
+            payoff_notes=VALUES(payoff_notes),
+            updated_by=VALUES(updated_by),
+            updated_at=NOW()";
+
+    $s = $dbo->prepare($sql);
+
+    return $s->execute([
+        ':y' => (int)$d['raceYear'],
+        ':u' => (int)$d['userID'],
+        ':t' => (string)$d['teamName'],
+        ':n' => (string)$d['userName'],
+        ':ma' => (float)$d['manual_adjustment'],
+        ':ar' => (string)$d['adjustment_reason'],
+        ':no' => (string)$d['notes'],
+        ':ru' => (string)$d['recipient_url'],
+        ':pn' => (string)$d['payoff_notes'],
+        ':ub' => $adminUid,
+    ]);
+}
+
+function app_parse_datetime($value)
+{
+    $s = trim((string)$value);
+    if ($s === '') {
+        return null;
+    }
+
+    $formats = [
+        'M j, Y, g:i A',
+        'M d, Y, g:i A',
+        'n/j/Y, g:i A',
+        'n/j/Y g:i A',
+        'm/d/Y, g:i A',
+        'm/d/Y g:i A',
+        'Y-m-d H:i:s',
+        'Y-m-d\TH:i',
+    ];
+
+    foreach ($formats as $format) {
+        $d = DateTime::createFromFormat('!'.$format, $s);
+        if ($d instanceof DateTime) {
+            return $d->format('Y-m-d H:i:s');
+        }
+    }
+
+    $ts = strtotime($s);
+    if ($ts !== false) {
+        return date('Y-m-d H:i:s', $ts);
+    }
+
+    return null;
+}
+
+function app_format_datetime($value): string
+{
+    $s = trim((string)$value);
+    if ($s === '') {
+        return '';
+    }
+
+    $ts = strtotime($s);
+    if ($ts === false) {
+        return $s;
+    }
+
+    return date('M j, Y, g:i A', $ts);
+}
+
+function app_add_transaction(PDO $dbo, array $d, int $adminUid): int
+{
+    $sql =
+        "INSERT INTO mrl_financial_transactions
+         (raceYear, userID, teamName, transaction_type, amount, method, source_account,
+          occurred_at, entered_date_text, note, linked_transaction_id, created_by, created_at)
+         VALUES
+         (:y, :u, :t, :ty, :a, :m, :s, :od, :dt, :no, :li, :cb, NOW())";
+
+    $s = $dbo->prepare($sql);
+    $s->execute([
+        ':y' => (int)$d['raceYear'],
+        ':u' => (int)$d['userID'],
+        ':t' => (string)$d['teamName'],
+        ':ty' => (string)$d['transaction_type'],
+        ':a' => (float)$d['amount'],
+        ':m' => (string)($d['method'] ?? ''),
+        ':s' => (string)($d['source_account'] ?? ''),
+        ':od' => $d['occurred_at'] ?? null,
+        ':dt' => (string)($d['entered_date_text'] ?? ''),
+        ':no' => (string)($d['note'] ?? ''),
+        ':li' => $d['linked_transaction_id'] ?? null,
+        ':cb' => $adminUid,
+    ]);
+
+    return (int)$dbo->lastInsertId();
+}
+
+function app_link_transactions(PDO $dbo, int $a, int $b): void
+{
+    $s = $dbo->prepare(
+        "UPDATE mrl_financial_transactions
+         SET linked_transaction_id=:b
+         WHERE id=:a"
+    );
+    $s->execute([':a' => $a, ':b' => $b]);
+
+    $s->execute([':a' => $b, ':b' => $a]);
+}
+
+function app_add_rollover_pair(
+    PDO $dbo,
+    string $fromYear,
+    string $toYear,
+    int $uid,
+    string $teamName,
+    float $amount,
+    string $occurredAt,
+    string $enteredDateText,
+    string $note,
+    int $adminUid
+): array {
+    $dbo->beginTransaction();
+
+    try {
+        $outId = app_add_transaction($dbo, [
+            'raceYear' => $fromYear,
+            'userID' => $uid,
+            'teamName' => $teamName,
+            'transaction_type' => 'rollover_out',
+            'amount' => $amount,
+            'method' => 'Rollover',
+            'source_account' => '',
+            'occurred_at' => $occurredAt,
+            'entered_date_text' => $enteredDateText,
+            'note' => $note,
+            'linked_transaction_id' => null,
+        ], $adminUid);
+
+        $inId = app_add_transaction($dbo, [
+            'raceYear' => $toYear,
+            'userID' => $uid,
+            'teamName' => $teamName,
+            'transaction_type' => 'rollover_in',
+            'amount' => $amount,
+            'method' => 'Rollover',
+            'source_account' => '',
+            'occurred_at' => $occurredAt,
+            'entered_date_text' => $enteredDateText,
+            'note' => 'Rolled over from '.$fromYear.($note !== '' ? ' — '.$note : ''),
+            'linked_transaction_id' => null,
+        ], $adminUid);
+
+        app_link_transactions($dbo, $outId, $inId);
+        $dbo->commit();
+
+        return [$outId, $inId];
+    } catch (Throwable $e) {
+        if ($dbo->inTransaction()) {
+            $dbo->rollBack();
+        }
+        throw $e;
+    }
+}
+
+function app_transactions(PDO $dbo, string $year, int $uid): array
+{
+    try {
+        $s = $dbo->prepare(
+            "SELECT *
+             FROM mrl_financial_transactions
+             WHERE raceYear=:y AND userID=:u AND voided_at IS NULL
+             ORDER BY COALESCE(occurred_at, created_at) DESC, id DESC"
+        );
+        $s->execute([
+            ':y' => (int)$year,
+            ':u' => $uid,
+        ]);
+        $r = $s->fetchAll(PDO::FETCH_ASSOC);
+        return is_array($r) ? $r : [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function app_transaction_totals(array $transactions): array
+{
+    $totals = [
+        'payment' => 0.0,
+        'payout' => 0.0,
+        'rollover_in' => 0.0,
+        'rollover_out' => 0.0,
+    ];
+
+    foreach ($transactions as $t) {
+        $type = (string)($t['transaction_type'] ?? '');
+        if (isset($totals[$type])) {
+            $totals[$type] = round(
+                $totals[$type] + (float)($t['amount'] ?? 0),
+                2
+            );
+        }
+    }
+
+    return $totals;
+}
+
+function app_latest_method(array $transactions, string $type, string $fallback = ''): string
+{
+    foreach ($transactions as $t) {
+        if ((string)($t['transaction_type'] ?? '') === $type) {
+            $method = trim((string)($t['method'] ?? ''));
+            if ($method !== '') {
+                return $method;
+            }
+        }
+    }
+
+    return $fallback;
+}
+
+function app_prizes_by_team(array $model): array
+{
+    $out = [];
+
+    foreach (['S1', 'S2', 'S3', 'S4'] as $seg) {
+        foreach (($model['sections'][$seg] ?? []) as $r) {
+            if (!empty($r['future'])) {
+                continue;
+            }
+
+            $team = trim((string)($r['winner'] ?? ''));
+            if ($team === '') {
+                continue;
+            }
+
+            if (!isset($out[$team])) {
+                $out[$team] = 0.0;
+            }
+
+            $out[$team] += round((float)($r['amount'] ?? 0), 2);
+        }
+    }
+
+    foreach (($model['yearly'] ?? []) as $r) {
+        if (!empty($r['future'])) {
+            continue;
+        }
+
+        $team = trim((string)($r['winner'] ?? ''));
+        if ($team === '') {
+            continue;
+        }
+
+        if (!isset($out[$team])) {
+            $out[$team] = 0.0;
+        }
+
+        $out[$team] += round((float)($r['amount'] ?? 0), 2);
+    }
+
+    return $out;
+}
+
+function app_calc(
+    float $fee,
+    float $cashPaid,
+    float $rolloverIn,
+    float $prize,
+    float $adjustment,
+    float $paidOut,
+    float $rolloverOut
+): array {
+    $effectivePaid = round($cashPaid + $rolloverIn, 2);
+    $signedFeeBalance = round($fee - $effectivePaid, 2);
+
+    $remaining = round(
+        $prize - $signedFeeBalance + $adjustment - $paidOut - $rolloverOut,
+        2
+    );
+
+    if ($fee <= 0) {
+        $status = 'No Fee';
+    } elseif ($effectivePaid + 0.005 >= $fee) {
+        $status = 'Paid';
+    } elseif ($effectivePaid > 0) {
+        $status = 'Partial';
+    } else {
+        $status = 'Unpaid';
+    }
+
+    return [
+        'effective_paid' => $effectivePaid,
+        'signed_fee_balance' => $signedFeeBalance,
+        'fee_due' => max(0.0, $signedFeeBalance),
+        'fee_credit' => max(0.0, -$signedFeeBalance),
+        'remaining' => $remaining,
+        'status' => $status,
+    ];
 }

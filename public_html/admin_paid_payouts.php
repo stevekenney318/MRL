@@ -1,65 +1,919 @@
 <?php
 declare(strict_types=1);
+
 /**
  * admin_paid_payouts.php
- * VERSION: v002
- * LAST MODIFIED: 11/15/2026 8:18:22 pm ET
- * PURPOSE: Root-level admin-only annual-fee/payment + calculated payout workspace.
+ *
+ * VERSION: v004
+ * LAST MODIFIED: 11/16/2026 4:23 pm ET
+ *
+ * PURPOSE:
+ * - Compact admin financial dashboard with expandable per-team editors.
+ * - Whole team row is clickable; multiple team editors may remain open.
+ * - Supports multiple payment transactions, payout transactions, and rollover credits.
+ * - Preserves legacy Financial/user_teams payment data as an opening amount.
+ * - Prize winnings remain calculated/read-only from race_results/payouts_helper.php.
+ *
  * PHP: 7.3 compatible.
  */
-if(session_status()===PHP_SESSION_NONE)session_start();
-date_default_timezone_set('America/New_York');
-$_SESSION['return_to']=$_SERVER['REQUEST_URI']??'/admin_paid_payouts.php';
-require_once $_SERVER['DOCUMENT_ROOT'].'/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'].'/config_mrl.php';
-require_once $_SERVER['DOCUMENT_ROOT'].'/class.user.php';
-require_once $_SERVER['DOCUMENT_ROOT'].'/mrl_team/mrl_theme_helper.php';
-require_once $_SERVER['DOCUMENT_ROOT'].'/race_results/payouts_helper.php';
-require_once $_SERVER['DOCUMENT_ROOT'].'/admin_paid_payouts_helper.php';
-$user_home=new USER();if(!$user_home->is_logged_in()){$user_home->redirect('/login.php');exit;}
-$uid=(int)($_SESSION['userSession']??0);if(!isAdmin($uid)){http_response_code(403);exit('Not authorized.');}
-if(!isset($_SESSION['app_csrf']))$_SESSION['app_csrf']=bin2hex(random_bytes(24));
-$payoutYears=mrlp_available_years($_SERVER['DOCUMENT_ROOT'].'/race_results');
-$years=app_years($dbo,$payoutYears,(string)($raceYear??''));
-$year=preg_replace('/[^0-9]/','',(string)($_POST['year']??$_GET['year']??($years[0]??date('Y'))));
-if(!in_array($year,$years,true))$year=$years[0]??date('Y');
-$msg='';$err='';
-if($_SERVER['REQUEST_METHOD']==='POST'){
-    if(!hash_equals((string)$_SESSION['app_csrf'],(string)($_POST['csrf']??''))){$err='Security token mismatch.';}
-    else{
-        $action=(string)($_POST['action']??'');
-        try{
-            if($action==='save_fee'){
-                $fee=max(0,app_money_value($_POST['annual_fee']??0));$date=app_date_or_null($_POST['effective_date']??'');$reason=trim((string)($_POST['fee_reason']??''));
-                if($date===null)throw new RuntimeException('Effective date is required.');
-                if($reason==='')throw new RuntimeException('A reason is required for every annual-fee change.');
-                if(!app_add_fee($dbo,$year,$fee,$date,$reason,$uid))throw new RuntimeException('Could not save annual fee.');
-                $msg='Annual fee saved for '.$year.'.';
-            }elseif($action==='save_team'){
-                $teamUid=(int)($_POST['userID']??0);$teamName=trim((string)($_POST['teamName']??''));$userName=trim((string)($_POST['userName']??''));
-                if($teamUid<=0||$teamName==='')throw new RuntimeException('Invalid team row.');
-                $adjust=app_money_value($_POST['manual_adjustment']??0);$adjustReason=trim((string)($_POST['adjustment_reason']??''));
-                if(abs($adjust)>0.004&&$adjustReason==='')throw new RuntimeException('Adjustment reason is required when Manual Adjustment is not $0.00.');
-                $d=['raceYear'=>$year,'userID'=>$teamUid,'teamName'=>$teamName,'userName'=>$userName,'amount_paid'=>max(0,app_money_value($_POST['amount_paid']??0)),'paid_method'=>trim((string)($_POST['paid_method']??'')),'paid_date'=>app_date_or_null($_POST['paid_date']??''),'manual_adjustment'=>$adjust,'adjustment_reason'=>$adjustReason,'notes'=>trim((string)($_POST['notes']??'')),'payout_paid'=>max(0,app_money_value($_POST['payout_paid']??0)),'payout_method'=>trim((string)($_POST['payout_method']??'')),'payout_date'=>app_date_or_null($_POST['payout_date']??''),'payout_source'=>trim((string)($_POST['payout_source']??'')),'recipient_url'=>trim((string)($_POST['recipient_url']??'')),'payoff_notes'=>trim((string)($_POST['payoff_notes']??''))];
-                if(!app_save_team_finance($dbo,$d,$uid))throw new RuntimeException('Could not save team financial record.');
-                $msg='Saved '.$teamName.' for '.$year.'.';
-            }
-        }catch(Throwable $e){$err=$e->getMessage();}
-    }
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
-$currentFeeRow=app_current_fee($dbo,$year);$currentFee=(float)($currentFeeRow['annual_fee']??0);$feeHistory=app_fee_history($dbo,$year);
-$score=mrlp_compute_year($year,$dbo??null,$dbconnect??null);$yearCfg=mrlp_year_config(mrlp_load_config(),$year);$payoutModel=mrlp_build_payout_model($score,$yearCfg);$prizes=app_prizes_by_team($payoutModel);
-$teams=app_team_rows($dbo,$year);$rows=[];$summary=['expected'=>0.0,'received'=>0.0,'prizes'=>0.0,'due_league'=>0.0,'adjustments'=>0.0,'paid_out'=>0.0,'remaining'=>0.0];
-foreach($teams as $t){$f=app_load_team_finance($dbo,$year,(int)$t['userID']);$prize=(float)($prizes[$t['teamName']]??0);$c=app_calc($currentFee,(float)$f['amount_paid'],$prize,(float)$f['manual_adjustment'],(float)$f['payout_paid']);$row=['team'=>$t,'f'=>$f,'prize'=>$prize,'calc'=>$c];$rows[]=$row;$summary['expected']+=$currentFee;$summary['received']+=(float)$f['amount_paid'];$summary['prizes']+=$prize;$summary['due_league']+=(float)$c['fee_due'];$summary['adjustments']+=(float)$f['manual_adjustment'];$summary['paid_out']+=(float)$f['payout_paid'];if($c['remaining']>0)$summary['remaining']+=$c['remaining'];}
-$owed=$rows;usort($owed,function($a,$b){$x=(float)$b['calc']['remaining']<=>(float)$a['calc']['remaining'];return $x!==0?$x:strnatcasecmp((string)$a['team']['teamName'],(string)$b['team']['teamName']);});
+date_default_timezone_set('America/New_York');
+
+function app_page_fatal(Throwable $e): void
+{
+    http_response_code(500);
+    echo '<!doctype html><html><head><meta charset="UTF-8"><title>MRL Paid + Payouts Admin - Error</title>';
+    echo '<style>body{background:#11161c;color:#eee;font-family:Tahoma;padding:24px}.box{max-width:1000px;margin:auto;background:#1b232c;border:1px solid #8f424b;border-radius:10px;padding:18px}code{color:#ffbec4;word-break:break-word}</style>';
+    echo '</head><body><div class="box"><h1>MRL Paid + Payouts Admin</h1>';
+    echo '<p>The page hit a runtime error.</p>';
+    echo '<p><strong>Message:</strong> <code>'.htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8').'</code></p>';
+    echo '<p><strong>File:</strong> <code>'.htmlspecialchars($e->getFile(), ENT_QUOTES, 'UTF-8').'</code></p>';
+    echo '<p><strong>Line:</strong> <code>'.(int)$e->getLine().'</code></p>';
+    echo '</div></body></html>';
+}
+
+try {
+    $_SESSION['return_to'] = $_SERVER['REQUEST_URI'] ?? '/admin_paid_payouts.php';
+
+    require_once $_SERVER['DOCUMENT_ROOT'].'/config.php';
+    require_once $_SERVER['DOCUMENT_ROOT'].'/config_mrl.php';
+    require_once $_SERVER['DOCUMENT_ROOT'].'/class.user.php';
+    require_once $_SERVER['DOCUMENT_ROOT'].'/mrl_team/mrl_theme_helper.php';
+    require_once $_SERVER['DOCUMENT_ROOT'].'/race_results/payouts_helper.php';
+    require_once $_SERVER['DOCUMENT_ROOT'].'/admin_paid_payouts_helper.php';
+
+    $user_home = new USER();
+
+    if (!$user_home->is_logged_in()) {
+        $user_home->redirect('/login.php');
+        exit;
+    }
+
+    $uid = (int)($_SESSION['userSession'] ?? 0);
+
+    if (!isAdmin($uid)) {
+        http_response_code(403);
+        exit('Not authorized.');
+    }
+
+    if (!isset($_SESSION['app_csrf'])) {
+        $_SESSION['app_csrf'] = bin2hex(random_bytes(24));
+    }
+
+    $payoutYears = mrlp_available_years($_SERVER['DOCUMENT_ROOT'].'/race_results');
+    $years = app_years($dbo, $payoutYears, (string)($raceYear ?? ''));
+
+    $year = preg_replace(
+        '/[^0-9]/',
+        '',
+        (string)($_POST['year'] ?? $_GET['year'] ?? ($years[0] ?? date('Y')))
+    );
+
+    if (!in_array($year, $years, true)) {
+        $year = (string)($years[0] ?? date('Y'));
+    }
+
+    $msg = '';
+    $err = '';
+
+    $currentFeeRow = app_current_fee($dbo, $year);
+    $currentFee = (float)($currentFeeRow['annual_fee'] ?? 0);
+
+    $score = mrlp_compute_year($year, $dbo, $dbconnect);
+    $yearCfg = mrlp_year_config(mrlp_load_config(), $year);
+    $payoutModel = mrlp_build_payout_model($score, $yearCfg);
+    $prizes = app_prizes_by_team($payoutModel);
+    $teams = app_team_rows($dbo, $year);
+
+    $buildRows = function () use ($dbo, $year, $currentFee, $prizes, $teams) {
+        $rows = [];
+        $summary = [
+            'expected' => 0.0,
+            'received' => 0.0,
+            'prizes' => 0.0,
+            'due_league' => 0.0,
+            'adjustments' => 0.0,
+            'paid_out' => 0.0,
+            'rollover_out' => 0.0,
+            'remaining' => 0.0,
+        ];
+
+        foreach ($teams as $team) {
+            $teamUid = (int)$team['userID'];
+            $legacy = app_legacy_finance($dbo, $year, $teamUid);
+            $finance = app_load_team_summary($dbo, $year, $teamUid);
+            $transactions = app_transactions($dbo, $year, $teamUid);
+            $totals = app_transaction_totals($transactions);
+
+            $cashPaid = round(
+                (float)$legacy['amount_paid'] + (float)$totals['payment'],
+                2
+            );
+
+            $prize = (float)($prizes[$team['teamName']] ?? 0);
+
+            $calc = app_calc(
+                $currentFee,
+                $cashPaid,
+                (float)$totals['rollover_in'],
+                $prize,
+                (float)$finance['manual_adjustment'],
+                (float)$totals['payout'],
+                (float)$totals['rollover_out']
+            );
+
+            $latestMethod = app_latest_method(
+                $transactions,
+                'payment',
+                (string)$legacy['paid_method']
+            );
+
+            $row = [
+                'team' => $team,
+                'legacy' => $legacy,
+                'finance' => $finance,
+                'transactions' => $transactions,
+                'totals' => $totals,
+                'cash_paid' => $cashPaid,
+                'prize' => $prize,
+                'calc' => $calc,
+                'latest_method' => $latestMethod,
+            ];
+
+            $rows[] = $row;
+
+            $summary['expected'] += $currentFee;
+            $summary['received'] += $cashPaid;
+            $summary['prizes'] += $prize;
+            $summary['due_league'] += (float)$calc['fee_due'];
+            $summary['adjustments'] += (float)$finance['manual_adjustment'];
+            $summary['paid_out'] += (float)$totals['payout'];
+            $summary['rollover_out'] += (float)$totals['rollover_out'];
+
+            if ((float)$calc['remaining'] > 0) {
+                $summary['remaining'] += (float)$calc['remaining'];
+            }
+        }
+
+        return [$rows, $summary];
+    };
+
+    list($rows, $summary) = $buildRows();
+
+    $rowByUid = [];
+    foreach ($rows as $r) {
+        $rowByUid[(int)$r['team']['userID']] = $r;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!hash_equals((string)$_SESSION['app_csrf'], (string)($_POST['csrf'] ?? ''))) {
+            $err = 'Security token mismatch.';
+        } else {
+            $action = (string)($_POST['action'] ?? '');
+
+            try {
+                if ($action === 'save_fee') {
+                    $fee = max(0, app_money_value($_POST['annual_fee'] ?? 0));
+                    $date = trim((string)($_POST['effective_date'] ?? ''));
+                    $reason = trim((string)($_POST['fee_reason'] ?? ''));
+
+                    $d = DateTime::createFromFormat('Y-m-d', $date);
+
+                    if (!$d || $d->format('Y-m-d') !== $date) {
+                        throw new RuntimeException('Effective date is required.');
+                    }
+
+                    if ($reason === '') {
+                        throw new RuntimeException('A reason is required for every annual-fee change.');
+                    }
+
+                    app_add_fee($dbo, $year, $fee, $date, $reason, $uid);
+                    $msg = 'Annual fee saved for '.$year.'.';
+                }
+
+                if (in_array($action, ['save_summary', 'add_payment', 'add_payout', 'add_rollover'], true)) {
+                    $teamUid = (int)($_POST['userID'] ?? 0);
+                    $teamName = trim((string)($_POST['teamName'] ?? ''));
+                    $userName = trim((string)($_POST['userName'] ?? ''));
+
+                    if ($teamUid <= 0 || $teamName === '' || !isset($rowByUid[$teamUid])) {
+                        throw new RuntimeException('Invalid team row.');
+                    }
+
+                    if ($action === 'save_summary') {
+                        $adjustment = app_money_value($_POST['manual_adjustment'] ?? 0);
+                        $adjustmentReason = trim((string)($_POST['adjustment_reason'] ?? ''));
+
+                        if (abs($adjustment) > 0.004 && $adjustmentReason === '') {
+                            throw new RuntimeException('Adjustment reason is required when Manual Adjustment is not $0.00.');
+                        }
+
+                        app_save_team_summary($dbo, [
+                            'raceYear' => $year,
+                            'userID' => $teamUid,
+                            'teamName' => $teamName,
+                            'userName' => $userName,
+                            'manual_adjustment' => $adjustment,
+                            'adjustment_reason' => $adjustmentReason,
+                            'notes' => trim((string)($_POST['notes'] ?? '')),
+                            'recipient_url' => trim((string)($_POST['recipient_url'] ?? '')),
+                            'payoff_notes' => trim((string)($_POST['payoff_notes'] ?? '')),
+                        ], $uid);
+
+                        $msg = 'Saved '.$teamName.' notes/adjustment.';
+                    }
+
+                    if ($action === 'add_payment' || $action === 'add_payout') {
+                        $amount = app_money_value($_POST['txn_amount'] ?? 0);
+                        $dateText = trim((string)($_POST['txn_datetime'] ?? ''));
+                        $occurredAt = app_parse_datetime($dateText);
+
+                        if ($amount <= 0) {
+                            throw new RuntimeException('Transaction amount must be greater than $0.00.');
+                        }
+
+                        if ($occurredAt === null) {
+                            throw new RuntimeException('Enter a valid date/time, for example: Apr 13, 2026, 12:54 PM.');
+                        }
+
+                        app_add_transaction($dbo, [
+                            'raceYear' => $year,
+                            'userID' => $teamUid,
+                            'teamName' => $teamName,
+                            'transaction_type' => $action === 'add_payment' ? 'payment' : 'payout',
+                            'amount' => $amount,
+                            'method' => trim((string)($_POST['txn_method'] ?? '')),
+                            'source_account' => trim((string)($_POST['txn_source'] ?? '')),
+                            'occurred_at' => $occurredAt,
+                            'entered_date_text' => $dateText,
+                            'note' => trim((string)($_POST['txn_note'] ?? '')),
+                            'linked_transaction_id' => null,
+                        ], $uid);
+
+                        $msg = ($action === 'add_payment' ? 'Payment' : 'Payout').' added for '.$teamName.'.';
+                    }
+
+                    if ($action === 'add_rollover') {
+                        $amount = app_money_value($_POST['rollover_amount'] ?? 0);
+                        $toYear = preg_replace('/[^0-9]/', '', (string)($_POST['rollover_year'] ?? ((int)$year + 1)));
+                        $dateText = trim((string)($_POST['rollover_datetime'] ?? ''));
+                        $occurredAt = app_parse_datetime($dateText);
+                        $available = max(0.0, (float)$rowByUid[$teamUid]['calc']['remaining']);
+
+                        if ($amount <= 0) {
+                            throw new RuntimeException('Rollover amount must be greater than $0.00.');
+                        }
+
+                        if ($amount - $available > 0.005) {
+                            throw new RuntimeException('Rollover cannot exceed the current amount owed to this member.');
+                        }
+
+                        if (!preg_match('/^\d{4}$/', $toYear) || (int)$toYear <= (int)$year) {
+                            throw new RuntimeException('Rollover year must be later than the current year.');
+                        }
+
+                        if ($occurredAt === null) {
+                            throw new RuntimeException('Enter a valid rollover date/time.');
+                        }
+
+                        app_add_rollover_pair(
+                            $dbo,
+                            $year,
+                            $toYear,
+                            $teamUid,
+                            $teamName,
+                            $amount,
+                            $occurredAt,
+                            $dateText,
+                            trim((string)($_POST['rollover_note'] ?? '')),
+                            $uid
+                        );
+
+                        $msg = app_money($amount).' rolled from '.$year.' to '.$toYear.' for '.$teamName.'.';
+                    }
+                }
+            } catch (Throwable $e) {
+                $err = $e->getMessage();
+            }
+        }
+
+        $currentFeeRow = app_current_fee($dbo, $year);
+        $currentFee = (float)($currentFeeRow['annual_fee'] ?? 0);
+        list($rows, $summary) = $buildRows();
+    }
+
+    $feeHistory = app_fee_history($dbo, $year);
+
+    $owedRows = $rows;
+    usort($owedRows, function ($a, $b) {
+        $cmp = (float)$b['calc']['remaining'] <=> (float)$a['calc']['remaining'];
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+        return strnatcasecmp((string)$a['team']['teamName'], (string)$b['team']['teamName']);
+    });
+
 ?>
-<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MRL Paid + Payouts Admin</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#11161c;color:#e9edf2;font-family:Tahoma,Verdana,Segoe,sans-serif;font-size:14px}.wrap{width:98%;max-width:1800px;margin:14px auto 34px}.banner,.card{border:1px solid #394655;border-radius:12px;background:#1b232c;padding:14px 16px;margin-bottom:10px}.banner{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.banner h1{margin:0;color:#fff2dc;font-size:27px}.sub{color:#aeb9c5;margin-top:5px}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.control{background:#f4f4f4;color:#111;border:1px solid #777;border-radius:6px;padding:6px 8px;font:14px Tahoma}.btn{border:1px solid #53697f;border-radius:7px;padding:7px 11px;text-decoration:none;cursor:pointer;font:bold 13px Tahoma}.save{background:#173927;color:#7de5aa;border-color:#2c7550}.blue{background:#173653;color:#a7cfff;border-color:#3977b0}.notice{padding:10px 12px;border-radius:8px;margin-bottom:10px}.ok{background:#173927;color:#7de5aa;border:1px solid #2c7550}.err{background:#452226;color:#ff9ca5;border:1px solid #8f424b}.summary{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:8px}.stat{background:#151c24;border:1px solid #33414f;border-radius:9px;padding:10px}.stat .k{color:#99a8b7;font-size:12px}.stat .v{font-size:20px;font-weight:bold;margin-top:3px}.card h2{margin:0 0 10px;color:#ffd08a;font-size:18px}.feegrid{display:grid;grid-template-columns:150px 165px minmax(260px,1fr) auto;gap:8px;align-items:end}.history{max-height:190px;overflow:auto;margin-top:10px}.history table,.finance{width:100%;border-collapse:collapse}.history th,.history td,.finance th,.finance td{border-bottom:1px solid #33414f;padding:6px;vertical-align:top}.history th,.finance th{color:#b8c8d8;text-align:left;position:sticky;top:0;background:#1b232c;z-index:1}.tablewrap{overflow:auto;max-height:70vh;border:1px solid #33414f;border-radius:9px}.finance{min-width:2350px}.finance td{background:#171e26}.finance tr:nth-child(even) td{background:#141b22}.finance input,.finance textarea{width:100%;min-width:88px;background:#f4f4f4;color:#111;border:1px solid #777;border-radius:5px;padding:5px;font:13px Tahoma}.finance textarea{min-height:54px;resize:vertical}.team{min-width:170px}.owner{min-width:130px}.money{white-space:nowrap;font-weight:bold}.positive{color:#79e6a5}.negative{color:#ff969f}.muted{color:#91a0ae;font-size:12px}.tag{display:inline-block;border:1px solid #4c6277;border-radius:10px;padding:2px 7px;font-size:11px;color:#b8c8d8}.legacy{color:#ffd08a}.owegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}.owecard{border:1px solid #3b4a58;border-radius:8px;background:#151c24;padding:10px}.owecard .amt{font-size:20px;color:#79e6a5;font-weight:bold}.url{word-break:break-all}.small{font-size:12px;color:#94a3b2}@media(max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}.feegrid{grid-template-columns:1fr}.banner{display:block}.toolbar{margin-top:10px}}</style></head>
-<body><div class="wrap"><div class="banner"><div><h1>MRL Paid + Payouts Admin</h1><div class="sub">Admin-only financial workspace. Prize winnings are calculated from the existing payout engine and are never manually edited.</div></div><div class="toolbar"><form method="get"><select class="control" name="year" onchange="this.form.submit()"><?php foreach($years as $y):?><option value="<?php echo app_h($y);?>" <?php echo $y===$year?'selected':'';?>><?php echo app_h($y);?></option><?php endforeach;?></select></form><a class="btn blue" target="_blank" href="/race_results/payouts.php?year=<?php echo app_h($year);?>&preview=1">Open Payouts</a></div></div>
-<?php if($msg!==''):?><div class="notice ok"><?php echo app_h($msg);?></div><?php endif;?><?php if($err!==''):?><div class="notice err"><?php echo app_h($err);?></div><?php endif;?>
-<div class="card"><h2><?php echo app_h($year);?> Year Summary</h2><div class="summary"><div class="stat"><div class="k">Annual Fees Expected</div><div class="v"><?php echo app_money($summary['expected']);?></div></div><div class="stat"><div class="k">Fees Received</div><div class="v"><?php echo app_money($summary['received']);?></div></div><div class="stat"><div class="k">Prize Money Awarded</div><div class="v"><?php echo app_money($summary['prizes']);?></div></div><div class="stat"><div class="k">Due to League</div><div class="v"><?php echo app_money($summary['due_league']);?></div></div><div class="stat"><div class="k">Manual Adjustments</div><div class="v"><?php echo app_money($summary['adjustments']);?></div></div><div class="stat"><div class="k">Payouts Already Paid</div><div class="v"><?php echo app_money($summary['paid_out']);?></div></div><div class="stat"><div class="k">Still Owed to Members</div><div class="v"><?php echo app_money($summary['remaining']);?></div></div></div></div>
-<div class="card"><h2>Annual Fee / Donation</h2><div class="muted">Current fee applies to every competitive team for the selected year. Changing it automatically recalculates every balance; previous fee entries remain in history.</div><form method="post" style="margin-top:10px"><input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']);?>"><input type="hidden" name="action" value="save_fee"><input type="hidden" name="year" value="<?php echo app_h($year);?>"><div class="feegrid"><label>Annual Fee<br><input class="control" name="annual_fee" value="<?php echo number_format($currentFee,2,'.','');?>"></label><label>Effective Date<br><input class="control" type="date" name="effective_date" value="<?php echo app_h(date('Y-m-d'));?>"></label><label>Reason<br><input class="control" style="width:100%" name="fee_reason" placeholder="Required — why the fee changed"></label><button class="btn save" type="submit">Save Fee Change</button></div></form><div class="history"><table><tr><th>Effective</th><th>Fee</th><th>Reason</th><th>Changed By</th><th>Recorded</th></tr><?php if(empty($feeHistory)):?><tr><td colspan="5" class="muted">No fee history yet.</td></tr><?php else:foreach($feeHistory as $fh):?><tr><td><?php echo app_h($fh['effective_date']??'');?></td><td><?php echo app_money($fh['annual_fee']??0);?></td><td><?php echo app_h($fh['reason']??'');?></td><td><?php echo app_h($fh['changed_by']??'');?></td><td><?php echo app_h($fh['created_at']??'');?></td></tr><?php endforeach;endif;?></table></div></div>
-<div class="card"><h2>Team Payment + Payout Status</h2><div class="small" style="margin-bottom:8px">Formula: Prize Winnings − unpaid annual fee ± manual adjustment − payout already paid = Remaining Owed.</div><div class="tablewrap"><table class="finance"><tr><th>Team</th><th>Owner</th><th>Fee</th><th>Paid In</th><th>Status</th><th>Fee Balance</th><th>Paid Method</th><th>Paid Date</th><th>Prize Winnings<br><span class="muted">Calculated</span></th><th>Manual Adjustment</th><th>Adjustment Reason</th><th>General Notes</th><th>Payout Paid</th><th>Payout Method</th><th>Payout Date</th><th>Paid From</th><th>Recipient / URL</th><th>Payoff Notes</th><th>Remaining</th><th>Save</th></tr>
-<?php foreach($rows as $r):$t=$r['team'];$f=$r['f'];$c=$r['calc'];$fid='teamform_'.(int)$t['userID'];?><tr><td class="team"><form id="<?php echo app_h($fid);?>" method="post"><input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']);?>"><input type="hidden" name="action" value="save_team"><input type="hidden" name="year" value="<?php echo app_h($year);?>"><input type="hidden" name="userID" value="<?php echo (int)$t['userID'];?>"><input type="hidden" name="teamName" value="<?php echo app_h($t['teamName']);?>"><input type="hidden" name="userName" value="<?php echo app_h($t['userName']);?>"></form><strong><?php echo app_h($t['teamName']);?></strong><br><?php if(($f['_source']??'')==='legacy'):?><span class="tag legacy">Legacy Financial fallback</span><?php elseif(($f['_source']??'')==='new'):?><span class="tag">Saved here</span><?php endif;?></td><td class="owner"><?php echo app_h($t['userName']);?></td><td class="money"><?php echo app_money($currentFee);?></td><td><input form="<?php echo app_h($fid);?>" name="amount_paid" value="<?php echo number_format((float)$f['amount_paid'],2,'.','');?>"></td><td><?php echo app_h($c['status']);?></td><td class="money"><?php echo app_money($c['fee_due']);?></td><td><input form="<?php echo app_h($fid);?>" name="paid_method" value="<?php echo app_h($f['paid_method']);?>"></td><td><input form="<?php echo app_h($fid);?>" type="date" name="paid_date" value="<?php echo app_h($f['paid_date']??'');?>"></td><td class="money"><?php echo app_money($r['prize']);?></td><td><input form="<?php echo app_h($fid);?>" name="manual_adjustment" value="<?php echo number_format((float)$f['manual_adjustment'],2,'.','');?>"></td><td><textarea form="<?php echo app_h($fid);?>" name="adjustment_reason"><?php echo app_h($f['adjustment_reason']);?></textarea></td><td><textarea form="<?php echo app_h($fid);?>" name="notes"><?php echo app_h($f['notes']);?></textarea></td><td><input form="<?php echo app_h($fid);?>" name="payout_paid" value="<?php echo number_format((float)$f['payout_paid'],2,'.','');?>"></td><td><input form="<?php echo app_h($fid);?>" name="payout_method" value="<?php echo app_h($f['payout_method']);?>"></td><td><input form="<?php echo app_h($fid);?>" type="date" name="payout_date" value="<?php echo app_h($f['payout_date']??'');?>"></td><td><input form="<?php echo app_h($fid);?>" name="payout_source" value="<?php echo app_h($f['payout_source']);?>"></td><td><input form="<?php echo app_h($fid);?>" name="recipient_url" value="<?php echo app_h($f['recipient_url']);?>"><?php if(trim((string)$f['recipient_url'])!==''):?><div><a class="small url" target="_blank" rel="noopener" href="<?php echo app_h($f['recipient_url']);?>">open link</a></div><?php endif;?></td><td><textarea form="<?php echo app_h($fid);?>" name="payoff_notes"><?php echo app_h($f['payoff_notes']);?></textarea></td><td class="money <?php echo $c['remaining']>=0?'positive':'negative';?>"><?php echo app_money($c['remaining']);?></td><td><button form="<?php echo app_h($fid);?>" class="btn save" type="submit">Save</button></td></tr><?php endforeach;?></table></div></div>
-<div class="card"><h2>How Much Do I Owe You?</h2><div class="owegrid"><?php $shown=0;foreach($owed as $r):if((float)$r['calc']['remaining']<=0)continue;$shown++;?><div class="owecard"><strong><?php echo app_h($r['team']['userName']);?></strong><div class="muted"><?php echo app_h($r['team']['teamName']);?></div><div class="amt"><?php echo app_money($r['calc']['remaining']);?></div><?php if(trim((string)$r['f']['recipient_url'])!==''):?><a target="_blank" rel="noopener" href="<?php echo app_h($r['f']['recipient_url']);?>">Payment link</a><?php endif;?></div><?php endforeach;if($shown===0):?><div class="muted">Nobody currently has a positive remaining balance.</div><?php endif;?></div></div>
-</div></body></html>
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MRL Paid + Payouts Admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#11161c;color:#e9edf2;font-family:Tahoma,Verdana,Segoe UI,sans-serif;font-size:14px}
+.wrap{width:98%;max-width:1720px;margin:14px auto 32px}
+.card{background:#1b232c;border:1px solid #394655;border-radius:10px;padding:12px 16px;margin-bottom:10px}
+.header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+h1{margin:0;color:#fff2dc;font-size:26px}
+h2{margin:0 0 8px;color:#ffd08a;font-size:19px}
+.sub,.muted{color:#9eacba}
+.toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+input,textarea,select{background:#f4f4f4;color:#111;border:1px solid #777;border-radius:5px;padding:5px 7px;font:13px Tahoma,Verdana,sans-serif}
+textarea{resize:vertical}
+.btn{border:1px solid #53697f;border-radius:6px;padding:6px 10px;text-decoration:none;cursor:pointer;font:bold 13px Tahoma,Verdana,sans-serif}
+.save{background:#173927;color:#7de5aa;border-color:#2c7550}
+.blue{background:#173653;color:#a7cfff;border-color:#3977b0}
+.warnbtn{background:#4b3417;color:#ffd08a;border-color:#8a6328}
+.notice{padding:9px 11px;border-radius:7px;margin-bottom:9px}
+.ok{background:#173927;color:#7de5aa;border:1px solid #2c7550}
+.err{background:#452226;color:#ff9ca5;border:1px solid #8f424b}
+
+.summary{display:grid;grid-template-columns:repeat(8,minmax(130px,1fr));gap:7px}
+.stat{background:#151c24;border:1px solid #33414f;border-radius:8px;padding:8px 10px}
+.stat .k{color:#99a8b7;font-size:11px}
+.stat .v{font-size:18px;font-weight:bold;margin-top:2px}
+
+.feeform{display:grid;grid-template-columns:165px 190px minmax(280px,1fr) auto;gap:7px;align-items:end}
+.history{width:100%;border-collapse:collapse;margin-top:9px}
+.history th,.history td{border-bottom:1px solid #33414f;padding:6px 8px;text-align:left}
+
+.tablewrap{overflow-x:auto}
+.finance-table{width:100%;min-width:1350px;border-collapse:collapse}
+.finance-table th{background:#18212a;color:#ffd7a0;font-size:12px;white-space:nowrap}
+.finance-table th,.finance-table td{padding:7px 8px;border-bottom:1px solid #34414e;text-align:left}
+.finance-table td.num,.finance-table th.num{text-align:right;white-space:nowrap}
+.finance-row{cursor:pointer}
+.finance-row:hover{background:#202c37}
+.finance-row.open{background:#1e2b36}
+.finance-row .teamlink{color:#dcecff;font-weight:bold}
+.status-paid{color:#78e4a2;font-weight:bold}
+.status-partial{color:#ffd17e;font-weight:bold}
+.status-unpaid{color:#ff9ba4;font-weight:bold}
+.money-positive{color:#78e4a2;font-weight:bold}
+.money-negative{color:#ff9ba4;font-weight:bold}
+.money-neutral{color:#e9edf2}
+
+.detail-row{display:none}
+.detail-row.open{display:table-row}
+.detail-cell{padding:0!important;background:#10171e}
+.team-editor{padding:10px 12px 12px;border-left:4px solid #355b78}
+.team-editor.dirty{border-left-color:#e3a640;background:#171b1f}
+.editor-title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}
+.editor-title strong{font-size:16px;color:#fff2dc}
+.dirty-note{display:none;color:#ffd17e;font-weight:bold}
+.team-editor.dirty .dirty-note{display:inline}
+.editor-grid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:10px}
+.editor-box{background:#151d25;border:1px solid #33414f;border-radius:8px;padding:9px}
+.editor-box h3{margin:0 0 7px;color:#bdd6ed;font-size:14px}
+.form-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:6px}
+.field label{display:block;color:#aeb9c5;font-size:11px;margin-bottom:2px}
+.field input,.field textarea,.field select{width:100%}
+.field textarea{min-height:48px}
+.span2{grid-column:span 2}
+.span3{grid-column:span 3}
+.span4{grid-column:span 4}
+.txn-list{width:100%;border-collapse:collapse;margin-bottom:7px}
+.txn-list th,.txn-list td{padding:4px 5px;border-bottom:1px solid #2e3944;font-size:12px;text-align:left}
+.txn-list th.num,.txn-list td.num{text-align:right}
+.legacy{background:#202018;color:#e8d79a}
+.rollover{background:#182a22}
+.small-note{font-size:11px;color:#94a3b1;margin-top:4px}
+
+.owed-table{width:100%;border-collapse:collapse}
+.owed-table th,.owed-table td{padding:6px 8px;border-bottom:1px solid #33414f;text-align:left}
+.owed-table td.num,.owed-table th.num{text-align:right}
+
+@media(max-width:1100px){
+  .summary{grid-template-columns:repeat(4,1fr)}
+  .feeform{grid-template-columns:1fr 1fr}
+  .editor-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="card header">
+    <div>
+        <h1>MRL Paid + Payouts Admin</h1>
+        <div class="sub">Annual fees, payments, adjustments, payoff tracking, rollover credit, and calculated prize winnings.</div>
+    </div>
+    <div class="toolbar">
+        <form method="get">
+            <select name="year" onchange="this.form.submit()">
+                <?php foreach ($years as $y): ?>
+                <option value="<?php echo app_h($y); ?>" <?php echo $y === $year ? 'selected' : ''; ?>>
+                    <?php echo app_h($y); ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </form>
+        <a class="btn blue" target="_blank" href="/race_results/payouts.php?year=<?php echo app_h($year); ?>&preview=1">Open Payouts</a>
+    </div>
+</div>
+
+<?php if ($msg !== ''): ?><div class="notice ok"><?php echo app_h($msg); ?></div><?php endif; ?>
+<?php if ($err !== ''): ?><div class="notice err"><?php echo app_h($err); ?></div><?php endif; ?>
+
+<div class="card">
+    <h2><?php echo app_h($year); ?> Year Summary</h2>
+    <div class="summary">
+        <?php
+        $stats = [
+            'Annual Fees Expected' => $summary['expected'],
+            'Fees Received' => $summary['received'],
+            'Prize Money Awarded' => $summary['prizes'],
+            'Due to League' => $summary['due_league'],
+            'Manual Adjustments' => $summary['adjustments'],
+            'Payouts Already Paid' => $summary['paid_out'],
+            'Rolled Forward' => $summary['rollover_out'],
+            'Still Owed to Members' => $summary['remaining'],
+        ];
+        foreach ($stats as $label => $value):
+        ?>
+        <div class="stat">
+            <div class="k"><?php echo app_h($label); ?></div>
+            <div class="v"><?php echo app_money($value); ?></div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Annual Fee / Donation</h2>
+    <div class="muted">The latest fee applies to every competitive team for the selected year. Earlier fee entries remain in history.</div>
+
+    <form method="post" class="feeform" style="margin-top:8px">
+        <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+        <input type="hidden" name="action" value="save_fee">
+        <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+
+        <label>Annual Fee<br><input name="annual_fee" value="<?php echo number_format($currentFee, 2, '.', ''); ?>"></label>
+        <label>Effective Date<br><input type="date" name="effective_date" value="<?php echo app_h(date('Y-m-d')); ?>"></label>
+        <label>Reason<br><input style="width:100%" name="fee_reason" placeholder="Required — why the fee changed"></label>
+        <button class="btn save" type="submit">Save Fee Change</button>
+    </form>
+
+    <table class="history">
+        <tr><th>Effective</th><th>Fee</th><th>Reason</th><th>Changed By</th><th>Recorded</th></tr>
+        <?php if (empty($feeHistory)): ?>
+        <tr><td colspan="5" class="muted">No fee history yet.</td></tr>
+        <?php else: ?>
+            <?php foreach ($feeHistory as $fh): ?>
+            <tr>
+                <td><?php echo app_h($fh['effective_date'] ?? ''); ?></td>
+                <td><?php echo app_money($fh['annual_fee'] ?? 0); ?></td>
+                <td><?php echo app_h($fh['reason'] ?? ''); ?></td>
+                <td><?php echo app_h($fh['changed_by'] ?? ''); ?></td>
+                <td><?php echo app_h($fh['created_at'] ?? ''); ?></td>
+            </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Team Payment + Payout Status</h2>
+    <div class="muted" style="margin-bottom:8px">
+        Click anywhere on a team row to open its editor. Multiple teams can remain open.
+        Net owed = Prize Winnings − signed fee balance ± adjustment − payouts − rollover.
+    </div>
+
+    <div class="tablewrap">
+        <table class="finance-table">
+            <thead>
+            <tr>
+                <th>Team</th>
+                <th>Owner</th>
+                <th>Status</th>
+                <th class="num">Fee</th>
+                <th class="num">Paid In</th>
+                <th class="num">Fee Due / Credit</th>
+                <th>How</th>
+                <th class="num">Prize</th>
+                <th class="num">Adjustment</th>
+                <th class="num">Paid Out</th>
+                <th class="num">Rollover</th>
+                <th class="num">I Owe</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($rows as $row):
+                $team = $row['team'];
+                $finance = $row['finance'];
+                $legacy = $row['legacy'];
+                $totals = $row['totals'];
+                $calc = $row['calc'];
+                $teamUid = (int)$team['userID'];
+
+                $feeText = $calc['fee_credit'] > 0
+                    ? '+'.app_money($calc['fee_credit']).' credit'
+                    : app_money($calc['fee_due']);
+
+                $statusClass = $calc['status'] === 'Paid'
+                    ? 'status-paid'
+                    : ($calc['status'] === 'Partial' ? 'status-partial' : 'status-unpaid');
+            ?>
+            <tr class="finance-row" data-team="<?php echo $teamUid; ?>" tabindex="0">
+                <td class="teamlink"><?php echo app_h($team['teamName']); ?></td>
+                <td><?php echo app_h($team['userName']); ?></td>
+                <td class="<?php echo $statusClass; ?>"><?php echo app_h($calc['status']); ?></td>
+                <td class="num"><?php echo app_money($currentFee); ?></td>
+                <td class="num"><?php echo app_money($row['cash_paid']); ?></td>
+                <td class="num <?php echo $calc['fee_credit'] > 0 ? 'money-positive' : ($calc['fee_due'] > 0 ? 'money-negative' : 'money-neutral'); ?>">
+                    <?php echo app_h($feeText); ?>
+                </td>
+                <td><?php echo app_h($row['latest_method']); ?></td>
+                <td class="num"><?php echo app_money($row['prize']); ?></td>
+                <td class="num"><?php echo app_money($finance['manual_adjustment']); ?></td>
+                <td class="num"><?php echo app_money($totals['payout']); ?></td>
+                <td class="num"><?php echo app_money($totals['rollover_out']); ?></td>
+                <td class="num <?php echo $calc['remaining'] > 0 ? 'money-positive' : ($calc['remaining'] < 0 ? 'money-negative' : 'money-neutral'); ?>">
+                    <?php echo app_money($calc['remaining']); ?>
+                </td>
+            </tr>
+
+            <tr class="detail-row" data-detail="<?php echo $teamUid; ?>">
+                <td colspan="12" class="detail-cell">
+                    <div class="team-editor" data-editor="<?php echo $teamUid; ?>">
+                        <div class="editor-title">
+                            <div>
+                                <strong><?php echo app_h($team['teamName']); ?></strong>
+                                <span class="muted"> — <?php echo app_h($team['userName']); ?></span>
+                            </div>
+                            <span class="dirty-note">Unsaved Changes</span>
+                        </div>
+
+                        <div class="editor-grid">
+
+                            <div class="editor-box">
+                                <h3>Payments Received</h3>
+                                <table class="txn-list">
+                                    <tr><th>Date / Time</th><th class="num">Amount</th><th>Method</th><th>Note</th></tr>
+                                    <?php if ((float)$legacy['amount_paid'] > 0): ?>
+                                    <tr class="legacy">
+                                        <td><?php echo app_h($legacy['paid_comment']); ?></td>
+                                        <td class="num"><?php echo app_money($legacy['amount_paid']); ?></td>
+                                        <td><?php echo app_h($legacy['paid_method']); ?></td>
+                                        <td>Legacy / opening payment</td>
+                                    </tr>
+                                    <?php endif; ?>
+
+                                    <?php
+                                    $paymentCount = 0;
+                                    foreach ($row['transactions'] as $t):
+                                        if ((string)$t['transaction_type'] !== 'payment') {
+                                            continue;
+                                        }
+                                        $paymentCount++;
+                                    ?>
+                                    <tr>
+                                        <td><?php echo app_h(app_format_datetime($t['occurred_at'])); ?></td>
+                                        <td class="num"><?php echo app_money($t['amount']); ?></td>
+                                        <td><?php echo app_h($t['method']); ?></td>
+                                        <td><?php echo app_h($t['note']); ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+
+                                    <?php if ($paymentCount === 0 && (float)$legacy['amount_paid'] <= 0): ?>
+                                    <tr><td colspan="4" class="muted">No payments recorded.</td></tr>
+                                    <?php endif; ?>
+                                </table>
+
+                                <form method="post" class="edit-form">
+                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                    <input type="hidden" name="action" value="add_payment">
+                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+
+                                    <div class="form-grid">
+                                        <div class="field"><label>Amount</label><input name="txn_amount" placeholder="0.00"></div>
+                                        <div class="field"><label>Method</label><input name="txn_method" placeholder="Venmo, PayPal, Cash..."></div>
+                                        <div class="field span2"><label>Date &amp; Time — paste email style or use picker</label><input name="txn_datetime" class="date-text" placeholder="Apr 13, 2026, 12:54 PM"></div>
+                                        <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
+                                        <div class="field span2"><label>Note</label><input name="txn_note"></div>
+                                        <div class="field" style="align-self:end"><button class="btn save" type="submit">Add Payment</button></div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="editor-box">
+                                <h3>Payout / Rollover</h3>
+
+                                <table class="txn-list">
+                                    <tr><th>Type</th><th>Date / Time</th><th class="num">Amount</th><th>How / Note</th></tr>
+                                    <?php
+                                    $outCount = 0;
+                                    foreach ($row['transactions'] as $t):
+                                        $type = (string)$t['transaction_type'];
+                                        if (!in_array($type, ['payout', 'rollover_out', 'rollover_in'], true)) {
+                                            continue;
+                                        }
+                                        $outCount++;
+                                    ?>
+                                    <tr class="<?php echo strpos($type, 'rollover') === 0 ? 'rollover' : ''; ?>">
+                                        <td><?php echo app_h(ucwords(str_replace('_', ' ', $type))); ?></td>
+                                        <td><?php echo app_h(app_format_datetime($t['occurred_at'])); ?></td>
+                                        <td class="num"><?php echo app_money($t['amount']); ?></td>
+                                        <td><?php echo app_h(trim((string)$t['method'].' '.(string)$t['source_account'].' '.(string)$t['note'])); ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+
+                                    <?php if ($outCount === 0): ?>
+                                    <tr><td colspan="4" class="muted">No payout or rollover transactions recorded.</td></tr>
+                                    <?php endif; ?>
+                                </table>
+
+                                <form method="post" class="edit-form">
+                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                    <input type="hidden" name="action" value="add_payout">
+                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+
+                                    <div class="form-grid">
+                                        <div class="field"><label>Payout Amount</label><input name="txn_amount" placeholder="0.00"></div>
+                                        <div class="field"><label>Method</label><input name="txn_method" placeholder="Venmo, PayPal, Cash..."></div>
+                                        <div class="field"><label>Paid From</label><input name="txn_source" placeholder="M&T, KeyBank, Pocket..."></div>
+                                        <div class="field"><label>Date &amp; Time</label><input name="txn_datetime" class="date-text" placeholder="Apr 13, 2026, 12:54 PM"></div>
+                                        <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
+                                        <div class="field span2"><label>Note</label><input name="txn_note"></div>
+                                        <div class="field" style="align-self:end"><button class="btn save" type="submit">Record Payout</button></div>
+                                    </div>
+                                </form>
+
+                                <form method="post" class="edit-form" style="margin-top:9px">
+                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                    <input type="hidden" name="action" value="add_rollover">
+                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+
+                                    <div class="form-grid">
+                                        <div class="field"><label>Rollover Amount</label><input name="rollover_amount" value="<?php echo $calc['remaining'] > 0 ? number_format((float)$calc['remaining'], 2, '.', '') : ''; ?>"></div>
+                                        <div class="field"><label>To Year</label><input name="rollover_year" value="<?php echo (int)$year + 1; ?>"></div>
+                                        <div class="field span2"><label>Date &amp; Time</label><input name="rollover_datetime" class="date-text" placeholder="Nov 16, 2026, 4:23 PM"></div>
+                                        <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
+                                        <div class="field span2"><label>Note</label><input name="rollover_note" placeholder="Keep winnings for next year's entry"></div>
+                                        <div class="field" style="align-self:end"><button class="btn warnbtn" type="submit">Rollover Credit</button></div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="editor-box">
+                                <h3>Adjustment / Team Notes</h3>
+
+                                <form method="post" class="edit-form">
+                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                    <input type="hidden" name="action" value="save_summary">
+                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+
+                                    <div class="form-grid">
+                                        <div class="field"><label>Manual Adjustment</label><input name="manual_adjustment" value="<?php echo number_format((float)$finance['manual_adjustment'], 2, '.', ''); ?>"></div>
+                                        <div class="field span3"><label>Adjustment Reason</label><input name="adjustment_reason" value="<?php echo app_h($finance['adjustment_reason']); ?>"></div>
+                                        <div class="field span4"><label>General Notes</label><textarea name="notes"><?php echo app_h($finance['notes']); ?></textarea></div>
+                                        <div class="field span2"><label>Recipient / Payment URL</label><input name="recipient_url" value="<?php echo app_h($finance['recipient_url']); ?>"></div>
+                                        <div class="field span2"><label>Payoff Notes</label><textarea name="payoff_notes"><?php echo app_h($finance['payoff_notes']); ?></textarea></div>
+                                        <div class="field span4"><button class="btn save" type="submit">Save Team Data</button></div>
+                                    </div>
+                                </form>
+
+                                <div class="small-note">
+                                    Legacy payment data above remains read-only here for now. New payments are added as separate transactions.
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>How Much Do I Owe You?</h2>
+    <table class="owed-table">
+        <tr><th>Owner</th><th>Team</th><th class="num">Amount</th><th>Payment Link</th></tr>
+        <?php
+        $shown = 0;
+        foreach ($owedRows as $row):
+            if ((float)$row['calc']['remaining'] <= 0) {
+                continue;
+            }
+            $shown++;
+        ?>
+        <tr>
+            <td><?php echo app_h($row['team']['userName']); ?></td>
+            <td><?php echo app_h($row['team']['teamName']); ?></td>
+            <td class="num money-positive"><?php echo app_money($row['calc']['remaining']); ?></td>
+            <td>
+                <?php if (trim((string)$row['finance']['recipient_url']) !== ''): ?>
+                    <a style="color:#9ecaff" target="_blank" rel="noopener" href="<?php echo app_h($row['finance']['recipient_url']); ?>">Open payment link</a>
+                <?php endif; ?>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+
+        <?php if ($shown === 0): ?>
+        <tr><td colspan="4" class="muted">Nobody currently has a positive remaining balance.</td></tr>
+        <?php endif; ?>
+    </table>
+</div>
+
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var storageKey = 'mrlPaidPayoutsOpen_<?php echo app_h($year); ?>';
+
+    function getOpenIds() {
+        var ids = [];
+        document.querySelectorAll('.detail-row.open').forEach(function (row) {
+            ids.push(row.getAttribute('data-detail'));
+        });
+        return ids;
+    }
+
+    function saveOpenIds() {
+        try {
+            sessionStorage.setItem(storageKey, JSON.stringify(getOpenIds()));
+        } catch (e) {
+        }
+    }
+
+    function editorFor(id) {
+        return document.querySelector('[data-editor="' + id + '"]');
+    }
+
+    function isEditorDirty(id) {
+        var editor = editorFor(id);
+        return editor && editor.classList.contains('dirty');
+    }
+
+    function setOpen(id, open) {
+        var row = document.querySelector('.finance-row[data-team="' + id + '"]');
+        var detail = document.querySelector('.detail-row[data-detail="' + id + '"]');
+
+        if (!row || !detail) {
+            return;
+        }
+
+        row.classList.toggle('open', open);
+        detail.classList.toggle('open', open);
+        saveOpenIds();
+    }
+
+    document.querySelectorAll('.finance-row').forEach(function (row) {
+        var id = row.getAttribute('data-team');
+
+        function toggle() {
+            var detail = document.querySelector('.detail-row[data-detail="' + id + '"]');
+            var isOpen = detail && detail.classList.contains('open');
+
+            if (isOpen && isEditorDirty(id)) {
+                if (!window.confirm('This team has unsaved changes. Close without saving?')) {
+                    return;
+                }
+                var editor = editorFor(id);
+                if (editor) {
+                    editor.classList.remove('dirty');
+                    editor.querySelectorAll('form').forEach(function (form) {
+                        form.setAttribute('data-dirty', '0');
+                    });
+                }
+            }
+
+            setOpen(id, !isOpen);
+        }
+
+        row.addEventListener('click', toggle);
+        row.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggle();
+            }
+        });
+    });
+
+    document.querySelectorAll('.edit-form').forEach(function (form) {
+        form.setAttribute('data-dirty', '0');
+
+        form.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(function (el) {
+            el.addEventListener('input', function () {
+                form.setAttribute('data-dirty', '1');
+                var editor = form.closest('.team-editor');
+                if (editor) {
+                    editor.classList.add('dirty');
+                }
+            });
+        });
+
+        form.addEventListener('submit', function (e) {
+            var otherDirty = false;
+
+            document.querySelectorAll('.edit-form[data-dirty="1"]').forEach(function (other) {
+                if (other !== form) {
+                    otherDirty = true;
+                }
+            });
+
+            if (otherDirty && !window.confirm('Another open team/section has unsaved changes. Continue and lose those unsaved changes?')) {
+                e.preventDefault();
+                return;
+            }
+
+            form.setAttribute('data-dirty', '0');
+            var editor = form.closest('.team-editor');
+            if (editor) {
+                editor.classList.remove('dirty');
+            }
+            saveOpenIds();
+        });
+    });
+
+    document.querySelectorAll('.date-picker').forEach(function (picker) {
+        picker.addEventListener('change', function () {
+            if (!picker.value) {
+                return;
+            }
+
+            var d = new Date(picker.value);
+
+            if (isNaN(d.getTime())) {
+                return;
+            }
+
+            var text = d.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+
+            var form = picker.closest('form');
+            var textInput = form ? form.querySelector('.date-text') : null;
+
+            if (textInput) {
+                textInput.value = text;
+                textInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+    });
+
+    window.addEventListener('beforeunload', function (e) {
+        var dirty = document.querySelector('.edit-form[data-dirty="1"]');
+
+        if (dirty) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    try {
+        var saved = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+
+        if (Array.isArray(saved)) {
+            saved.forEach(function (id) {
+                setOpen(String(id), true);
+            });
+        }
+    } catch (e) {
+    }
+})();
+</script>
+
+</body>
+</html>
+<?php
+} catch (Throwable $e) {
+    app_page_fatal($e);
+}
