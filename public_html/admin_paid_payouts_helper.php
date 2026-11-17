@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts_helper.php
  *
- * VERSION: v003
- * LAST MODIFIED: 11/16/2026 4:23 pm ET
+ * VERSION: v004
+ * LAST MODIFIED: 11/16/2026 4:42 pm ET
  *
  * PURPOSE:
  * - Helper/data layer for admin_paid_payouts.php.
@@ -76,7 +76,8 @@ function app_years(PDO $dbo, array $payoutYears, string $raceYear): array
         $years[date('Y')] = true;
     }
 
-    $out = array_keys($years);
+    $out = array_map('strval', array_keys($years));
+    $out = array_values(array_unique($out));
     rsort($out, SORT_STRING);
     return $out;
 }

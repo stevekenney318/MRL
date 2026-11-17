@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts.php
  *
- * VERSION: v004
- * LAST MODIFIED: 11/16/2026 4:23 pm ET
+ * VERSION: v005
+ * LAST MODIFIED: 11/16/2026 4:42 pm ET
  *
  * PURPOSE:
  * - Compact admin financial dashboard with expandable per-team editors.
@@ -64,16 +64,21 @@ try {
     }
 
     $payoutYears = mrlp_available_years($_SERVER['DOCUMENT_ROOT'].'/race_results');
-    $years = app_years($dbo, $payoutYears, (string)($raceYear ?? ''));
+    $years = array_map('strval', app_years($dbo, $payoutYears, (string)($raceYear ?? '')));
+
+    $defaultYear = (string)($raceYear ?? '');
+    if (!preg_match('/^\d{4}$/', $defaultYear) || !in_array($defaultYear, $years, true)) {
+        $defaultYear = (string)($years[0] ?? date('Y'));
+    }
 
     $year = preg_replace(
         '/[^0-9]/',
         '',
-        (string)($_POST['year'] ?? $_GET['year'] ?? ($years[0] ?? date('Y')))
+        (string)($_POST['year'] ?? $_GET['year'] ?? $defaultYear)
     );
 
     if (!in_array($year, $years, true)) {
-        $year = (string)($years[0] ?? date('Y'));
+        $year = $defaultYear;
     }
 
     $msg = '';
@@ -542,7 +547,7 @@ textarea{resize:vertical}
                 <td class="num"><?php echo app_money($row['prize']); ?></td>
                 <td class="num"><?php echo app_money($finance['manual_adjustment']); ?></td>
                 <td class="num"><?php echo app_money($totals['payout']); ?></td>
-                <td class="num"><?php echo app_money($totals['rollover_out']); ?></td>
+                <td class="num <?php echo (float)$totals['rollover_out'] > 0 ? 'money-positive' : 'money-neutral'; ?>"><?php echo app_money($totals['rollover_out']); ?></td>
                 <td class="num <?php echo $calc['remaining'] > 0 ? 'money-positive' : ($calc['remaining'] < 0 ? 'money-negative' : 'money-neutral'); ?>">
                     <?php echo app_money($calc['remaining']); ?>
                 </td>
