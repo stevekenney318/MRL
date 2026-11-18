@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts.php
  *
- * VERSION: v009
- * LAST MODIFIED: 11/18/2026 3:20 am ET
+ * VERSION: v010
+ * LAST MODIFIED: 11/18/2026 9:15 am ET
  *
  * PURPOSE:
  * - Compact admin financial dashboard with IN / EARNED / OUT / BALANCE groups.
@@ -16,6 +16,7 @@ declare(strict_types=1);
  * - Preserves legacy Financial/user_teams payment data as an opening amount.
  * - Prize winnings remain calculated/read-only from race_results/payouts_helper.php.
  * - POST actions use Redirect-after-POST so browser refresh cannot replay transactions.
+ * - Expanded editor favors the left side: Payments above Payout/Rollover, Team Notes on the right.
  *
  * PHP: 7.3 compatible.
  */
@@ -556,9 +557,10 @@ textarea{resize:vertical}
 .editor-title strong{font-size:16px;color:#fff2dc}
 .dirty-note{display:none;color:#ffd17e;font-weight:bold}
 .team-editor.dirty .dirty-note{display:inline}
-.editor-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.editor-grid{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);gap:10px;align-items:start}
+.editor-stack{display:flex;flex-direction:column;gap:10px;min-width:0}
 .editor-box{background:#151d25;border:1px solid #33414f;border-radius:8px;padding:9px;min-width:0;overflow:hidden}
-.editor-box:nth-child(3){grid-column:1 / -1}
+.editor-balance{margin-left:10px;font-size:16px;white-space:nowrap}
 .editor-box h3{margin:0 0 7px;color:#bdd6ed;font-size:14px}
 .form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
 .field label{display:block;color:#aeb9c5;font-size:11px;margin-bottom:2px}
@@ -580,7 +582,6 @@ textarea{resize:vertical}
 
 @media(max-width:1250px){
   .editor-grid{grid-template-columns:1fr}
-  .editor-box:nth-child(3){grid-column:auto}
 }
 @media(max-width:1100px){
   .summary{grid-template-columns:repeat(4,1fr)}
@@ -761,6 +762,8 @@ textarea{resize:vertical}
 
                         <div class="editor-grid">
 
+                            <div class="editor-stack">
+
                             <div class="editor-box">
                                 <h3>Payments Received</h3>
                                 <table class="txn-list">
@@ -876,7 +879,12 @@ textarea{resize:vertical}
                             </div>
 
                             <div class="editor-box">
-                                <h3>Payout / Rollover</h3>
+                                <h3>
+                                    Payout / Rollover
+                                    <span class="editor-balance <?php echo $calc['remaining'] > 0 ? 'money-positive' : ($calc['remaining'] < 0 ? 'money-negative' : 'money-neutral'); ?>">
+                                        Balance <?php echo app_money($calc['remaining']); ?>
+                                    </span>
+                                </h3>
 
                                 <table class="txn-list">
                                     <tr><th>Type</th><th>Date / Time</th><th class="num">Amount</th><th>Method</th><th>Paid From</th><th>Note</th><th></th></tr>
@@ -1020,6 +1028,8 @@ textarea{resize:vertical}
                                         <div class="field" style="align-self:end"><button class="btn warnbtn" type="submit">Rollover Credit</button></div>
                                     </div>
                                 </form>
+                            </div>
+
                             </div>
 
                             <div class="editor-box">
