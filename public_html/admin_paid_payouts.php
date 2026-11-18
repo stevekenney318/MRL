@@ -4,11 +4,11 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts.php
  *
- * VERSION: v005
- * LAST MODIFIED: 11/16/2026 4:42 pm ET
+ * VERSION: v006
+ * LAST MODIFIED: 11/17/2026 2:19 am ET
  *
  * PURPOSE:
- * - Compact admin financial dashboard with expandable per-team editors.
+ * - Compact admin financial dashboard with IN / EARNED / OUT / BALANCE groups.
  * - Whole team row is clickable; multiple team editors may remain open.
  * - Supports multiple payment transactions, payout transactions, and rollover credits.
  * - Preserves legacy Financial/user_teams payment data as an opening amount.
@@ -136,6 +136,20 @@ try {
                 (string)$legacy['paid_method']
             );
 
+            $latestPayoutMethod = app_latest_transaction_value(
+                $transactions,
+                'payout',
+                'method',
+                ''
+            );
+
+            $latestPayoutSource = app_latest_transaction_value(
+                $transactions,
+                'payout',
+                'source_account',
+                ''
+            );
+
             $row = [
                 'team' => $team,
                 'legacy' => $legacy,
@@ -146,6 +160,8 @@ try {
                 'prize' => $prize,
                 'calc' => $calc,
                 'latest_method' => $latestMethod,
+                'latest_payout_method' => $latestPayoutMethod,
+                'latest_payout_source' => $latestPayoutSource,
             ];
 
             $rows[] = $row;
@@ -199,7 +215,7 @@ try {
                     $msg = 'Annual fee saved for '.$year.'.';
                 }
 
-                if (in_array($action, ['save_summary', 'add_payment', 'add_payout', 'add_rollover'], true)) {
+                if (in_array($action, ['save_summary', 'add_payment', 'add_payout', 'add_rollover', 'void_transaction', 'delete_transaction'], true)) {
                     $teamUid = (int)($_POST['userID'] ?? 0);
                     $teamName = trim((string)($_POST['teamName'] ?? ''));
                     $userName = trim((string)($_POST['userName'] ?? ''));
@@ -299,6 +315,28 @@ try {
 
                         $msg = app_money($amount).' rolled from '.$year.' to '.$toYear.' for '.$teamName.'.';
                     }
+
+                    if ($action === 'void_transaction' || $action === 'delete_transaction') {
+                        $txnId = (int)($_POST['transaction_id'] ?? 0);
+                        $txn = app_get_transaction($dbo, $txnId);
+
+                        if (empty($txn)) {
+                            throw new RuntimeException('Transaction not found.');
+                        }
+
+                        if ((int)$txn['userID'] !== $teamUid) {
+                            throw new RuntimeException('Transaction does not belong to this team.');
+                        }
+
+                        if ($action === 'void_transaction') {
+                            $reason = trim((string)($_POST['void_reason'] ?? ''));
+                            app_void_transaction($dbo, $txnId, $uid, $reason);
+                            $msg = 'Transaction voided for '.$teamName.'.';
+                        } else {
+                            app_delete_transaction($dbo, $txnId);
+                            $msg = 'Transaction permanently deleted for '.$teamName.'.';
+                        }
+                    }
                 }
             } catch (Throwable $e) {
                 $err = $e->getMessage();
@@ -320,6 +358,24 @@ try {
         }
         return strnatcasecmp((string)$a['team']['teamName'], (string)$b['team']['teamName']);
     });
+
+    $yearIndex = array_search($year, $years, true);
+    $newerYear = null;
+    $olderYear = null;
+
+    if ($yearIndex !== false) {
+        if ($yearIndex > 0) {
+            $newerYear = (string)$years[$yearIndex - 1];
+        }
+        if ($yearIndex < count($years) - 1) {
+            $olderYear = (string)$years[$yearIndex + 1];
+        }
+    }
+
+    $liveYear = (string)($raceYear ?? $year);
+    if (!preg_match('/^\d{4}$/', $liveYear)) {
+        $liveYear = $year;
+    }
 
 ?>
 <!doctype html>
@@ -358,10 +414,34 @@ textarea{resize:vertical}
 .history th,.history td{border-bottom:1px solid #33414f;padding:6px 8px;text-align:left}
 
 .tablewrap{overflow-x:auto}
-.finance-table{width:100%;min-width:1350px;border-collapse:collapse}
+.finance-table{width:100%;min-width:1280px;border-collapse:collapse;table-layout:auto}
 .finance-table th{background:#18212a;color:#ffd7a0;font-size:12px;white-space:nowrap}
-.finance-table th,.finance-table td{padding:7px 8px;border-bottom:1px solid #34414e;text-align:left}
+.finance-table th,.finance-table td{padding:6px 7px;border-bottom:1px solid #34414e;text-align:left}
 .finance-table td.num,.finance-table th.num{text-align:right;white-space:nowrap}
+.finance-table .team-col{width:150px;max-width:180px}
+.finance-table .owner-col{width:125px;max-width:150px}
+.finance-table .status-col{width:70px}
+.finance-table .money-col{width:82px}
+.finance-table .method-col{width:82px}
+.finance-table .source-col{width:88px}
+.finance-table .group-head{text-align:center;background:#121a22;color:#9ecaff;border-left:1px solid #3c4a58;border-right:1px solid #3c4a58}
+.finance-table .group-in{color:#79e6a5}
+.finance-table .group-earned{color:#ffd08a}
+.finance-table .group-out{color:#a7cfff}
+.finance-table .group-balance{color:#f0c2ff}
+.year-nav{display:flex;align-items:center;gap:5px}
+.year-nav .navbtn{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 8px}
+.year-nav .disabled{opacity:.28;pointer-events:none}
+.txn-action{display:flex;gap:4px;justify-content:flex-end;white-space:nowrap}
+.mini-btn{border-radius:5px;padding:3px 6px;font:bold 11px Tahoma;cursor:pointer}
+.void-btn{background:#4b3417;color:#ffd08a;border:1px solid #8a6328}
+.delete-btn{background:#4a1f25;color:#ffadb5;border:1px solid #8e3b47}
+.txn-voided{opacity:.55;text-decoration:line-through}
+.void-reason{font-size:10px;color:#d0a56b;text-decoration:none!important;display:block;margin-top:2px}
+.year-end-table{width:100%;border-collapse:collapse}
+.year-end-table th,.year-end-table td{padding:6px 8px;border-bottom:1px solid #33414f;text-align:left}
+.year-end-table td.num,.year-end-table th.num{text-align:right;white-space:nowrap}
+.disposition{font-weight:bold}
 .finance-row{cursor:pointer}
 .finance-row:hover{background:#202c37}
 .finance-row.open{background:#1e2b36}
@@ -419,15 +499,23 @@ textarea{resize:vertical}
         <div class="sub">Annual fees, payments, adjustments, payoff tracking, rollover credit, and calculated prize winnings.</div>
     </div>
     <div class="toolbar">
-        <form method="get">
-            <select name="year" onchange="this.form.submit()">
-                <?php foreach ($years as $y): ?>
-                <option value="<?php echo app_h($y); ?>" <?php echo $y === $year ? 'selected' : ''; ?>>
-                    <?php echo app_h($y); ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-        </form>
+        <div class="year-nav">
+            <a class="btn blue navbtn <?php echo $olderYear === null ? 'disabled' : ''; ?>" href="<?php echo $olderYear !== null ? '/admin_paid_payouts.php?year='.app_h($olderYear) : '#'; ?>" title="Previous year">&#9664;</a>
+
+            <form method="get">
+                <select name="year" onchange="this.form.submit()">
+                    <?php foreach ($years as $y): ?>
+                    <option value="<?php echo app_h($y); ?>" <?php echo $y === $year ? 'selected' : ''; ?>>
+                        <?php echo app_h($y); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
+
+            <a class="btn blue navbtn <?php echo $newerYear === null ? 'disabled' : ''; ?>" href="<?php echo $newerYear !== null ? '/admin_paid_payouts.php?year='.app_h($newerYear) : '#'; ?>" title="Next year">&#9654;</a>
+            <a class="btn save navbtn" href="/admin_paid_payouts.php?year=<?php echo app_h($liveYear); ?>">Live</a>
+        </div>
+
         <a class="btn blue" target="_blank" href="/race_results/payouts.php?year=<?php echo app_h($year); ?>&preview=1">Open Payouts</a>
     </div>
 </div>
@@ -503,18 +591,25 @@ textarea{resize:vertical}
         <table class="finance-table">
             <thead>
             <tr>
-                <th>Team</th>
-                <th>Owner</th>
-                <th>Status</th>
-                <th class="num">Fee</th>
-                <th class="num">Paid In</th>
-                <th class="num">Fee Due / Credit</th>
-                <th>How</th>
-                <th class="num">Prize</th>
-                <th class="num">Adjustment</th>
-                <th class="num">Paid Out</th>
-                <th class="num">Rollover</th>
-                <th class="num">I Owe</th>
+                <th class="team-col" rowspan="2">Team</th>
+                <th class="owner-col" rowspan="2">Owner</th>
+                <th class="status-col" rowspan="2">Status</th>
+                <th class="group-head group-in" colspan="3">IN</th>
+                <th class="group-head group-earned" colspan="2">EARNED</th>
+                <th class="group-head group-out" colspan="4">OUT</th>
+                <th class="group-head group-balance" colspan="1">BALANCE</th>
+            </tr>
+            <tr>
+                <th class="num money-col">Paid</th>
+                <th class="method-col">How</th>
+                <th class="num money-col">Fee +/-</th>
+                <th class="num money-col">Prize</th>
+                <th class="num money-col">Adj.</th>
+                <th class="num money-col">Paid</th>
+                <th class="method-col">How</th>
+                <th class="source-col">From</th>
+                <th class="num money-col">Rollover</th>
+                <th class="num money-col">I Owe</th>
             </tr>
             </thead>
             <tbody>
@@ -535,26 +630,27 @@ textarea{resize:vertical}
                     : ($calc['status'] === 'Partial' ? 'status-partial' : 'status-unpaid');
             ?>
             <tr class="finance-row" data-team="<?php echo $teamUid; ?>" tabindex="0">
-                <td class="teamlink"><?php echo app_h($team['teamName']); ?></td>
-                <td><?php echo app_h($team['userName']); ?></td>
-                <td class="<?php echo $statusClass; ?>"><?php echo app_h($calc['status']); ?></td>
-                <td class="num"><?php echo app_money($currentFee); ?></td>
-                <td class="num"><?php echo app_money($row['cash_paid']); ?></td>
-                <td class="num <?php echo $calc['fee_credit'] > 0 ? 'money-positive' : ($calc['fee_due'] > 0 ? 'money-negative' : 'money-neutral'); ?>">
+                <td class="teamlink team-col"><?php echo app_h($team['teamName']); ?></td>
+                <td class="owner-col"><?php echo app_h($team['userName']); ?></td>
+                <td class="status-col <?php echo $statusClass; ?>"><?php echo app_h($calc['status']); ?></td>
+                <td class="num money-col"><?php echo app_money($row['cash_paid']); ?></td>
+                <td class="method-col"><?php echo app_h($row['latest_method']); ?></td>
+                <td class="num money-col <?php echo $calc['fee_credit'] > 0 ? 'money-positive' : ($calc['fee_due'] > 0 ? 'money-negative' : 'money-neutral'); ?>">
                     <?php echo app_h($feeText); ?>
                 </td>
-                <td><?php echo app_h($row['latest_method']); ?></td>
-                <td class="num"><?php echo app_money($row['prize']); ?></td>
-                <td class="num"><?php echo app_money($finance['manual_adjustment']); ?></td>
-                <td class="num"><?php echo app_money($totals['payout']); ?></td>
-                <td class="num <?php echo (float)$totals['rollover_out'] > 0 ? 'money-positive' : 'money-neutral'; ?>"><?php echo app_money($totals['rollover_out']); ?></td>
-                <td class="num <?php echo $calc['remaining'] > 0 ? 'money-positive' : ($calc['remaining'] < 0 ? 'money-negative' : 'money-neutral'); ?>">
+                <td class="num money-col"><?php echo app_money($row['prize']); ?></td>
+                <td class="num money-col"><?php echo app_money($finance['manual_adjustment']); ?></td>
+                <td class="num money-col"><?php echo app_money($totals['payout']); ?></td>
+                <td class="method-col"><?php echo app_h($row['latest_payout_method']); ?></td>
+                <td class="source-col"><?php echo app_h($row['latest_payout_source']); ?></td>
+                <td class="num money-col <?php echo (float)$totals['rollover_out'] > 0 ? 'money-positive' : 'money-neutral'; ?>"><?php echo app_money($totals['rollover_out']); ?></td>
+                <td class="num money-col <?php echo $calc['remaining'] > 0 ? 'money-positive' : ($calc['remaining'] < 0 ? 'money-negative' : 'money-neutral'); ?>">
                     <?php echo app_money($calc['remaining']); ?>
                 </td>
             </tr>
 
             <tr class="detail-row" data-detail="<?php echo $teamUid; ?>">
-                <td colspan="12" class="detail-cell">
+                <td colspan="13" class="detail-cell">
                     <div class="team-editor" data-editor="<?php echo $teamUid; ?>">
                         <div class="editor-title">
                             <div>
@@ -569,13 +665,14 @@ textarea{resize:vertical}
                             <div class="editor-box">
                                 <h3>Payments Received</h3>
                                 <table class="txn-list">
-                                    <tr><th>Date / Time</th><th class="num">Amount</th><th>Method</th><th>Note</th></tr>
+                                    <tr><th>Date / Time</th><th class="num">Amount</th><th>Method</th><th>Note</th><th></th></tr>
                                     <?php if ((float)$legacy['amount_paid'] > 0): ?>
                                     <tr class="legacy">
                                         <td><?php echo app_h($legacy['paid_comment']); ?></td>
                                         <td class="num"><?php echo app_money($legacy['amount_paid']); ?></td>
                                         <td><?php echo app_h($legacy['paid_method']); ?></td>
                                         <td>Legacy / opening payment</td>
+                                        <td></td>
                                     </tr>
                                     <?php endif; ?>
 
@@ -587,16 +684,46 @@ textarea{resize:vertical}
                                         }
                                         $paymentCount++;
                                     ?>
-                                    <tr>
-                                        <td><?php echo app_h(app_format_datetime($t['occurred_at'])); ?></td>
+                                    <tr class="<?php echo !empty($t['voided_at']) ? 'txn-voided' : ''; ?>">
+                                        <td>
+                                            <?php echo app_h(app_format_datetime($t['occurred_at'])); ?>
+                                            <?php if (!empty($t['voided_at'])): ?><span class="void-reason">VOID: <?php echo app_h($t['void_reason']); ?></span><?php endif; ?>
+                                        </td>
                                         <td class="num"><?php echo app_money($t['amount']); ?></td>
                                         <td><?php echo app_h($t['method']); ?></td>
                                         <td><?php echo app_h($t['note']); ?></td>
+                                        <td>
+                                            <?php if (empty($t['voided_at'])): ?>
+                                            <div class="txn-action">
+                                                <form method="post" class="txn-action-form">
+                                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                                    <input type="hidden" name="action" value="void_transaction">
+                                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+                                                    <input type="hidden" name="transaction_id" value="<?php echo (int)$t['id']; ?>">
+                                                    <input type="hidden" name="void_reason" value="">
+                                                    <button type="submit" class="mini-btn void-btn" data-label="<?php echo app_h(app_money($t['amount']).' payment'); ?>">Void</button>
+                                                </form>
+                                                <form method="post" class="txn-action-form">
+                                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                                    <input type="hidden" name="action" value="delete_transaction">
+                                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+                                                    <input type="hidden" name="transaction_id" value="<?php echo (int)$t['id']; ?>">
+                                                    <button type="submit" class="mini-btn delete-btn" data-label="<?php echo app_h(app_money($t['amount']).' payment'); ?>">Delete</button>
+                                                </form>
+                                            </div>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                     <?php endforeach; ?>
 
                                     <?php if ($paymentCount === 0 && (float)$legacy['amount_paid'] <= 0): ?>
-                                    <tr><td colspan="4" class="muted">No payments recorded.</td></tr>
+                                    <tr><td colspan="5" class="muted">No payments recorded.</td></tr>
                                     <?php endif; ?>
                                 </table>
 
@@ -623,7 +750,7 @@ textarea{resize:vertical}
                                 <h3>Payout / Rollover</h3>
 
                                 <table class="txn-list">
-                                    <tr><th>Type</th><th>Date / Time</th><th class="num">Amount</th><th>How / Note</th></tr>
+                                    <tr><th>Type</th><th>Date / Time</th><th class="num">Amount</th><th>Method</th><th>Paid From</th><th>Note</th><th></th></tr>
                                     <?php
                                     $outCount = 0;
                                     foreach ($row['transactions'] as $t):
@@ -633,16 +760,48 @@ textarea{resize:vertical}
                                         }
                                         $outCount++;
                                     ?>
-                                    <tr class="<?php echo strpos($type, 'rollover') === 0 ? 'rollover' : ''; ?>">
-                                        <td><?php echo app_h(ucwords(str_replace('_', ' ', $type))); ?></td>
+                                    <tr class="<?php echo (strpos($type, 'rollover') === 0 ? 'rollover ' : '').(!empty($t['voided_at']) ? 'txn-voided' : ''); ?>">
+                                        <td>
+                                            <?php echo app_h(ucwords(str_replace('_', ' ', $type))); ?>
+                                            <?php if (!empty($t['voided_at'])): ?><span class="void-reason">VOID: <?php echo app_h($t['void_reason']); ?></span><?php endif; ?>
+                                        </td>
                                         <td><?php echo app_h(app_format_datetime($t['occurred_at'])); ?></td>
                                         <td class="num"><?php echo app_money($t['amount']); ?></td>
-                                        <td><?php echo app_h(trim((string)$t['method'].' '.(string)$t['source_account'].' '.(string)$t['note'])); ?></td>
+                                        <td><?php echo app_h($t['method']); ?></td>
+                                        <td><?php echo app_h($t['source_account']); ?></td>
+                                        <td><?php echo app_h($t['note']); ?></td>
+                                        <td>
+                                            <?php if (empty($t['voided_at'])): ?>
+                                            <div class="txn-action">
+                                                <form method="post" class="txn-action-form">
+                                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                                    <input type="hidden" name="action" value="void_transaction">
+                                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+                                                    <input type="hidden" name="transaction_id" value="<?php echo (int)$t['id']; ?>">
+                                                    <input type="hidden" name="void_reason" value="">
+                                                    <button type="submit" class="mini-btn void-btn" data-label="<?php echo app_h(app_money($t['amount']).' '.str_replace('_', ' ', $type)); ?>">Void</button>
+                                                </form>
+                                                <form method="post" class="txn-action-form">
+                                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                                    <input type="hidden" name="action" value="delete_transaction">
+                                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+                                                    <input type="hidden" name="transaction_id" value="<?php echo (int)$t['id']; ?>">
+                                                    <button type="submit" class="mini-btn delete-btn" data-label="<?php echo app_h(app_money($t['amount']).' '.str_replace('_', ' ', $type)); ?>">Delete</button>
+                                                </form>
+                                            </div>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                     <?php endforeach; ?>
 
                                     <?php if ($outCount === 0): ?>
-                                    <tr><td colspan="4" class="muted">No payout or rollover transactions recorded.</td></tr>
+                                    <tr><td colspan="7" class="muted">No payout or rollover transactions recorded.</td></tr>
                                     <?php endif; ?>
                                 </table>
 
@@ -721,32 +880,54 @@ textarea{resize:vertical}
 </div>
 
 <div class="card">
-    <h2>How Much Do I Owe You?</h2>
-    <table class="owed-table">
-        <tr><th>Owner</th><th>Team</th><th class="num">Amount</th><th>Payment Link</th></tr>
-        <?php
-        $shown = 0;
-        foreach ($owedRows as $row):
-            if ((float)$row['calc']['remaining'] <= 0) {
-                continue;
+    <h2>Year-End Status</h2>
+    <div class="muted" style="margin-bottom:8px">Simplified final financial status for every team in the selected season.</div>
+
+    <table class="year-end-table">
+        <tr>
+            <th>Team</th>
+            <th>Owner</th>
+            <th>Status</th>
+            <th class="num">Final Balance</th>
+            <th>Disposition</th>
+        </tr>
+
+        <?php foreach ($owedRows as $row):
+            $balance = (float)$row['calc']['remaining'];
+            $rollover = (float)$row['totals']['rollover_out'];
+            $paidOut = (float)$row['totals']['payout'];
+
+            if ($balance > 0.004) {
+                $finalStatus = 'Owed';
+                $balanceClass = 'money-positive';
+                $disposition = 'Pay';
+            } elseif ($balance < -0.004) {
+                $finalStatus = 'Owes League';
+                $balanceClass = 'money-negative';
+                $disposition = 'Due';
+            } else {
+                $finalStatus = 'Settled';
+                $balanceClass = 'money-neutral';
+
+                if ($rollover > 0.004 && $paidOut > 0.004) {
+                    $disposition = 'Paid + Rollover';
+                } elseif ($rollover > 0.004) {
+                    $disposition = 'Rollover '.app_money($rollover);
+                } elseif ($paidOut > 0.004) {
+                    $disposition = 'Paid '.app_money($paidOut);
+                } else {
+                    $disposition = 'No Balance';
+                }
             }
-            $shown++;
         ?>
         <tr>
-            <td><?php echo app_h($row['team']['userName']); ?></td>
             <td><?php echo app_h($row['team']['teamName']); ?></td>
-            <td class="num money-positive"><?php echo app_money($row['calc']['remaining']); ?></td>
-            <td>
-                <?php if (trim((string)$row['finance']['recipient_url']) !== ''): ?>
-                    <a style="color:#9ecaff" target="_blank" rel="noopener" href="<?php echo app_h($row['finance']['recipient_url']); ?>">Open payment link</a>
-                <?php endif; ?>
-            </td>
+            <td><?php echo app_h($row['team']['userName']); ?></td>
+            <td class="disposition <?php echo $balanceClass; ?>"><?php echo app_h($finalStatus); ?></td>
+            <td class="num <?php echo $balanceClass; ?>"><?php echo app_money($balance); ?></td>
+            <td><?php echo app_h($disposition); ?></td>
         </tr>
         <?php endforeach; ?>
-
-        <?php if ($shown === 0): ?>
-        <tr><td colspan="4" class="muted">Nobody currently has a positive remaining balance.</td></tr>
-        <?php endif; ?>
     </table>
 </div>
 
@@ -860,6 +1041,46 @@ textarea{resize:vertical}
                 editor.classList.remove('dirty');
             }
             saveOpenIds();
+        });
+    });
+
+    document.querySelectorAll('.void-btn').forEach(function (button) {
+        button.addEventListener('click', function (e) {
+            var label = button.getAttribute('data-label') || 'transaction';
+            var reason = window.prompt('Void ' + label + '?\n\nEnter the reason for voiding it:');
+
+            if (reason === null) {
+                e.preventDefault();
+                return;
+            }
+
+            reason = reason.trim();
+
+            if (!reason) {
+                window.alert('A void reason is required.');
+                e.preventDefault();
+                return;
+            }
+
+            var form = button.closest('form');
+            var reasonInput = form ? form.querySelector('input[name="void_reason"]') : null;
+
+            if (reasonInput) {
+                reasonInput.value = reason;
+            }
+        });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(function (button) {
+        button.addEventListener('click', function (e) {
+            var label = button.getAttribute('data-label') || 'transaction';
+
+            if (!window.confirm(
+                'Permanently delete ' + label + '?\n\n' +
+                'This cannot be undone. If this is a rollover, both the OUT and IN transactions will be deleted.'
+            )) {
+                e.preventDefault();
+            }
         });
     });
 

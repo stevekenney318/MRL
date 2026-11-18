@@ -1,6 +1,6 @@
 {
     "schema_version": 4,
-    "updated_at": "2026-11-03 14:46:12",
+    "updated_at": "2026-11-17 14:11:17",
     "custom_html_block": {
         "enabled": false,
         "position": "below",
@@ -14,6 +14,12 @@
     "admin_league_panel": {
         "title": "League & Team",
         "items": [
+            {
+                "label": "\ud83d\udcb2\ud83d\udcb0\ud83d\udcb3 **New** Admin Financials",
+                "url": "/admin_paid_payouts.php",
+                "enabled": true,
+                "new_tab": true
+            },
             {
                 "label": "\ud83d\udcb0\ud83d\udcb2 Payouts",
                 "url": "/race_results/payouts.php",

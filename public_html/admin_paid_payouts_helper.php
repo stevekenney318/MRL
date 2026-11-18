@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts_helper.php
  *
- * VERSION: v004
- * LAST MODIFIED: 11/16/2026 4:42 pm ET
+ * VERSION: v005
+ * LAST MODIFIED: 11/17/2026 2:19 am ET
  *
  * PURPOSE:
  * - Helper/data layer for admin_paid_payouts.php.
@@ -55,7 +55,7 @@ function app_years(PDO $dbo, array $payoutYears, string $raceYear): array
     } catch (Throwable $e) {
     }
 
-    foreach (['mrl_financial_fee_history', 'mrl_financial_team_year', 'mrl_financial_transactions'] as $table) {
+    foreach (['mrl_financial_fee_history', 'mrl_financial_team_year'] as $table) {
         try {
             $q = $dbo->query("SELECT DISTINCT raceYear FROM {$table} WHERE raceYear > 0");
             foreach ($q as $r) {
@@ -66,6 +66,21 @@ function app_years(PDO $dbo, array $payoutYears, string $raceYear): array
             }
         } catch (Throwable $e) {
         }
+    }
+
+    try {
+        $q = $dbo->query(
+            "SELECT DISTINCT raceYear
+             FROM mrl_financial_transactions
+             WHERE raceYear > 0 AND voided_at IS NULL"
+        );
+        foreach ($q as $r) {
+            $y = (string)($r['raceYear'] ?? '');
+            if (preg_match('/^\d{4}$/', $y)) {
+                $years[$y] = true;
+            }
+        }
+    } catch (Throwable $e) {
     }
 
     if (preg_match('/^\d{4}$/', $raceYear)) {
@@ -444,7 +459,7 @@ function app_transactions(PDO $dbo, string $year, int $uid): array
         $s = $dbo->prepare(
             "SELECT *
              FROM mrl_financial_transactions
-             WHERE raceYear=:y AND userID=:u AND voided_at IS NULL
+             WHERE raceYear=:y AND userID=:u
              ORDER BY COALESCE(occurred_at, created_at) DESC, id DESC"
         );
         $s->execute([
@@ -468,6 +483,10 @@ function app_transaction_totals(array $transactions): array
     ];
 
     foreach ($transactions as $t) {
+        if (!empty($t['voided_at'])) {
+            continue;
+        }
+
         $type = (string)($t['transaction_type'] ?? '');
         if (isset($totals[$type])) {
             $totals[$type] = round(
@@ -483,6 +502,10 @@ function app_transaction_totals(array $transactions): array
 function app_latest_method(array $transactions, string $type, string $fallback = ''): string
 {
     foreach ($transactions as $t) {
+        if (!empty($t['voided_at'])) {
+            continue;
+        }
+
         if ((string)($t['transaction_type'] ?? '') === $type) {
             $method = trim((string)($t['method'] ?? ''));
             if ($method !== '') {
@@ -492,6 +515,108 @@ function app_latest_method(array $transactions, string $type, string $fallback =
     }
 
     return $fallback;
+}
+
+
+function app_latest_transaction_value(
+    array $transactions,
+    string $type,
+    string $field,
+    string $fallback = ''
+): string {
+    foreach ($transactions as $t) {
+        if (!empty($t['voided_at'])) {
+            continue;
+        }
+
+        if ((string)($t['transaction_type'] ?? '') !== $type) {
+            continue;
+        }
+
+        $value = trim((string)($t[$field] ?? ''));
+        if ($value !== '') {
+            return $value;
+        }
+    }
+
+    return $fallback;
+}
+
+function app_get_transaction(PDO $dbo, int $id): array
+{
+    $s = $dbo->prepare(
+        "SELECT *
+         FROM mrl_financial_transactions
+         WHERE id=:id
+         LIMIT 1"
+    );
+    $s->execute([':id' => $id]);
+    $r = $s->fetch(PDO::FETCH_ASSOC);
+
+    return is_array($r) ? $r : [];
+}
+
+function app_transaction_pair_ids(PDO $dbo, int $id): array
+{
+    $t = app_get_transaction($dbo, $id);
+    if (empty($t)) {
+        return [];
+    }
+
+    $ids = [$id];
+    $linked = (int)($t['linked_transaction_id'] ?? 0);
+
+    if ($linked > 0 && $linked !== $id) {
+        $ids[] = $linked;
+    }
+
+    return array_values(array_unique($ids));
+}
+
+function app_void_transaction(PDO $dbo, int $id, int $adminUid, string $reason): int
+{
+    $reason = trim($reason);
+    if ($reason === '') {
+        throw new RuntimeException('Void reason is required.');
+    }
+
+    $ids = app_transaction_pair_ids($dbo, $id);
+    if (empty($ids)) {
+        throw new RuntimeException('Transaction not found.');
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $sql =
+        "UPDATE mrl_financial_transactions
+         SET voided_at=NOW(), voided_by=?, void_reason=?
+         WHERE id IN ({$placeholders}) AND voided_at IS NULL";
+
+    $params = [$adminUid, $reason];
+    foreach ($ids as $txnId) {
+        $params[] = $txnId;
+    }
+
+    $s = $dbo->prepare($sql);
+    $s->execute($params);
+
+    return $s->rowCount();
+}
+
+function app_delete_transaction(PDO $dbo, int $id): int
+{
+    $ids = app_transaction_pair_ids($dbo, $id);
+    if (empty($ids)) {
+        throw new RuntimeException('Transaction not found.');
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $s = $dbo->prepare(
+        "DELETE FROM mrl_financial_transactions
+         WHERE id IN ({$placeholders})"
+    );
+    $s->execute($ids);
+
+    return $s->rowCount();
 }
 
 function app_prizes_by_team(array $model): array
