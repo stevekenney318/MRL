@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts.php
  *
- * VERSION: v008
- * LAST MODIFIED: 11/17/2026 9:10 pm ET
+ * VERSION: v009
+ * LAST MODIFIED: 11/18/2026 3:20 am ET
  *
  * PURPOSE:
  * - Compact admin financial dashboard with IN / EARNED / OUT / BALANCE groups.
@@ -15,6 +15,7 @@ declare(strict_types=1);
  * - Supports multiple payment transactions, payout transactions, and rollover credits.
  * - Preserves legacy Financial/user_teams payment data as an opening amount.
  * - Prize winnings remain calculated/read-only from race_results/payouts_helper.php.
+ * - POST actions use Redirect-after-POST so browser refresh cannot replay transactions.
  *
  * PHP: 7.3 compatible.
  */
@@ -65,6 +66,10 @@ try {
         $_SESSION['app_csrf'] = bin2hex(random_bytes(24));
     }
 
+    $flashMessage = (string)($_SESSION['app_flash_message'] ?? '');
+    $flashError = (string)($_SESSION['app_flash_error'] ?? '');
+    unset($_SESSION['app_flash_message'], $_SESSION['app_flash_error']);
+
     $payoutYears = mrlp_available_years($_SERVER['DOCUMENT_ROOT'].'/race_results');
     $years = array_map('strval', app_years($dbo, $payoutYears, (string)($raceYear ?? '')));
 
@@ -83,8 +88,8 @@ try {
         $year = $defaultYear;
     }
 
-    $msg = '';
-    $err = '';
+    $msg = $flashMessage;
+    $err = $flashError;
 
     $currentFeeRow = app_current_fee($dbo, $year);
     $currentFee = (float)($currentFeeRow['annual_fee'] ?? 0);
@@ -191,9 +196,26 @@ try {
         $rowByUid[(int)$r['team']['userID']] = $r;
     }
 
+    $postRedirect = function (string $redirectYear, string $message = '', string $error = ''): void {
+        if ($message !== '') {
+            $_SESSION['app_flash_message'] = $message;
+        }
+
+        if ($error !== '') {
+            $_SESSION['app_flash_error'] = $error;
+        }
+
+        header(
+            'Location: /admin_paid_payouts.php?year='.rawurlencode($redirectYear),
+            true,
+            303
+        );
+        exit;
+    };
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!hash_equals((string)$_SESSION['app_csrf'], (string)($_POST['csrf'] ?? ''))) {
-            $err = 'Security token mismatch.';
+            $postRedirect($year, '', 'Security token mismatch.');
         } else {
             $action = (string)($_POST['action'] ?? '');
 
@@ -403,13 +425,11 @@ try {
                     }
                 }
             } catch (Throwable $e) {
-                $err = $e->getMessage();
+                $postRedirect($year, '', $e->getMessage());
             }
-        }
 
-        $currentFeeRow = app_current_fee($dbo, $year);
-        $currentFee = (float)($currentFeeRow['annual_fee'] ?? 0);
-        list($rows, $summary) = $buildRows();
+            $postRedirect($year, $msg, '');
+        }
     }
 
     $feeHistory = app_fee_history($dbo, $year);

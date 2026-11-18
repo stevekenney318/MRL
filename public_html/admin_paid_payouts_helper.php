@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts_helper.php
  *
- * VERSION: v007
- * LAST MODIFIED: 11/17/2026 9:10 pm ET
+ * VERSION: v008
+ * LAST MODIFIED: 11/18/2026 3:20 am ET
  *
  * PURPOSE:
  * - Helper/data layer for admin_paid_payouts.php.
