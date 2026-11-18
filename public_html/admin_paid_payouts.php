@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts.php
  *
- * VERSION: v007
- * LAST MODIFIED: 11/17/2026 8:25 pm ET
+ * VERSION: v008
+ * LAST MODIFIED: 11/17/2026 9:10 pm ET
  *
  * PURPOSE:
  * - Compact admin financial dashboard with IN / EARNED / OUT / BALANCE groups.
@@ -252,14 +252,12 @@ try {
                     if ($action === 'add_payment' || $action === 'add_payout') {
                         $amount = app_money_value($_POST['txn_amount'] ?? 0);
                         $dateText = trim((string)($_POST['txn_datetime'] ?? ''));
-                        $occurredAt = app_parse_datetime($dateText);
+                        $dateInfo = app_parse_datetime_or_now($dateText);
+                        $occurredAt = $dateInfo['sql'];
+                        $dateText = $dateInfo['display'];
 
                         if ($amount <= 0) {
                             throw new RuntimeException('Transaction amount must be greater than $0.00.');
-                        }
-
-                        if ($occurredAt === null) {
-                            throw new RuntimeException('Enter a valid date/time, for example: Apr 13, 2026, 12:54 PM.');
                         }
 
                         app_add_transaction($dbo, [
@@ -283,7 +281,9 @@ try {
                         $amount = app_money_value($_POST['rollover_amount'] ?? 0);
                         $toYear = preg_replace('/[^0-9]/', '', (string)($_POST['rollover_year'] ?? ((int)$year + 1)));
                         $dateText = trim((string)($_POST['rollover_datetime'] ?? ''));
-                        $occurredAt = app_parse_datetime($dateText);
+                        $dateInfo = app_parse_datetime_or_now($dateText);
+                        $occurredAt = $dateInfo['sql'];
+                        $dateText = $dateInfo['display'];
                         $available = max(0.0, (float)$rowByUid[$teamUid]['calc']['remaining']);
 
                         if ($amount <= 0) {
@@ -296,10 +296,6 @@ try {
 
                         if (!preg_match('/^\d{4}$/', $toYear) || (int)$toYear <= (int)$year) {
                             throw new RuntimeException('Rollover year must be later than the current year.');
-                        }
-
-                        if ($occurredAt === null) {
-                            throw new RuntimeException('Enter a valid rollover date/time.');
                         }
 
                         app_add_rollover_pair(
@@ -851,7 +847,7 @@ textarea{resize:vertical}
                                     <div class="form-grid">
                                         <div class="field"><label>Amount</label><input name="txn_amount" placeholder="0.00"></div>
                                         <div class="field"><label>Method</label><input name="txn_method" placeholder="Venmo, PayPal, Cash..."></div>
-                                        <div class="field span2"><label>Date &amp; Time — paste email style or use picker</label><input name="txn_datetime" class="date-text" placeholder="Apr 13, 2026, 12:54 PM"></div>
+                                        <div class="field span2"><label>Date &amp; Time — blank = now; paste email style or use picker</label><input name="txn_datetime" class="date-text" placeholder="Apr 13, 2026, 12:54 PM"></div>
                                         <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
                                         <div class="field span2"><label>Note</label><input name="txn_note"></div>
                                         <div class="field" style="align-self:end"><button class="btn save" type="submit">Add Payment</button></div>
@@ -980,7 +976,7 @@ textarea{resize:vertical}
                                         <div class="field"><label>Payout Amount</label><input name="txn_amount" placeholder="0.00"></div>
                                         <div class="field"><label>Method</label><input name="txn_method" placeholder="Venmo, PayPal, Cash..."></div>
                                         <div class="field"><label>Paid From</label><input name="txn_source" placeholder="M&T, KeyBank, Pocket..."></div>
-                                        <div class="field"><label>Date &amp; Time</label><input name="txn_datetime" class="date-text" placeholder="Apr 13, 2026, 12:54 PM"></div>
+                                        <div class="field"><label>Date &amp; Time — blank = now</label><input name="txn_datetime" class="date-text" placeholder="Apr 13, 2026, 12:54 PM"></div>
                                         <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
                                         <div class="field span2"><label>Note</label><input name="txn_note"></div>
                                         <div class="field" style="align-self:end"><button class="btn save" type="submit">Record Payout</button></div>
@@ -998,7 +994,7 @@ textarea{resize:vertical}
                                     <div class="form-grid">
                                         <div class="field"><label>Rollover Amount</label><input name="rollover_amount" value="<?php echo $calc['remaining'] > 0 ? number_format((float)$calc['remaining'], 2, '.', '') : ''; ?>"></div>
                                         <div class="field"><label>To Year</label><input name="rollover_year" value="<?php echo (int)$year + 1; ?>"></div>
-                                        <div class="field span2"><label>Date &amp; Time</label><input name="rollover_datetime" class="date-text" placeholder="Nov 16, 2026, 4:23 PM"></div>
+                                        <div class="field span2"><label>Date &amp; Time — blank = now</label><input name="rollover_datetime" class="date-text" placeholder="Nov 16, 2026, 4:23 PM"></div>
                                         <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
                                         <div class="field span2"><label>Note</label><input name="rollover_note" placeholder="Keep winnings for next year's entry"></div>
                                         <div class="field" style="align-self:end"><button class="btn warnbtn" type="submit">Rollover Credit</button></div>

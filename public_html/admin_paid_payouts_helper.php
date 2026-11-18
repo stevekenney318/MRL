@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts_helper.php
  *
- * VERSION: v006
- * LAST MODIFIED: 11/17/2026 8:25 pm ET
+ * VERSION: v007
+ * LAST MODIFIED: 11/17/2026 9:10 pm ET
  *
  * PURPOSE:
  * - Helper/data layer for admin_paid_payouts.php.
@@ -573,6 +573,34 @@ function app_transaction_pair_ids(PDO $dbo, int $id): array
     return array_values(array_unique($ids));
 }
 
+
+
+function app_parse_datetime_or_now(string $text): array
+{
+    $text = trim($text);
+
+    if ($text === '') {
+        $now = new DateTime('now', new DateTimeZone('America/New_York'));
+
+        return [
+            'sql' => $now->format('Y-m-d H:i:s'),
+            'display' => $now->format('M j, Y, g:i A'),
+        ];
+    }
+
+    $parsed = app_parse_datetime($text);
+
+    if ($parsed === null) {
+        throw new RuntimeException(
+            'Enter a valid date/time, for example: Apr 13, 2026, 12:54 PM.'
+        );
+    }
+
+    return [
+        'sql' => $parsed,
+        'display' => $text,
+    ];
+}
 
 function app_update_transaction(PDO $dbo, int $id, array $d, int $adminUid): void
 {
