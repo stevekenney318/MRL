@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts_helper.php
  *
- * VERSION: v005
- * LAST MODIFIED: 11/17/2026 2:19 am ET
+ * VERSION: v006
+ * LAST MODIFIED: 11/17/2026 8:25 pm ET
  *
  * PURPOSE:
  * - Helper/data layer for admin_paid_payouts.php.
@@ -571,6 +571,130 @@ function app_transaction_pair_ids(PDO $dbo, int $id): array
     }
 
     return array_values(array_unique($ids));
+}
+
+
+function app_update_transaction(PDO $dbo, int $id, array $d, int $adminUid): void
+{
+    $txn = app_get_transaction($dbo, $id);
+
+    if (empty($txn)) {
+        throw new RuntimeException('Transaction not found.');
+    }
+
+    if (!empty($txn['voided_at'])) {
+        throw new RuntimeException('Voided transactions cannot be edited.');
+    }
+
+    $type = (string)($txn['transaction_type'] ?? '');
+
+    if ($type === 'rollover_out' || $type === 'rollover_in') {
+        $linkedId = (int)($txn['linked_transaction_id'] ?? 0);
+
+        if ($linkedId <= 0) {
+            throw new RuntimeException('Linked rollover transaction not found.');
+        }
+
+        $linked = app_get_transaction($dbo, $linkedId);
+
+        if (empty($linked)) {
+            throw new RuntimeException('Linked rollover transaction not found.');
+        }
+
+        $amount = (float)$d['amount'];
+        $occurredAt = (string)$d['occurred_at'];
+        $enteredDateText = (string)$d['entered_date_text'];
+        $note = (string)$d['note'];
+        $toYear = (int)$d['to_year'];
+
+        if ($type === 'rollover_out') {
+            $out = $txn;
+            $in = $linked;
+        } else {
+            $out = $linked;
+            $in = $txn;
+        }
+
+        $fromYear = (int)$out['raceYear'];
+
+        if ($toYear <= $fromYear) {
+            throw new RuntimeException('Rollover year must be later than the source year.');
+        }
+
+        $dbo->beginTransaction();
+
+        try {
+            $s = $dbo->prepare(
+                "UPDATE mrl_financial_transactions
+                 SET amount=:a,
+                     occurred_at=:od,
+                     entered_date_text=:dt,
+                     note=:no
+                 WHERE id=:id"
+            );
+
+            $s->execute([
+                ':a' => $amount,
+                ':od' => $occurredAt,
+                ':dt' => $enteredDateText,
+                ':no' => $note,
+                ':id' => (int)$out['id'],
+            ]);
+
+            $s = $dbo->prepare(
+                "UPDATE mrl_financial_transactions
+                 SET raceYear=:y,
+                     amount=:a,
+                     occurred_at=:od,
+                     entered_date_text=:dt,
+                     note=:no
+                 WHERE id=:id"
+            );
+
+            $s->execute([
+                ':y' => $toYear,
+                ':a' => $amount,
+                ':od' => $occurredAt,
+                ':dt' => $enteredDateText,
+                ':no' => 'Rolled over from '.$fromYear.($note !== '' ? ' — '.$note : ''),
+                ':id' => (int)$in['id'],
+            ]);
+
+            $dbo->commit();
+        } catch (Throwable $e) {
+            if ($dbo->inTransaction()) {
+                $dbo->rollBack();
+            }
+            throw $e;
+        }
+
+        return;
+    }
+
+    if (!in_array($type, ['payment', 'payout'], true)) {
+        throw new RuntimeException('This transaction type cannot be edited here.');
+    }
+
+    $s = $dbo->prepare(
+        "UPDATE mrl_financial_transactions
+         SET amount=:a,
+             method=:m,
+             source_account=:s,
+             occurred_at=:od,
+             entered_date_text=:dt,
+             note=:no
+         WHERE id=:id"
+    );
+
+    $s->execute([
+        ':a' => (float)$d['amount'],
+        ':m' => (string)$d['method'],
+        ':s' => (string)$d['source_account'],
+        ':od' => (string)$d['occurred_at'],
+        ':dt' => (string)$d['entered_date_text'],
+        ':no' => (string)$d['note'],
+        ':id' => $id,
+    ]);
 }
 
 function app_void_transaction(PDO $dbo, int $id, int $adminUid, string $reason): int

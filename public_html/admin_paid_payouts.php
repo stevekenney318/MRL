@@ -4,12 +4,14 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts.php
  *
- * VERSION: v006
- * LAST MODIFIED: 11/17/2026 2:19 am ET
+ * VERSION: v007
+ * LAST MODIFIED: 11/17/2026 8:25 pm ET
  *
  * PURPOSE:
  * - Compact admin financial dashboard with IN / EARNED / OUT / BALANCE groups.
  * - Whole team row is clickable; multiple team editors may remain open.
+ * - Transaction Edit/Void/Delete controls are available for transaction rows.
+ * - Expanded editors stay width-neutral and reflow vertically as needed.
  * - Supports multiple payment transactions, payout transactions, and rollover credits.
  * - Preserves legacy Financial/user_teams payment data as an opening amount.
  * - Prize winnings remain calculated/read-only from race_results/payouts_helper.php.
@@ -215,7 +217,7 @@ try {
                     $msg = 'Annual fee saved for '.$year.'.';
                 }
 
-                if (in_array($action, ['save_summary', 'add_payment', 'add_payout', 'add_rollover', 'void_transaction', 'delete_transaction'], true)) {
+                if (in_array($action, ['save_summary', 'add_payment', 'add_payout', 'add_rollover', 'edit_transaction', 'void_transaction', 'delete_transaction'], true)) {
                     $teamUid = (int)($_POST['userID'] ?? 0);
                     $teamName = trim((string)($_POST['teamName'] ?? ''));
                     $userName = trim((string)($_POST['userName'] ?? ''));
@@ -314,6 +316,72 @@ try {
                         );
 
                         $msg = app_money($amount).' rolled from '.$year.' to '.$toYear.' for '.$teamName.'.';
+                    }
+
+                    if ($action === 'edit_transaction') {
+                        $txnId = (int)($_POST['transaction_id'] ?? 0);
+                        $txn = app_get_transaction($dbo, $txnId);
+
+                        if (empty($txn)) {
+                            throw new RuntimeException('Transaction not found.');
+                        }
+
+                        if ((int)$txn['userID'] !== $teamUid) {
+                            throw new RuntimeException('Transaction does not belong to this team.');
+                        }
+
+                        $amount = app_money_value($_POST['edit_amount'] ?? 0);
+                        $dateText = trim((string)($_POST['edit_datetime'] ?? ''));
+                        $occurredAt = app_parse_datetime($dateText);
+
+                        if ($amount <= 0) {
+                            throw new RuntimeException('Transaction amount must be greater than $0.00.');
+                        }
+
+                        if ($occurredAt === null) {
+                            throw new RuntimeException('Enter a valid date/time.');
+                        }
+
+                        $type = (string)($txn['transaction_type'] ?? '');
+
+                        if ($type === 'rollover_out' || $type === 'rollover_in') {
+                            $toYear = preg_replace('/[^0-9]/', '', (string)($_POST['edit_to_year'] ?? ''));
+                            $currentAmount = (float)($txn['amount'] ?? 0);
+                            $available = max(
+                                0.0,
+                                (float)$rowByUid[$teamUid]['calc']['remaining'] + $currentAmount
+                            );
+
+                            if ($amount - $available > 0.005) {
+                                throw new RuntimeException('Rollover cannot exceed the amount available to this member.');
+                            }
+
+                            if (!preg_match('/^\d{4}$/', $toYear)) {
+                                throw new RuntimeException('Enter a valid rollover year.');
+                            }
+
+                            app_update_transaction($dbo, $txnId, [
+                                'amount' => $amount,
+                                'method' => 'Rollover',
+                                'source_account' => '',
+                                'occurred_at' => $occurredAt,
+                                'entered_date_text' => $dateText,
+                                'note' => trim((string)($_POST['edit_note'] ?? '')),
+                                'to_year' => (int)$toYear,
+                            ], $uid);
+                        } else {
+                            app_update_transaction($dbo, $txnId, [
+                                'amount' => $amount,
+                                'method' => trim((string)($_POST['edit_method'] ?? '')),
+                                'source_account' => trim((string)($_POST['edit_source'] ?? '')),
+                                'occurred_at' => $occurredAt,
+                                'entered_date_text' => $dateText,
+                                'note' => trim((string)($_POST['edit_note'] ?? '')),
+                                'to_year' => 0,
+                            ], $uid);
+                        }
+
+                        $msg = 'Transaction updated for '.$teamName.'.';
                     }
 
                     if ($action === 'void_transaction' || $action === 'delete_transaction') {
@@ -432,7 +500,17 @@ textarea{resize:vertical}
 .year-nav{display:flex;align-items:center;gap:5px}
 .year-nav .navbtn{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 8px}
 .year-nav .disabled{opacity:.28;pointer-events:none}
-.txn-action{display:flex;gap:4px;justify-content:flex-end;white-space:nowrap}
+.txn-action{display:flex;gap:4px;justify-content:flex-end;white-space:nowrap;flex-wrap:wrap}
+.edit-btn{background:#173653;color:#a7cfff;border:1px solid #3977b0}
+.txn-edit-row{display:none;background:#10171e}
+.txn-edit-row.open{display:table-row}
+.txn-edit-wrap{padding:7px 3px}
+.txn-edit-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;align-items:end}
+.txn-edit-actions{display:flex;gap:6px;align-items:end;flex-wrap:wrap}
+.cancel-btn{background:#2b3138;color:#d7dde3;border:1px solid #59636d}
+.reading-space-control{display:flex;align-items:center;gap:8px;justify-content:center;margin:10px 0 0}
+.reading-space{height:0;transition:height .15s ease}
+.reading-space.open{height:38vh;min-height:220px}
 .mini-btn{border-radius:5px;padding:3px 6px;font:bold 11px Tahoma;cursor:pointer}
 .void-btn{background:#4b3417;color:#ffd08a;border:1px solid #8a6328}
 .delete-btn{background:#4a1f25;color:#ffadb5;border:1px solid #8e3b47}
@@ -455,19 +533,20 @@ textarea{resize:vertical}
 
 .detail-row{display:none}
 .detail-row.open{display:table-row}
-.detail-cell{padding:0!important;background:#10171e}
-.team-editor{padding:10px 12px 12px;border-left:4px solid #355b78}
+.detail-cell{padding:0!important;background:#10171e;min-width:0;max-width:0;overflow:hidden}
+.team-editor{padding:10px 12px 12px;border-left:4px solid #355b78;min-width:0;max-width:100%;width:100%;box-sizing:border-box;overflow:hidden}
 .team-editor.dirty{border-left-color:#e3a640;background:#171b1f}
 .editor-title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}
 .editor-title strong{font-size:16px;color:#fff2dc}
 .dirty-note{display:none;color:#ffd17e;font-weight:bold}
 .team-editor.dirty .dirty-note{display:inline}
-.editor-grid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:10px}
-.editor-box{background:#151d25;border:1px solid #33414f;border-radius:8px;padding:9px}
+.editor-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.editor-box{background:#151d25;border:1px solid #33414f;border-radius:8px;padding:9px;min-width:0;overflow:hidden}
+.editor-box:nth-child(3){grid-column:1 / -1}
 .editor-box h3{margin:0 0 7px;color:#bdd6ed;font-size:14px}
-.form-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:6px}
+.form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
 .field label{display:block;color:#aeb9c5;font-size:11px;margin-bottom:2px}
-.field input,.field textarea,.field select{width:100%}
+.field{min-width:0}.field input,.field textarea,.field select{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
 .field textarea{min-height:48px}
 .span2{grid-column:span 2}
 .span3{grid-column:span 3}
@@ -483,10 +562,14 @@ textarea{resize:vertical}
 .owed-table th,.owed-table td{padding:6px 8px;border-bottom:1px solid #33414f;text-align:left}
 .owed-table td.num,.owed-table th.num{text-align:right}
 
+@media(max-width:1250px){
+  .editor-grid{grid-template-columns:1fr}
+  .editor-box:nth-child(3){grid-column:auto}
+}
 @media(max-width:1100px){
   .summary{grid-template-columns:repeat(4,1fr)}
   .feeform{grid-template-columns:1fr 1fr}
-  .editor-grid{grid-template-columns:1fr}
+  .txn-edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 </style>
 </head>
@@ -695,6 +778,7 @@ textarea{resize:vertical}
                                         <td>
                                             <?php if (empty($t['voided_at'])): ?>
                                             <div class="txn-action">
+                                                <button type="button" class="mini-btn edit-btn" data-edit-target="txn-edit-<?php echo (int)$t['id']; ?>">Edit</button>
                                                 <form method="post" class="txn-action-form">
                                                     <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
                                                     <input type="hidden" name="action" value="void_transaction">
@@ -720,6 +804,35 @@ textarea{resize:vertical}
                                             <?php endif; ?>
                                         </td>
                                     </tr>
+                                    <?php if (empty($t['voided_at'])): ?>
+                                    <tr class="txn-edit-row" id="txn-edit-<?php echo (int)$t['id']; ?>">
+                                        <td colspan="5">
+                                            <div class="txn-edit-wrap">
+                                                <form method="post" class="edit-form">
+                                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                                    <input type="hidden" name="action" value="edit_transaction">
+                                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+                                                    <input type="hidden" name="transaction_id" value="<?php echo (int)$t['id']; ?>">
+
+                                                    <div class="txn-edit-grid">
+                                                        <div class="field"><label>Amount</label><input name="edit_amount" value="<?php echo number_format((float)$t['amount'], 2, '.', ''); ?>"></div>
+                                                        <div class="field"><label>Method</label><input name="edit_method" value="<?php echo app_h($t['method']); ?>"></div>
+                                                        <div class="field span2"><label>Date &amp; Time</label><input name="edit_datetime" class="date-text" value="<?php echo app_h(app_format_datetime($t['occurred_at'])); ?>"></div>
+                                                        <div class="field span2"><label>Note</label><input name="edit_note" value="<?php echo app_h($t['note']); ?>"></div>
+                                                        <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
+                                                        <div class="txn-edit-actions">
+                                                            <button class="btn save" type="submit">Save Edit</button>
+                                                            <button class="mini-btn cancel-btn" type="button" data-edit-cancel="txn-edit-<?php echo (int)$t['id']; ?>">Cancel</button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endif; ?>
                                     <?php endforeach; ?>
 
                                     <?php if ($paymentCount === 0 && (float)$legacy['amount_paid'] <= 0): ?>
@@ -773,6 +886,7 @@ textarea{resize:vertical}
                                         <td>
                                             <?php if (empty($t['voided_at'])): ?>
                                             <div class="txn-action">
+                                                <button type="button" class="mini-btn edit-btn" data-edit-target="txn-edit-<?php echo (int)$t['id']; ?>">Edit</button>
                                                 <form method="post" class="txn-action-form">
                                                     <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
                                                     <input type="hidden" name="action" value="void_transaction">
@@ -798,6 +912,55 @@ textarea{resize:vertical}
                                             <?php endif; ?>
                                         </td>
                                     </tr>
+                                    <?php if (empty($t['voided_at'])):
+                                        $isRollover = strpos($type, 'rollover') === 0;
+                                        $editToYear = '';
+                                        if ($isRollover) {
+                                            if ($type === 'rollover_out') {
+                                                $linkedTxn = app_get_transaction($dbo, (int)($t['linked_transaction_id'] ?? 0));
+                                                $editToYear = (string)($linkedTxn['raceYear'] ?? ((int)$year + 1));
+                                            } else {
+                                                $editToYear = (string)$t['raceYear'];
+                                            }
+                                        }
+                                    ?>
+                                    <tr class="txn-edit-row" id="txn-edit-<?php echo (int)$t['id']; ?>">
+                                        <td colspan="7">
+                                            <div class="txn-edit-wrap">
+                                                <form method="post" class="edit-form">
+                                                    <input type="hidden" name="csrf" value="<?php echo app_h($_SESSION['app_csrf']); ?>">
+                                                    <input type="hidden" name="action" value="edit_transaction">
+                                                    <input type="hidden" name="year" value="<?php echo app_h($year); ?>">
+                                                    <input type="hidden" name="userID" value="<?php echo $teamUid; ?>">
+                                                    <input type="hidden" name="teamName" value="<?php echo app_h($team['teamName']); ?>">
+                                                    <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
+                                                    <input type="hidden" name="transaction_id" value="<?php echo (int)$t['id']; ?>">
+
+                                                    <div class="txn-edit-grid">
+                                                        <div class="field"><label>Amount</label><input name="edit_amount" value="<?php echo number_format((float)$t['amount'], 2, '.', ''); ?>"></div>
+
+                                                        <?php if ($isRollover): ?>
+                                                        <input type="hidden" name="edit_method" value="Rollover">
+                                                        <input type="hidden" name="edit_source" value="">
+                                                        <div class="field"><label>To Year</label><input name="edit_to_year" value="<?php echo app_h($editToYear); ?>"></div>
+                                                        <?php else: ?>
+                                                        <div class="field"><label>Method</label><input name="edit_method" value="<?php echo app_h($t['method']); ?>"></div>
+                                                        <div class="field"><label>Paid From</label><input name="edit_source" value="<?php echo app_h($t['source_account']); ?>"></div>
+                                                        <?php endif; ?>
+
+                                                        <div class="field span2"><label>Date &amp; Time</label><input name="edit_datetime" class="date-text" value="<?php echo app_h(app_format_datetime($t['occurred_at'])); ?>"></div>
+                                                        <div class="field span2"><label>Note</label><input name="edit_note" value="<?php echo app_h($t['note']); ?>"></div>
+                                                        <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
+                                                        <div class="txn-edit-actions">
+                                                            <button class="btn save" type="submit">Save Edit</button>
+                                                            <button class="mini-btn cancel-btn" type="button" data-edit-cancel="txn-edit-<?php echo (int)$t['id']; ?>">Cancel</button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endif; ?>
                                     <?php endforeach; ?>
 
                                     <?php if ($outCount === 0): ?>
@@ -929,7 +1092,13 @@ textarea{resize:vertical}
         </tr>
         <?php endforeach; ?>
     </table>
+
+    <div class="reading-space-control">
+        <button type="button" class="btn blue" id="reading-space-toggle">Expand Bottom Reading Space</button>
+    </div>
 </div>
+
+<div class="reading-space" id="reading-space" aria-hidden="true"></div>
 
 </div>
 
@@ -1043,6 +1212,84 @@ textarea{resize:vertical}
             saveOpenIds();
         });
     });
+
+    document.querySelectorAll('.edit-btn').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var id = button.getAttribute('data-edit-target');
+            var row = id ? document.getElementById(id) : null;
+
+            if (!row) {
+                return;
+            }
+
+            document.querySelectorAll('.txn-edit-row.open').forEach(function (other) {
+                if (other !== row) {
+                    other.classList.remove('open');
+                }
+            });
+
+            row.classList.toggle('open');
+        });
+    });
+
+    document.querySelectorAll('[data-edit-cancel]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var id = button.getAttribute('data-edit-cancel');
+            var row = id ? document.getElementById(id) : null;
+
+            if (!row) {
+                return;
+            }
+
+            var form = row.querySelector('form');
+
+            if (form && form.getAttribute('data-dirty') === '1') {
+                if (!window.confirm('Discard these unsaved transaction edits?')) {
+                    return;
+                }
+                form.reset();
+                form.setAttribute('data-dirty', '0');
+            }
+
+            row.classList.remove('open');
+
+            var editor = button.closest('.team-editor');
+            if (editor && !editor.querySelector('.edit-form[data-dirty="1"]')) {
+                editor.classList.remove('dirty');
+            }
+        });
+    });
+
+    var readingSpace = document.getElementById('reading-space');
+    var readingToggle = document.getElementById('reading-space-toggle');
+    var readingKey = 'mrlPaidPayoutsReadingSpace';
+
+    function setReadingSpace(open) {
+        if (!readingSpace || !readingToggle) {
+            return;
+        }
+
+        readingSpace.classList.toggle('open', open);
+        readingSpace.setAttribute('aria-hidden', open ? 'false' : 'true');
+        readingToggle.textContent = open ? 'Collapse Bottom Reading Space' : 'Expand Bottom Reading Space';
+
+        try {
+            localStorage.setItem(readingKey, open ? '1' : '0');
+        } catch (e) {
+        }
+    }
+
+    if (readingToggle) {
+        readingToggle.addEventListener('click', function () {
+            setReadingSpace(!readingSpace.classList.contains('open'));
+        });
+    }
+
+    try {
+        setReadingSpace(localStorage.getItem(readingKey) === '1');
+    } catch (e) {
+        setReadingSpace(false);
+    }
 
     document.querySelectorAll('.void-btn').forEach(function (button) {
         button.addEventListener('click', function (e) {
