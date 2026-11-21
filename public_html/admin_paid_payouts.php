@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts.php
  *
- * VERSION: v011
- * LAST MODIFIED: 11/18/2026 9:50 am ET
+ * VERSION: v012
+ * LAST MODIFIED: 11/20/2026 9:30 pm ET
  *
  * PURPOSE:
  * - Compact admin financial dashboard with IN / EARNED / OUT / BALANCE groups.
@@ -18,6 +18,8 @@ declare(strict_types=1);
  * - POST actions use Redirect-after-POST so browser refresh cannot replay transactions.
  * - Expanded editor favors the left side: Payments above Payout/Rollover, Team Notes on the right.
  * - Balance shortcut fills payout/payment amount; dirty-form warning only checks other teams.
+ * - Rollover supports both positive credits and negative debts carried into a later year.
+ * - Long payout notes wrap without hiding Edit/Void/Delete; focused fields use stronger contrast.
  *
  * PHP: 7.3 compatible.
  */
@@ -308,14 +310,22 @@ try {
                         $dateInfo = app_parse_datetime_or_now($dateText);
                         $occurredAt = $dateInfo['sql'];
                         $dateText = $dateInfo['display'];
-                        $available = max(0.0, (float)$rowByUid[$teamUid]['calc']['remaining']);
+                        $available = (float)$rowByUid[$teamUid]['calc']['remaining'];
 
-                        if ($amount <= 0) {
-                            throw new RuntimeException('Rollover amount must be greater than $0.00.');
+                        if (abs($amount) < 0.005) {
+                            throw new RuntimeException('Rollover - Credit/Debt amount cannot be $0.00.');
                         }
 
-                        if ($amount - $available > 0.005) {
-                            throw new RuntimeException('Rollover cannot exceed the current amount owed to this member.');
+                        if (abs($available) < 0.005) {
+                            throw new RuntimeException('There is no balance available to roll over.');
+                        }
+
+                        if (($amount > 0 && $available < 0) || ($amount < 0 && $available > 0)) {
+                            throw new RuntimeException('Rollover - Credit/Debt must have the same sign as the current balance.');
+                        }
+
+                        if (abs($amount) - abs($available) > 0.005) {
+                            throw new RuntimeException('Rollover - Credit/Debt cannot exceed the current balance.');
                         }
 
                         if (!preg_match('/^\d{4}$/', $toYear) || (int)$toYear <= (int)$year) {
@@ -354,10 +364,6 @@ try {
                         $dateText = trim((string)($_POST['edit_datetime'] ?? ''));
                         $occurredAt = app_parse_datetime($dateText);
 
-                        if ($amount <= 0) {
-                            throw new RuntimeException('Transaction amount must be greater than $0.00.');
-                        }
-
                         if ($occurredAt === null) {
                             throw new RuntimeException('Enter a valid date/time.');
                         }
@@ -365,15 +371,27 @@ try {
                         $type = (string)($txn['transaction_type'] ?? '');
 
                         if ($type === 'rollover_out' || $type === 'rollover_in') {
+                            if (abs($amount) < 0.005) {
+                                throw new RuntimeException('Rollover - Credit/Debt amount cannot be $0.00.');
+                            }
+
                             $toYear = preg_replace('/[^0-9]/', '', (string)($_POST['edit_to_year'] ?? ''));
                             $currentAmount = (float)($txn['amount'] ?? 0);
-                            $available = max(
-                                0.0,
-                                (float)$rowByUid[$teamUid]['calc']['remaining'] + $currentAmount
+                            $available = round(
+                                (float)$rowByUid[$teamUid]['calc']['remaining'] + $currentAmount,
+                                2
                             );
 
-                            if ($amount - $available > 0.005) {
-                                throw new RuntimeException('Rollover cannot exceed the amount available to this member.');
+                            if (abs($available) < 0.005) {
+                                throw new RuntimeException('There is no balance available to roll over.');
+                            }
+
+                            if (($amount > 0 && $available < 0) || ($amount < 0 && $available > 0)) {
+                                throw new RuntimeException('Rollover - Credit/Debt must have the same sign as the available balance.');
+                            }
+
+                            if (abs($amount) - abs($available) > 0.005) {
+                                throw new RuntimeException('Rollover - Credit/Debt cannot exceed the available balance.');
                             }
 
                             if (!preg_match('/^\d{4}$/', $toYear)) {
@@ -390,6 +408,10 @@ try {
                                 'to_year' => (int)$toYear,
                             ], $uid);
                         } else {
+                            if ($amount <= 0) {
+                                throw new RuntimeException('Transaction amount must be greater than $0.00.');
+                            }
+
                             app_update_transaction($dbo, $txnId, [
                                 'amount' => $amount,
                                 'method' => trim((string)($_POST['edit_method'] ?? '')),
@@ -569,6 +591,15 @@ textarea{resize:vertical}
 .form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
 .field label{display:block;color:#aeb9c5;font-size:11px;margin-bottom:2px}
 .field{min-width:0}.field input,.field textarea,.field select{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+.field input:focus,
+.field textarea:focus,
+.field select:focus{
+    outline:3px solid #78e4a2!important;
+    outline-offset:1px!important;
+    border-color:#1f6fb2!important;
+    background:#fff6d8!important;
+    color:#111!important;
+}
 .field textarea{min-height:48px}
 .span2{grid-column:span 2}
 .span3{grid-column:span 3}
@@ -576,6 +607,20 @@ textarea{resize:vertical}
 .txn-list{width:100%;border-collapse:collapse;margin-bottom:7px}
 .txn-list th,.txn-list td{padding:4px 5px;border-bottom:1px solid #2e3944;font-size:12px;text-align:left}
 .txn-list th.num,.txn-list td.num{text-align:right}
+.payout-txn-list{table-layout:fixed}
+.payout-txn-list th:nth-child(1),.payout-txn-list td:nth-child(1){width:58px}
+.payout-txn-list th:nth-child(2),.payout-txn-list td:nth-child(2){width:132px}
+.payout-txn-list th:nth-child(3),.payout-txn-list td:nth-child(3){width:72px}
+.payout-txn-list th:nth-child(4),.payout-txn-list td:nth-child(4){width:78px}
+.payout-txn-list th:nth-child(5),.payout-txn-list td:nth-child(5){width:88px}
+.payout-txn-list th:nth-child(6),.payout-txn-list td:nth-child(6){white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.payout-txn-list th:nth-child(7),.payout-txn-list td:nth-child(7){width:145px}
+.payout-txn-list .txn-action{justify-content:flex-end}
+.balance-choice{display:none;gap:6px;align-items:center;margin:6px 0 8px;padding:7px 8px;border:1px solid #7a4b51;border-radius:6px;background:#25191c}
+.balance-choice.open{display:flex;flex-wrap:wrap}
+.balance-choice-label{color:#ffb0b7;font-weight:bold;font-size:12px}
+.choice-collect{background:#173927;color:#78e4a2;border:1px solid #2c7550}
+.choice-rollover{background:#4b3417;color:#ffd08a;border:1px solid #8a6328}
 .legacy{background:#202018;color:#e8d79a}
 .rollover{background:#182a22}
 .small-note{font-size:11px;color:#94a3b1;margin-top:4px}
@@ -747,7 +792,7 @@ textarea{resize:vertical}
                 <td class="num money-col"><?php echo app_money($totals['payout']); ?></td>
                 <td class="method-col"><?php echo app_h($row['latest_payout_method']); ?></td>
                 <td class="source-col"><?php echo app_h($row['latest_payout_source']); ?></td>
-                <td class="num money-col <?php echo (float)$totals['rollover_out'] > 0 ? 'money-positive' : 'money-neutral'; ?>"><?php echo app_money($totals['rollover_out']); ?></td>
+                <td class="num money-col <?php echo (float)$totals['rollover_out'] > 0.004 ? 'money-positive' : ((float)$totals['rollover_out'] < -0.004 ? 'money-negative' : 'money-neutral'); ?>"><?php echo app_money($totals['rollover_out']); ?></td>
                 <td class="num money-col <?php echo $calc['remaining'] > 0 ? 'money-positive' : ($calc['remaining'] < 0 ? 'money-negative' : 'money-neutral'); ?>">
                     <?php echo app_money($calc['remaining']); ?>
                 </td>
@@ -770,7 +815,7 @@ textarea{resize:vertical}
 
                             <div class="editor-box">
                                 <h3>Payments Received</h3>
-                                <table class="txn-list">
+                                <table class="txn-list payout-txn-list">
                                     <tr><th>Date / Time</th><th class="num">Amount</th><th>Method</th><th>Note</th><th></th></tr>
                                     <?php if ((float)$legacy['amount_paid'] > 0): ?>
                                     <tr class="legacy">
@@ -895,7 +940,15 @@ textarea{resize:vertical}
                                     </button>
                                 </h3>
 
-                                <table class="txn-list">
+                                <?php if ((float)$calc['remaining'] < -0.004): ?>
+                                <div class="balance-choice" data-balance-choice>
+                                    <span class="balance-choice-label">Negative balance:</span>
+                                    <button type="button" class="mini-btn choice-collect">Collect Now</button>
+                                    <button type="button" class="mini-btn choice-rollover">Rollover - Credit/Debt</button>
+                                </div>
+                                <?php endif; ?>
+
+                                <table class="txn-list payout-txn-list">
                                     <tr><th>Type</th><th>Date / Time</th><th class="num">Amount</th><th>Method</th><th>Paid From</th><th>Note</th><th></th></tr>
                                     <?php
                                     $outCount = 0;
@@ -1029,12 +1082,12 @@ textarea{resize:vertical}
                                     <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
 
                                     <div class="form-grid">
-                                        <div class="field"><label>Rollover Amount</label><input name="rollover_amount" value="<?php echo $calc['remaining'] > 0 ? number_format((float)$calc['remaining'], 2, '.', '') : ''; ?>"></div>
+                                        <div class="field"><label>Rollover - Credit/Debt</label><input name="rollover_amount" class="rollover-amount-input" value="<?php echo abs((float)$calc['remaining']) > 0.004 ? number_format((float)$calc['remaining'], 2, '.', '') : ''; ?>"></div>
                                         <div class="field"><label>To Year</label><input name="rollover_year" value="<?php echo (int)$year + 1; ?>"></div>
                                         <div class="field span2"><label>Date &amp; Time — blank = now</label><input name="rollover_datetime" class="date-text" placeholder="Nov 16, 2026, 4:23 PM"></div>
                                         <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
-                                        <div class="field span2"><label>Note</label><input name="rollover_note" placeholder="Keep winnings for next year's entry"></div>
-                                        <div class="field" style="align-self:end"><button class="btn warnbtn" type="submit">Rollover Credit</button></div>
+                                        <div class="field span2"><label>Note</label><input name="rollover_note" placeholder="Credit/debt carried into next year"></div>
+                                        <div class="field" style="align-self:end"><button class="btn warnbtn" type="submit">Rollover - Credit/Debt</button></div>
                                     </div>
                                 </form>
                             </div>
@@ -1107,10 +1160,14 @@ textarea{resize:vertical}
                 $finalStatus = 'Settled';
                 $balanceClass = 'money-neutral';
 
-                if ($rollover > 0.004 && $paidOut > 0.004) {
-                    $disposition = 'Paid + Rollover';
+                if (abs($rollover) > 0.004 && $paidOut > 0.004) {
+                    $disposition = $rollover > 0
+                        ? 'Paid + Rollover Credit '.app_money($rollover)
+                        : 'Paid + Rollover Debt '.app_money(abs($rollover));
                 } elseif ($rollover > 0.004) {
-                    $disposition = 'Rollover '.app_money($rollover);
+                    $disposition = 'Rollover Credit '.app_money($rollover);
+                } elseif ($rollover < -0.004) {
+                    $disposition = 'Rollover Debt '.app_money(abs($rollover));
                 } elseif ($paidOut > 0.004) {
                     $disposition = 'Paid '.app_money($paidOut);
                 } else {
@@ -1262,11 +1319,40 @@ textarea{resize:vertical}
                 return;
             }
 
-            var target = balance > 0
-                ? editor.querySelector('.payout-amount-input')
-                : editor.querySelector('.payment-amount-input');
+            if (balance > 0) {
+                var payoutTarget = editor.querySelector('.payout-amount-input');
 
-            if (!target) {
+                if (!payoutTarget) {
+                    return;
+                }
+
+                payoutTarget.value = balance.toFixed(2);
+                payoutTarget.dispatchEvent(new Event('input', { bubbles: true }));
+                payoutTarget.focus();
+                payoutTarget.select();
+                return;
+            }
+
+            var choice = editor.querySelector('[data-balance-choice]');
+            if (choice) {
+                choice.classList.toggle('open');
+            }
+        });
+    });
+
+    document.querySelectorAll('.choice-collect').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var editor = button.closest('.team-editor');
+            var balanceButton = editor ? editor.querySelector('.balance-fill') : null;
+            var target = editor ? editor.querySelector('.payment-amount-input') : null;
+
+            if (!editor || !balanceButton || !target) {
+                return;
+            }
+
+            var balance = parseFloat(balanceButton.getAttribute('data-balance') || '0');
+
+            if (!isFinite(balance) || balance >= -0.004) {
                 return;
             }
 
@@ -1274,6 +1360,39 @@ textarea{resize:vertical}
             target.dispatchEvent(new Event('input', { bubbles: true }));
             target.focus();
             target.select();
+
+            var choice = editor.querySelector('[data-balance-choice]');
+            if (choice) {
+                choice.classList.remove('open');
+            }
+        });
+    });
+
+    document.querySelectorAll('.choice-rollover').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var editor = button.closest('.team-editor');
+            var balanceButton = editor ? editor.querySelector('.balance-fill') : null;
+            var target = editor ? editor.querySelector('.rollover-amount-input') : null;
+
+            if (!editor || !balanceButton || !target) {
+                return;
+            }
+
+            var balance = parseFloat(balanceButton.getAttribute('data-balance') || '0');
+
+            if (!isFinite(balance) || balance >= -0.004) {
+                return;
+            }
+
+            target.value = balance.toFixed(2);
+            target.dispatchEvent(new Event('input', { bubbles: true }));
+            target.focus();
+            target.select();
+
+            var choice = editor.querySelector('[data-balance-choice]');
+            if (choice) {
+                choice.classList.remove('open');
+            }
         });
     });
 
