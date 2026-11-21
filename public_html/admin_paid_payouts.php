@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts.php
  *
- * VERSION: v012
- * LAST MODIFIED: 11/20/2026 9:30 pm ET
+ * VERSION: v013
+ * LAST MODIFIED: 11/20/2026 10:40 pm ET
  *
  * PURPOSE:
  * - Compact admin financial dashboard with IN / EARNED / OUT / BALANCE groups.
@@ -20,6 +20,7 @@ declare(strict_types=1);
  * - Balance shortcut fills payout/payment amount; dirty-form warning only checks other teams.
  * - Rollover supports both positive credits and negative debts carried into a later year.
  * - Long payout notes wrap without hiding Edit/Void/Delete; focused fields use stronger contrast.
+ * - Main Status displays Paid when a fee year is fully settled to a $0.00 final balance.
  *
  * PHP: 7.3 compatible.
  */
@@ -774,14 +775,20 @@ textarea{resize:vertical}
                     ? '+'.app_money($calc['fee_credit']).' credit'
                     : app_money($calc['fee_due']);
 
-                $statusClass = $calc['status'] === 'Paid'
+                $displayStatus = (string)$calc['status'];
+
+                if ($currentFee > 0.004 && abs((float)$calc['remaining']) < 0.005) {
+                    $displayStatus = 'Paid';
+                }
+
+                $statusClass = $displayStatus === 'Paid'
                     ? 'status-paid'
-                    : ($calc['status'] === 'Partial' ? 'status-partial' : 'status-unpaid');
+                    : ($displayStatus === 'Partial' ? 'status-partial' : 'status-unpaid');
             ?>
             <tr class="finance-row" data-team="<?php echo $teamUid; ?>" tabindex="0">
                 <td class="teamlink team-col"><?php echo app_h($team['teamName']); ?></td>
                 <td class="owner-col"><?php echo app_h($team['userName']); ?></td>
-                <td class="status-col <?php echo $statusClass; ?>"><?php echo app_h($calc['status']); ?></td>
+                <td class="status-col <?php echo $statusClass; ?>"><?php echo app_h($displayStatus); ?></td>
                 <td class="num money-col"><?php echo app_money($row['cash_paid']); ?></td>
                 <td class="method-col"><?php echo app_h($row['latest_method']); ?></td>
                 <td class="num money-col <?php echo $calc['fee_credit'] > 0 ? 'money-positive' : ($calc['fee_due'] > 0 ? 'money-negative' : 'money-neutral'); ?>">
