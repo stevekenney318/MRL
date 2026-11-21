@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * admin_paid_payouts.php
  *
- * VERSION: v010
- * LAST MODIFIED: 11/18/2026 9:15 am ET
+ * VERSION: v011
+ * LAST MODIFIED: 11/18/2026 9:50 am ET
  *
  * PURPOSE:
  * - Compact admin financial dashboard with IN / EARNED / OUT / BALANCE groups.
@@ -17,6 +17,7 @@ declare(strict_types=1);
  * - Prize winnings remain calculated/read-only from race_results/payouts_helper.php.
  * - POST actions use Redirect-after-POST so browser refresh cannot replay transactions.
  * - Expanded editor favors the left side: Payments above Payout/Rollover, Team Notes on the right.
+ * - Balance shortcut fills payout/payment amount; dirty-form warning only checks other teams.
  *
  * PHP: 7.3 compatible.
  */
@@ -561,6 +562,9 @@ textarea{resize:vertical}
 .editor-stack{display:flex;flex-direction:column;gap:10px;min-width:0}
 .editor-box{background:#151d25;border:1px solid #33414f;border-radius:8px;padding:9px;min-width:0;overflow:hidden}
 .editor-balance{margin-left:10px;font-size:16px;white-space:nowrap}
+.balance-fill{background:transparent;border:0;padding:0;font:inherit;font-weight:bold;cursor:pointer}
+.balance-fill:hover{text-decoration:underline}
+.balance-fill.money-neutral{cursor:default;text-decoration:none}
 .editor-box h3{margin:0 0 7px;color:#bdd6ed;font-size:14px}
 .form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
 .field label{display:block;color:#aeb9c5;font-size:11px;margin-bottom:2px}
@@ -868,7 +872,7 @@ textarea{resize:vertical}
                                     <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
 
                                     <div class="form-grid">
-                                        <div class="field"><label>Amount</label><input name="txn_amount" placeholder="0.00"></div>
+                                        <div class="field"><label>Amount</label><input name="txn_amount" class="payment-amount-input" placeholder="0.00"></div>
                                         <div class="field"><label>Method</label><input name="txn_method" placeholder="Venmo, PayPal, Cash..."></div>
                                         <div class="field span2"><label>Date &amp; Time — blank = now; paste email style or use picker</label><input name="txn_datetime" class="date-text" placeholder="Apr 13, 2026, 12:54 PM"></div>
                                         <div class="field"><label>Date/Time Picker</label><input type="datetime-local" class="date-picker"></div>
@@ -881,9 +885,14 @@ textarea{resize:vertical}
                             <div class="editor-box">
                                 <h3>
                                     Payout / Rollover
-                                    <span class="editor-balance <?php echo $calc['remaining'] > 0 ? 'money-positive' : ($calc['remaining'] < 0 ? 'money-negative' : 'money-neutral'); ?>">
+                                    <button
+                                        type="button"
+                                        class="editor-balance balance-fill <?php echo $calc['remaining'] > 0 ? 'money-positive' : ($calc['remaining'] < 0 ? 'money-negative' : 'money-neutral'); ?>"
+                                        data-balance="<?php echo app_h(number_format((float)$calc['remaining'], 2, '.', '')); ?>"
+                                        title="<?php echo $calc['remaining'] > 0 ? 'Fill Payout Amount' : ($calc['remaining'] < 0 ? 'Fill Payment Amount' : 'No balance to fill'); ?>"
+                                    >
                                         Balance <?php echo app_money($calc['remaining']); ?>
-                                    </span>
+                                    </button>
                                 </h3>
 
                                 <table class="txn-list">
@@ -1001,7 +1010,7 @@ textarea{resize:vertical}
                                     <input type="hidden" name="userName" value="<?php echo app_h($team['userName']); ?>">
 
                                     <div class="form-grid">
-                                        <div class="field"><label>Payout Amount</label><input name="txn_amount" placeholder="0.00"></div>
+                                        <div class="field"><label>Payout Amount</label><input name="txn_amount" class="payout-amount-input" placeholder="0.00"></div>
                                         <div class="field"><label>Method</label><input name="txn_method" placeholder="Venmo, PayPal, Cash..."></div>
                                         <div class="field"><label>Paid From</label><input name="txn_source" placeholder="M&T, KeyBank, Pocket..."></div>
                                         <div class="field"><label>Date &amp; Time — blank = now</label><input name="txn_datetime" class="date-text" placeholder="Apr 13, 2026, 12:54 PM"></div>
@@ -1217,25 +1226,54 @@ textarea{resize:vertical}
         });
 
         form.addEventListener('submit', function (e) {
+            var currentEditor = form.closest('.team-editor');
             var otherDirty = false;
 
-            document.querySelectorAll('.edit-form[data-dirty="1"]').forEach(function (other) {
-                if (other !== form) {
+            document.querySelectorAll('.team-editor.dirty').forEach(function (editor) {
+                if (editor !== currentEditor) {
                     otherDirty = true;
                 }
             });
 
-            if (otherDirty && !window.confirm('Another open team/section has unsaved changes. Continue and lose those unsaved changes?')) {
+            if (otherDirty && !window.confirm('Another open team has unsaved changes. Continue and lose those unsaved changes?')) {
                 e.preventDefault();
                 return;
             }
 
             form.setAttribute('data-dirty', '0');
-            var editor = form.closest('.team-editor');
-            if (editor) {
-                editor.classList.remove('dirty');
+            if (currentEditor) {
+                currentEditor.classList.remove('dirty');
             }
             saveOpenIds();
+        });
+    });
+
+    document.querySelectorAll('.balance-fill').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var editor = button.closest('.team-editor');
+
+            if (!editor) {
+                return;
+            }
+
+            var balance = parseFloat(button.getAttribute('data-balance') || '0');
+
+            if (!isFinite(balance) || Math.abs(balance) < 0.005) {
+                return;
+            }
+
+            var target = balance > 0
+                ? editor.querySelector('.payout-amount-input')
+                : editor.querySelector('.payment-amount-input');
+
+            if (!target) {
+                return;
+            }
+
+            target.value = Math.abs(balance).toFixed(2);
+            target.dispatchEvent(new Event('input', { bubbles: true }));
+            target.focus();
+            target.select();
         });
     });
 
